@@ -6,7 +6,6 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/config"
-	"openai/internal/service/fiter"
 	"openai/internal/service/openai"
 	"openai/internal/service/wechat"
 	"sync"
@@ -15,9 +14,7 @@ import (
 
 var (
 	success  = []byte("success")
-	warn     = "警告，检测到敏感词"
 	requests sync.Map // K - 消息ID ， V - chan string
-	users    sync.Map
 )
 
 func WechatCheck(w http.ResponseWriter, r *http.Request) {
@@ -71,13 +68,6 @@ func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
 
 	}
 
-	// 敏感词检测
-	if !fiter.Check(msg.Content) {
-		warnWx := msg.GenerateEchoData(warn)
-		echo(w, warnWx)
-		return
-	}
-
 	var ch chan string
 	v, ok := requests.Load(msg.MsgId)
 	if !ok {
@@ -94,9 +84,6 @@ func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
 
 	select {
 	case result := <-ch:
-		if !fiter.Check(result) {
-			result = warn
-		}
 		bs := msg.GenerateEchoData(result)
 		echo(w, bs)
 		close(ch)
@@ -108,10 +95,6 @@ func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
 
 func Test(w http.ResponseWriter, r *http.Request) {
 	msg := r.URL.Query().Get("msg")
-	if !fiter.Check(msg) {
-		echoJson(w, "", warn)
-		return
-	}
 	s := openai.Query(msg, time.Second*180)
 	echoJson(w, s, "")
 }
