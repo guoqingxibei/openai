@@ -121,10 +121,6 @@ func Query(msg string, timeout time.Duration) string {
 func completions(msg string, timeout time.Duration) (string, error) {
 	start := time.Now()
 	msg = strings.TrimSpace(msg)
-	length := len([]rune(msg))
-	if length <= 1 {
-		return "请说详细些...", nil
-	}
 	var r request
 	r.Model = "gpt-3.5-turbo"
 	r.Messages = []reqMessage{{
