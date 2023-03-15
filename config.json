@@ -8,6 +8,7 @@
     "key": ""
   },
   "wechat": {
-    "token": ""
+    "token": "",
+    "reply_when_subscribe": ""
   }
 }

@@ -16,7 +16,8 @@ type conf struct {
 		Key string `json:"key"`
 	} `json:"openai"`
 	Wechat struct {
-		Token string `json:"token"`
+		Token              string `json:"token"`
+		ReplyWhenSubscribe string `json:"reply_when_subscribe"`
 	} `json:"wechat"`
 }
 

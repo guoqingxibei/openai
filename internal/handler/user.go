@@ -57,7 +57,7 @@ func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
 			echo(w, success)
 		case "subscribe":
 			log.Println("新增关注:", msg.FromUserName)
-			echo(w, success)
+			echo(w, msg.GenerateEchoData(config.C.Wechat.ReplyWhenSubscribe))
 			return
 		case "unsubscribe":
 			log.Println("取消关注:", msg.FromUserName)
