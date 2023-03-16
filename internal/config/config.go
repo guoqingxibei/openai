@@ -18,18 +18,19 @@ type conf struct {
 	Wechat struct {
 		Token              string `json:"token"`
 		ReplyWhenSubscribe string `json:"reply_when_subscribe"`
+		MessageUrlPrefix   string `json:"message_url_prefix"`
 	} `json:"wechat"`
 }
 
 var (
-	C conf
+	C   conf
+	env = os.Getenv("GO_ENV")
 )
 
 func init() {
-
 	// 尝试加载配置文件，否则使用参数
 	if err := parseConfigFile(); err != nil {
-		fmt.Println("缺少配置文件 config.json")
+		fmt.Println("缺少配置文件 config-" + env + ".json")
 		os.Exit(0)
 	}
 
@@ -49,7 +50,7 @@ func init() {
 }
 
 func parseConfigFile() error {
-	filename := "./config.json"
+	filename := fmt.Sprint("./config-", env, ".json")
 	f, err := os.Open(filename)
 	if err != nil {
 		return err

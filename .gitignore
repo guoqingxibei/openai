@@ -5,3 +5,4 @@ openaiBin
 log/*
 test.html
 .idea
+config-*.json

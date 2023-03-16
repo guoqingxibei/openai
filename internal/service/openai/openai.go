@@ -70,7 +70,7 @@ type choiceItem struct {
 	} `json:"message"`
 }
 
-// OpenAI可能无法在希望的时间内做出回复
+// Query OpenAI可能无法在希望的时间内做出回复
 // 使用goroutine + channel 的形式，不管是否能及时回复用户，后台都打印结果
 func Query(msg string, timeout time.Duration) string {
 	ch := make(chan string, 1)
@@ -93,7 +93,7 @@ func Query(msg string, timeout time.Duration) string {
 	resultCache.Store(msg, MsgWait)
 
 	go func(msg string, ctx context.Context, ch chan string) {
-		result, err := completions(msg, time.Second*180)
+		result, err := Completions(msg, time.Second*180)
 		if err != nil {
 			result = "发生错误「" + err.Error() + "」，您重试一下"
 		}
@@ -117,8 +117,8 @@ func Query(msg string, timeout time.Duration) string {
 	return result
 }
 
-// https://beta.openai.com/docs/api-reference/making-requests
-func completions(msg string, timeout time.Duration) (string, error) {
+// Completions https://beta.openai.com/docs/api-reference/making-requests
+func Completions(msg string, timeout time.Duration) (string, error) {
 	start := time.Now()
 	msg = strings.TrimSpace(msg)
 	var r request

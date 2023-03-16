@@ -6,7 +6,7 @@ import (
 	"sort"
 )
 
-// 验证签名
+// CheckSignature 验证签名
 func CheckSignature(signature, timestamp, nonce, token string) bool {
 	sl := []string{token, timestamp, nonce}
 	sort.Strings(sl)

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Loading Page</title>
+    <style>
+        /* Center the "Loading" text on the page */
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+<h1 id="loading">ChatGpt 正在思考中，稍等一下下...</h1>
+<script>
+    // Function to fetch the value from the specified URL
+    async function fetchValue() {
+        const response = await fetch(window.location.origin + "/reply" + window.location.search);
+        return response.json();
+    }
+
+    // Function to check for the value every second and update the page when found
+    async function checkValue() {
+        tryCount++;
+        const data = await fetchValue();
+        if (tryCount > 300) {
+            document.getElementById("loading").textContent = '出错了，请重新提问';
+        } else if (!data.code && data.message) {
+            document.getElementById("loading").textContent = data.message;
+        } else {
+            setTimeout(checkValue, 1000);
+        }
+    }
+
+    // Call the checkValue function to start fetching the value
+    let tryCount = 0;
+    checkValue();
+</script>
+</body>
+</html>

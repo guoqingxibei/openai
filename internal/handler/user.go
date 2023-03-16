@@ -8,13 +8,14 @@ import (
 	"openai/internal/config"
 	"openai/internal/service/openai"
 	"openai/internal/service/wechat"
+	"strconv"
 	"sync"
 	"time"
 )
 
 var (
-	success  = []byte("success")
-	requests sync.Map // K - 消息ID ， V - chan string
+	success      = []byte("success")
+	msgIdToReply sync.Map // K - 消息ID ， V - string
 )
 
 func WechatCheck(w http.ResponseWriter, r *http.Request) {
@@ -33,7 +34,7 @@ func WechatCheck(w http.ResponseWriter, r *http.Request) {
 	log.Println("此接口为公众号验证，不应该被手动调用，公众号接入校验失败")
 }
 
-// https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
+// ReceiveMsg https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
 // 微信服务器在五秒内收不到响应会断掉连接，并且重新发起请求，总共重试三次
 func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
 	bs, _ := io.ReadAll(r.Body)
@@ -65,38 +66,82 @@ func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "text":
+		answer := replyToText(msg.MsgId, msg.Content)
+		echo(w, msg.GenerateEchoData(answer))
+	}
+}
 
+func TestReplyToText(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+	msgId := query.Get("msgId")
+	intMsgId, err := strconv.ParseInt(msgId, 10, 64)
+	if err != nil {
+		panic(err)
 	}
 
-	var ch chan string
-	v, ok := requests.Load(msg.MsgId)
-	if !ok {
-		ch = make(chan string)
-		requests.Store(msg.MsgId, ch)
-		go func(id int64, msg string) {
-			// 15s不回复微信，则失效
-			result := openai.Query(msg, time.Millisecond*13500)
-			ch <- result
-		}(msg.MsgId, msg.Content)
-	} else {
-		ch = v.(chan string)
+	question := query.Get("question")
+	answer := replyToText(intMsgId, question)
+	echoJson(w, answer, "")
+}
+
+func replyToText(msgId int64, question string) string {
+	v, ok := msgIdToReply.Load(msgId)
+	if ok {
+		return v.(string)
 	}
 
+	answerChan := make(chan string)
+	leaveChan := make(chan bool)
+	go func() {
+		// 15s不回复微信，则失效
+		answer, err := openai.Completions(question, time.Second*180)
+		if err != nil {
+			answer = "Try again"
+		}
+		msgIdToReply.Store(msgId, answer)
+		select {
+		case answerChan <- answer:
+		case <-leaveChan:
+		}
+	}()
+
+	answer := ""
 	select {
-	case result := <-ch:
-		bs := msg.GenerateEchoData(result)
-		echo(w, bs)
-		close(ch)
-		requests.Delete(msg.MsgId)
+	case reply := <-answerChan:
+		answer = reply
+		msgIdToReply.Delete(msgId)
 	// 超时不要回答，会重试的
-	case <-time.After(time.Second * 5):
+	case <-time.After(time.Second * 4):
+		answer = config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + strconv.FormatInt(msgId, 10)
+		go func() {
+			leaveChan <- true
+		}()
 	}
+	return answer
 }
 
 func Test(w http.ResponseWriter, r *http.Request) {
 	msg := r.URL.Query().Get("msg")
 	s := openai.Query(msg, time.Second*180)
 	echoJson(w, s, "")
+}
+
+func Index(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "./web/index.html")
+}
+
+func GetReply(w http.ResponseWriter, r *http.Request) {
+	msgId := r.URL.Query().Get("msgId")
+	intMsgId, err := strconv.ParseInt(msgId, 10, 64)
+	if err != nil {
+		panic(err)
+	}
+	value, ok := msgIdToReply.Load(intMsgId)
+	if ok {
+		echoJson(w, value.(string), "")
+	} else {
+		echoJson(w, "", "Reply is coming")
+	}
 }
 
 func echoJson(w http.ResponseWriter, replyMsg string, errMsg string) {
