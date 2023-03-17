@@ -109,15 +109,23 @@ func replyToText(msgId int64, question string) string {
 	select {
 	case reply := <-answerChan:
 		answer = reply
-		msgIdToReply.Delete(msgId)
+		if len(answer) > 2000 {
+			answer = buildAnswerURL(msgId)
+		} else {
+			msgIdToReply.Delete(msgId)
+		}
 	// 超时不要回答，会重试的
 	case <-time.After(time.Second * 4):
-		answer = config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + strconv.FormatInt(msgId, 10)
+		answer = buildAnswerURL(msgId)
 		go func() {
 			leaveChan <- true
 		}()
 	}
 	return answer
+}
+
+func buildAnswerURL(msgId int64) string {
+	return config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + strconv.FormatInt(msgId, 10)
 }
 
 func Test(w http.ResponseWriter, r *http.Request) {
