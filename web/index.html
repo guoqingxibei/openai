@@ -3,20 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Loading Page</title>
+    <title>ChatGPT</title>
     <style>
-        /* Center the "Loading" text on the page */
+        /* Center the content */
         body {
             display: flex;
-            justify-content: center;
+            flex-direction: column;
             align-items: center;
-            height: 100vh;
+            justify-content: center;
             margin: 0;
+            padding: 0;
+            font-size: 18px;
+        }
+
+        /* Style for the article content */
+        article {
+            max-width: 600px;
+            line-height: 1.5;
+            padding: 20px;
+            background-color: #f2f2f2;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
+            margin: 20px;
         }
     </style>
 </head>
 <body>
-<h1 id="loading">ChatGpt 正在思考中，稍等一下下...</h1>
+<article>
+    <p id="content">ChatGPT 正在处理你的消息，请稍等...</p>
+</article>
 <script>
     // Function to fetch the value from the specified URL
     async function fetchValue() {
@@ -29,9 +44,9 @@
         tryCount++;
         const data = await fetchValue();
         if (tryCount > 300) {
-            document.getElementById("loading").textContent = '出错了，请重新提问';
+            document.getElementById("content").innerText = '出错了，请重新提问';
         } else if (!data.code && data.message) {
-            document.getElementById("loading").textContent = data.message;
+            document.getElementById("content").innerText = data.message;
         } else {
             setTimeout(checkValue, 1000);
         }
