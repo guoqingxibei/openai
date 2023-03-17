@@ -19,9 +19,9 @@ func main() {
 	r := bootstrap.New()
 
 	// 微信消息处理
-	r.POST("/wx", handler.ReceiveMsg)
+	r.POST("/talk", handler.ReceiveMsg)
 	// 用于公众号自动验证
-	r.GET("/wx", handler.WechatCheck)
+	r.GET("/talk", handler.WechatCheck)
 
 	// 用于测试
 	r.GET("/test", handler.Test)
