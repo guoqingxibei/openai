@@ -4,6 +4,9 @@ import (
 	"context"
 	"github.com/redis/go-redis/v9"
 	"openai/internal/config"
+	"openai/internal/service/openai"
+	"openai/internal/util"
+	"strconv"
 	"time"
 )
 
@@ -32,4 +35,84 @@ func Del(key string) error {
 
 func Inc(key string) (int64, error) {
 	return rdb.Incr(ctx, key).Result()
+}
+
+func FetchReply(shortMsgId string) (string, error) {
+	reply, err := Get(buildReplyKey(shortMsgId))
+	if err == nil {
+		return reply, nil
+	}
+	return "", err
+}
+
+func SetReply(shortMsgId string, reply string) error {
+	return Set(buildReplyKey(shortMsgId), reply, time.Hour*24*7)
+}
+
+func SetMessages(toUserName string, messages []openai.Message) error {
+	newRoundsStr, err := util.StringifyMessages(messages)
+	if err != nil {
+		return err
+	}
+	return Set(buildMessagesKey(toUserName), newRoundsStr, time.Minute*10)
+}
+
+func FetchMessages(toUserName string) ([]openai.Message, error) {
+	var messages []openai.Message
+	messagesStr, err := Get(buildMessagesKey(toUserName))
+	if err != nil {
+		if err == redis.Nil {
+			return messages, nil
+		}
+		return nil, err
+	}
+	messages, err = util.ParseMessages(messagesStr)
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
+}
+
+func buildMessagesKey(toUserName string) string {
+	return "user:" + toUserName + ":messages"
+}
+
+func DelReply(shortMsgId string) error {
+	return Del(buildReplyKey(shortMsgId))
+}
+
+func buildReplyKey(shortMsgId string) string {
+	return "short-msg-id:" + shortMsgId + ":reply"
+}
+
+func generateShortMsgId() (string, error) {
+	shortMsgId, err := Inc("current-max-short-id")
+	if err == nil {
+		return strconv.FormatInt(shortMsgId, 10), nil
+	}
+	return "", err
+}
+
+func FetchShortMsgId(longMsgId string) (string, error) {
+	key := buildShortMsgIdKey(longMsgId)
+	shortMsgId, err := Get(key)
+	if err == nil {
+		return shortMsgId, nil
+	}
+	if err == redis.Nil {
+		shortMsgId, err := generateShortMsgId()
+		if err == nil {
+			err := Set(key, shortMsgId, time.Hour*24*7)
+			if err == nil {
+				return shortMsgId, nil
+			}
+			return "", err
+		}
+		return "", err
+	}
+	return "", err
+}
+
+func buildShortMsgIdKey(longMsgId string) string {
+	return "long-msg-id:" + longMsgId + ":short-msg-id"
 }

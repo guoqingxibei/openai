@@ -21,10 +21,10 @@ const (
 var totalTokens int64
 
 type request struct {
-	Model    string       `json:"model"`
-	Messages []reqMessage `json:"messages"`
+	Model    string    `json:"model"`
+	Messages []Message `json:"messages"`
 }
-type reqMessage struct {
+type Message struct {
 	Role    string `json:"role"`
 	Content string `json:"content"`
 }
@@ -53,15 +53,11 @@ type choiceItem struct {
 }
 
 // Completions https://beta.openai.com/docs/api-reference/making-requests
-func Completions(msg string, timeout time.Duration) (string, error) {
+func Completions(messages []Message, timeout time.Duration) (string, error) {
 	start := time.Now()
-	msg = strings.TrimSpace(msg)
 	var r request
 	r.Model = "gpt-3.5-turbo"
-	r.Messages = []reqMessage{{
-		Role:    "user",
-		Content: msg,
-	}}
+	r.Messages = messages
 
 	bs, err := json.Marshal(r)
 	if err != nil {
@@ -98,14 +94,11 @@ func Completions(msg string, timeout time.Duration) (string, error) {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
 
 		reply := replyMsg(data.Choices[0].Message.Content)
-		log.Printf("本次:用时:%ds,花费约:%f¥,token:%d,请求:%d,回复:%d。 服务启动至今累计花费约:%f¥ \nQ:%s \nA:%s \n",
+		log.Printf("Duration: %ds，request token：%d, response token: %d, \nrequest messages: %s, \nanswer: %s",
 			int(time.Since(start).Seconds()),
-			float32(data.Usage.TotalTokens/1000)*0.002*exchangeRate,
-			data.Usage.TotalTokens,
 			data.Usage.PromptTokens,
 			data.Usage.CompletionTokens,
-			float32(totalTokens/1000)*0.002*exchangeRate,
-			msg,
+			messages,
 			reply,
 		)
 
