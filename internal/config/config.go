@@ -20,6 +20,10 @@ type conf struct {
 		ReplyWhenSubscribe string `json:"reply_when_subscribe"`
 		MessageUrlPrefix   string `json:"message_url_prefix"`
 	} `json:"wechat"`
+	Redis struct {
+		Addr string `json:"addr"`
+		DB   int    `json:"db"`
+	}
 }
 
 var (

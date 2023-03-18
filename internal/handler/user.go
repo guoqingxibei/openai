@@ -2,20 +2,20 @@ package handler
 
 import (
 	"encoding/json"
+	"github.com/redis/go-redis/v9"
 	"io"
 	"log"
 	"net/http"
 	"openai/internal/config"
+	"openai/internal/service/gptredis"
 	"openai/internal/service/openai"
 	"openai/internal/service/wechat"
 	"strconv"
-	"sync"
 	"time"
 )
 
 var (
-	success      = []byte("success")
-	msgIdToReply sync.Map // K - 消息ID ， V - string
+	success = []byte("success")
 )
 
 func WechatCheck(w http.ResponseWriter, r *http.Request) {
@@ -66,8 +66,12 @@ func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	case "text":
-		answer := replyToText(msg.MsgId, msg.Content)
-		echo(w, msg.GenerateEchoData(answer))
+		answer, err := replyToText(msg.MsgId, msg.Content)
+		if err == nil {
+			echo(w, msg.GenerateEchoData(answer))
+		} else {
+			echo(w, msg.GenerateEchoData("出错了，请重新提问"))
+		}
 	}
 }
 
@@ -80,14 +84,33 @@ func TestReplyToText(w http.ResponseWriter, r *http.Request) {
 	}
 
 	question := query.Get("question")
-	answer := replyToText(intMsgId, question)
-	echoJson(w, answer, "")
+	answer, err := replyToText(intMsgId, question)
+	if err == nil {
+		echoJson(w, 0, answer)
+	} else {
+		echoJson(w, -1, "出错了，请重新提问")
+	}
 }
 
-func replyToText(msgId int64, question string) string {
-	v, ok := msgIdToReply.Load(msgId)
-	if ok {
-		return v.(string)
+func replyToText(msgId int64, question string) (string, error) {
+	msgIdStr := strconv.FormatInt(msgId, 10)
+	shortMsgId, err := fetchShortMsgId(msgIdStr)
+	if err != nil {
+		return "", err
+	}
+
+	// indicate reply is loading
+	err = setReplyToRedis(shortMsgId, "")
+	if err != nil {
+		return "", err
+	}
+
+	reply, err := fetchReplyFromRedis(shortMsgId)
+	if err == nil && reply != "" {
+		return reply, nil
+	}
+	if err != nil {
+		return "", nil
 	}
 
 	answerChan := make(chan string)
@@ -96,42 +119,100 @@ func replyToText(msgId int64, question string) string {
 		// 15s不回复微信，则失效
 		answer, err := openai.Completions(question, time.Second*180)
 		if err != nil {
-			answer = "Try again"
+			log.Println("openai.Completions failed", err)
+			answer = "出错了，请重新提问"
 		}
-		msgIdToReply.Store(msgId, answer)
+		err = setReplyToRedis(shortMsgId, answer)
+		if err != nil {
+			log.Println("gptredis.Set failed", err)
+			answer = "出错了，请重新提问"
+		}
 		select {
 		case answerChan <- answer:
 		case <-leaveChan:
 		}
 	}()
 
-	answer := ""
 	select {
-	case reply := <-answerChan:
-		answer = reply
-		if len(answer) > 2000 {
-			answer = buildAnswerURL(msgId)
+	case reply = <-answerChan:
+		if len(reply) > 2000 {
+			reply = buildAnswerURL(shortMsgId)
 		} else {
-			msgIdToReply.Delete(msgId)
+			err := delReplyFromRedis(shortMsgId)
+			if err != nil {
+				log.Println("gptredis.Del failed", err)
+			}
 		}
 	// 超时不要回答，会重试的
 	case <-time.After(time.Second * 4):
-		answer = buildAnswerURL(msgId)
+		reply = buildAnswerURL(shortMsgId)
 		go func() {
 			leaveChan <- true
 		}()
 	}
-	return answer
+	return reply, nil
 }
 
-func buildAnswerURL(msgId int64) string {
-	return config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + strconv.FormatInt(msgId, 10)
+func fetchReplyFromRedis(shortMsgId string) (string, error) {
+	reply, err := gptredis.Get(buildReplyKey(shortMsgId))
+	if err == nil {
+		return reply, nil
+	}
+	return "", err
+}
+
+func setReplyToRedis(shortMsgId string, reply string) error {
+	return gptredis.Set(buildReplyKey(shortMsgId), reply, time.Hour*24*7)
+}
+
+func delReplyFromRedis(shortMsgId string) error {
+	return gptredis.Del(buildReplyKey(shortMsgId))
+}
+
+func buildReplyKey(shortMsgId string) string {
+	return "short-msg-id:" + shortMsgId + ":reply"
+}
+
+func generateShortMsgId() (string, error) {
+	shortMsgId, err := gptredis.Inc("current-max-short-id")
+	if err == nil {
+		return strconv.FormatInt(shortMsgId, 10), nil
+	}
+	return "", err
+}
+
+func fetchShortMsgId(longMsgId string) (string, error) {
+	key := buildShortMsgIdKey(longMsgId)
+	shortMsgId, err := gptredis.Get(key)
+	if err == nil {
+		return shortMsgId, nil
+	}
+	if err == redis.Nil {
+		shortMsgId, err := generateShortMsgId()
+		if err == nil {
+			err := gptredis.Set(key, shortMsgId, time.Hour*24*7)
+			if err == nil {
+				return shortMsgId, nil
+			}
+			return "", err
+		}
+		return "", err
+	}
+	return "", err
+}
+
+func buildShortMsgIdKey(longMsgId string) string {
+	return "long-msg-id:" + longMsgId + ":short-msg-id"
+}
+
+func buildAnswerURL(msgId string) string {
+	return config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + msgId
 }
 
 func Test(w http.ResponseWriter, r *http.Request) {
 	msg := r.URL.Query().Get("msg")
 	s := openai.Query(msg, time.Second*180)
-	echoJson(w, s, "")
+	echoJson(w, 0, s)
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -139,29 +220,22 @@ func Index(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetReply(w http.ResponseWriter, r *http.Request) {
-	msgId := r.URL.Query().Get("msgId")
-	intMsgId, err := strconv.ParseInt(msgId, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-	value, ok := msgIdToReply.Load(intMsgId)
-	if ok {
-		echoJson(w, value.(string), "")
+	shortMsgId := r.URL.Query().Get("msgId")
+	reply, err := fetchReplyFromRedis(shortMsgId)
+	if err == nil {
+		echoJson(w, 0, reply)
+	} else if err == redis.Nil {
+		echoJson(w, 1, "Not found or expired")
 	} else {
-		echoJson(w, "", "Reply is coming")
+		log.Println("GetReply failed", err)
+		echoJson(w, 2, "Internal error")
 	}
 }
 
-func echoJson(w http.ResponseWriter, replyMsg string, errMsg string) {
+func echoJson(w http.ResponseWriter, code int, message string) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 
-	var code int
-	var message = replyMsg
-	if errMsg != "" {
-		code = -1
-		message = errMsg
-	}
 	data, _ := json.Marshal(map[string]interface{}{
 		"code":    code,
 		"message": message,

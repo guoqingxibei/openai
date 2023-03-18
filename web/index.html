@@ -26,11 +26,28 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
             margin: 20px;
         }
+
+        #spinner {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-top-color: #333;
+            animation: spin 1s ease-in-out infinite;
+            margin: auto;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
     </style>
 </head>
 <body>
 <article>
-    <p id="content">ChatGPT 正在处理你的消息，请稍等...</p>
+    <div id="spinner"></div>
+    <p id="content">您的消息正在处理中, 预计&nbsp;<b id="countDown"></b>&nbsp;秒内回复，不要离开此页面。</p>
 </article>
 <script>
     // Function to fetch the value from the specified URL
@@ -41,20 +58,44 @@
 
     // Function to check for the value every second and update the page when found
     async function checkValue() {
-        tryCount++;
-        const data = await fetchValue();
-        if (tryCount > 300) {
-            document.getElementById("content").innerText = '出错了，请重新提问';
-        } else if (!data.code && data.message) {
-            document.getElementById("content").innerText = data.message;
-        } else {
-            setTimeout(checkValue, 1000);
+        const countDownEle = document.getElementById("countDown");
+        if (countDownEle) {
+            countDownEle.innerText = countDown + "";
+            countDown--;
+            if (countDown <= 0) {
+                countDown = initCountDown;
+            }
         }
+        if (tryCount <= 0) {
+            setContent('出错了，请重新提问');
+        } else {
+            const data = await fetchValue();
+            if (!data.code) {
+                if (data.message) {
+                    setContent(data.message);
+                } else {
+                    setTimeout(checkValue, 1000);
+                }
+            } else if (data.code === 1) {
+                setContent("消息已经过期了");
+            } else {
+                setTimeout(checkValue, 1000);
+            }
+        }
+        tryCount--;
+    }
+
+    function setContent(content) {
+        document.getElementById("spinner").remove();
+        document.getElementById("content").innerText = content;
     }
 
     // Call the checkValue function to start fetching the value
-    let tryCount = 0;
-    const url = window.location.origin + "/wechat/reply" + window.location.search;
+    let tryCount = 300, initCountDown = 60, countDown = initCountDown;
+    const segments = window.location.pathname.split("/");
+    segments.pop();
+    const pathPrefix = segments.join("/");
+    const url = window.location.origin + pathPrefix + "/reply" + window.location.search;
     checkValue();
 </script>
 </body>
