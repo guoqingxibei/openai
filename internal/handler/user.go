@@ -209,12 +209,6 @@ func buildAnswerURL(msgId string) string {
 	return config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + msgId
 }
 
-func Test(w http.ResponseWriter, r *http.Request) {
-	msg := r.URL.Query().Get("msg")
-	s := openai.Query(msg, time.Second*180)
-	echoJson(w, 0, s)
-}
-
 func Index(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "./web/index.html")
 }

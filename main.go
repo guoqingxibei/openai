@@ -24,12 +24,11 @@ func main() {
 	r.GET("/talk", handler.WechatCheck)
 
 	// 用于测试
-	r.GET("/test", handler.Test)
-	r.GET("/test_reply", handler.TestReplyToText)
+	r.GET("/bypass_wechat/talk_in_text", handler.TestReplyToText)
 
 	// Use webpage to display timeout or long message
 	r.GET("/index", handler.Index)
-	// For webpage
+	// Provide reply content for the webpage
 	r.GET("/reply", handler.GetReply)
 
 	// 设置日志
