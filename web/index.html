@@ -42,6 +42,15 @@
                 transform: rotate(360deg);
             }
         }
+
+        pre {
+            white-space: pre-wrap;
+            white-space: -moz-pre-wrap;
+            white-space: -pre-wrap;
+            white-space: -o-pre-wrap;
+            *word-wrap: break-word;
+            *white-space: normal;
+        }
     </style>
 </head>
 <body>
@@ -57,7 +66,7 @@
     }
 
     // Function to check for the value every second and update the page when found
-    async function checkValue() {
+    async function pollReply() {
         const countDownEle = document.getElementById("countDown");
         if (countDownEle) {
             countDownEle.innerText = countDown + "";
@@ -74,12 +83,12 @@
                 if (data.message) {
                     setContent(data.message);
                 } else {
-                    setTimeout(checkValue, 1000);
+                    setTimeout(pollReply, 1000);
                 }
             } else if (data.code === 1) {
                 setContent("消息已经过期，请重新提问，mua~");
             } else {
-                setTimeout(checkValue, 1000);
+                setTimeout(pollReply, 1000);
             }
         }
         tryCount--;
@@ -87,16 +96,16 @@
 
     function setContent(content) {
         document.getElementById("spinner").remove();
-        document.getElementById("content").innerText = content;
+        document.getElementById("content").innerHTML = `<pre>${content}</pre>`;
     }
 
-    // Call the checkValue function to start fetching the value
+    // Call the pollReply function to start fetching the value
     let tryCount = 300, initCountDown = 30, countDown = initCountDown;
     const segments = window.location.pathname.split("/");
     segments.pop();
     const pathPrefix = segments.join("/");
     const url = window.location.origin + pathPrefix + "/reply" + window.location.search;
-    checkValue();
+    pollReply();
 </script>
 </body>
 </html>
