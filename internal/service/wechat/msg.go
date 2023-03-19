@@ -17,7 +17,7 @@ type Msg struct {
 	MsgId int64 `xml:"MsgId,omitempty"`
 }
 
-func NewMsg(data []byte) *Msg {
+func NewInMsg(data []byte) *Msg {
 	var msg Msg
 	if err := xml.Unmarshal(data, &msg); err != nil {
 		return nil
@@ -25,13 +25,13 @@ func NewMsg(data []byte) *Msg {
 	return &msg
 }
 
-func (msg *Msg) GenerateEchoData(s string) []byte {
+func (msg *Msg) BuildOutMsg(reply string) []byte {
 	data := Msg{
 		ToUserName:   msg.FromUserName,
 		FromUserName: msg.ToUserName,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      "text",
-		Content:      s,
+		Content:      reply,
 	}
 	bs, _ := xml.Marshal(&data)
 	return bs

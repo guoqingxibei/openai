@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	success = []byte("success")
+	WechatConfig = config.C.Wechat
+	success      = []byte("success")
 )
 
 type ChatRound struct {
@@ -25,7 +26,7 @@ type ChatRound struct {
 	answer   string
 }
 
-func WechatCheck(w http.ResponseWriter, r *http.Request) {
+func Check(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	signature := query.Get("signature")
 	timestamp := query.Get("timestamp")
@@ -33,7 +34,7 @@ func WechatCheck(w http.ResponseWriter, r *http.Request) {
 	echostr := query.Get("echostr")
 
 	// 校验
-	if wechat.CheckSignature(signature, timestamp, nonce, config.C.Wechat.Token) {
+	if wechat.CheckSignature(signature, timestamp, nonce, WechatConfig.Token) {
 		w.Write([]byte(echostr))
 		return
 	}
@@ -41,99 +42,75 @@ func WechatCheck(w http.ResponseWriter, r *http.Request) {
 	log.Println("此接口为公众号验证，不应该被手动调用，公众号接入校验失败")
 }
 
-// ReceiveMsg https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
+// Talk https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
 // 微信服务器在五秒内收不到响应会断掉连接，并且重新发起请求，总共重试三次
-func ReceiveMsg(w http.ResponseWriter, r *http.Request) {
-	bs, _ := io.ReadAll(r.Body)
-	msg := wechat.NewMsg(bs)
+func Talk(writer http.ResponseWriter, request *http.Request) {
+	bs, _ := io.ReadAll(request.Body)
+	inMsg := wechat.NewInMsg(bs)
 
-	if msg == nil {
-		echo(w, []byte("xml格式公众号消息接口，请勿手动调用"))
+	if inMsg == nil {
+		echoWeChat(writer, []byte("xml格式公众号消息接口，请勿手动调用"))
 		return
 	}
 
 	// 非文本不回复(返回success表示不回复)
-	switch msg.MsgType {
-	// 未写的类型
-	default:
-		log.Printf("未实现的消息类型%s\n", msg.MsgType)
-		echo(w, success)
+	switch inMsg.MsgType {
 	case "event":
-		switch msg.Event {
-		default:
-			log.Printf("未实现的事件%s\n", msg.Event)
-			echo(w, success)
+		switch inMsg.Event {
 		case "subscribe":
-			log.Println("新增关注:", msg.FromUserName)
-			echo(w, msg.GenerateEchoData(config.C.Wechat.ReplyWhenSubscribe))
-			return
+			log.Println("新增关注:", inMsg.FromUserName)
+			echoWeChat(writer, inMsg.BuildOutMsg(WechatConfig.ReplyWhenSubscribe))
 		case "unsubscribe":
-			log.Println("取消关注:", msg.FromUserName)
-			echo(w, success)
-			return
+			log.Println("取消关注:", inMsg.FromUserName)
+			echoWeChat(writer, success)
+		default:
+			log.Printf("未实现的事件%s\n", inMsg.Event)
+			echoWeChat(writer, success)
 		}
 	case "text":
-		answer, err := replyToText(msg)
-		if err == nil {
-			echo(w, msg.GenerateEchoData(answer))
-		} else {
-			echo(w, msg.GenerateEchoData("出错了，请重新提问"))
-		}
+		replyToText(inMsg, writer)
+	default:
+		log.Printf("未实现的消息类型%s\n", inMsg.MsgType)
+		echoWeChat(writer, success)
 	}
 }
 
-func TestReplyToText(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	msgId := query.Get("msgId")
-	fromUserName := query.Get("FromUserName")
-	intMsgId, err := strconv.ParseInt(msgId, 10, 64)
-	if err != nil {
-		panic(err)
-	}
-
-	question := query.Get("question")
-	answer, err := replyToText(&wechat.Msg{
-		MsgId:        intMsgId,
-		Content:      question,
-		FromUserName: fromUserName,
-	})
-	if err == nil {
-		echoJson(w, 0, answer)
-	} else {
-		echoJson(w, -1, "出错了，请重新提问")
-	}
-}
-
-func replyToText(msg *wechat.Msg) (string, error) {
-	longMsgId := strconv.FormatInt(msg.MsgId, 10)
+func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	longMsgId := strconv.FormatInt(inMsg.MsgId, 10)
 	shortMsgId, err := gptredis.FetchShortMsgId(longMsgId)
 	if err != nil {
-		return "", err
+		log.Println(err)
+		return
 	}
 
 	reply, err := gptredis.FetchReply(shortMsgId)
 	answerUrl := buildAnswerURL(shortMsgId)
 	if err == nil {
 		if reply == "" {
-			return answerUrl, nil
+			// WeChat server retries
+			echoWechatMsg(writer, inMsg, answerUrl)
+			return
 		}
-		return reply, nil
+		echoWechatMsg(writer, inMsg, reply)
+		return
 	}
+
 	if err != redis.Nil {
-		return "", nil
+		log.Println(err)
+		return
 	}
+
 	// indicate reply is loading
 	err = gptredis.SetReply(shortMsgId, "")
 	if err != nil {
 		log.Println("setReplyToRedis failed", err)
 	}
-
 	answerChan := make(chan string)
 	leaveChan := make(chan bool)
 	go func() {
 		// 15s不回复微信，则失效
-		question := strings.TrimSpace(msg.Content)
-		messages, err := gptredis.FetchMessages(msg.FromUserName)
+		question := strings.TrimSpace(inMsg.Content)
+		messages, err := gptredis.FetchMessages(inMsg.FromUserName)
 		if err != nil {
 			log.Println("fetchMessagesFromRedis failed", err)
 			return
@@ -155,7 +132,7 @@ func replyToText(msg *wechat.Msg) (string, error) {
 				Role:    "assistant",
 				Content: answer,
 			})
-			err = gptredis.SetMessages(msg.FromUserName, messages)
+			err = gptredis.SetMessages(inMsg.FromUserName, messages)
 			if err != nil {
 				log.Println("setMessagesToRedis failed", err)
 			}
@@ -181,13 +158,13 @@ func replyToText(msg *wechat.Msg) (string, error) {
 			}
 		}
 	// 超时不要回答，会重试的
-	case <-time.After(time.Second * 4):
+	case <-time.After(time.Millisecond * 4500):
 		reply = answerUrl
 		go func() {
 			leaveChan <- true
 		}()
 	}
-	return reply, nil
+	echoWechatMsg(writer, inMsg, reply)
 }
 
 func rotateMessages(messages []openai.Message) ([]openai.Message, error) {
@@ -204,7 +181,7 @@ func rotateMessages(messages []openai.Message) ([]openai.Message, error) {
 }
 
 func buildAnswerURL(msgId string) string {
-	return config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + msgId
+	return WechatConfig.MessageUrlPrefix + "/index?msgId=" + msgId
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
@@ -235,8 +212,13 @@ func echoJson(w http.ResponseWriter, code int, message string) {
 	w.Write(data)
 }
 
-func echo(w http.ResponseWriter, data []byte) {
+func echoWeChat(w http.ResponseWriter, data []byte) {
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	w.Write(data)
+}
+
+func echoWechatMsg(writer http.ResponseWriter, inMsg *wechat.Msg, reply string) {
+	outMsg := inMsg.BuildOutMsg(reply)
+	echoWeChat(writer, outMsg)
 }

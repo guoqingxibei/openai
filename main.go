@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -11,31 +10,20 @@ import (
 	"os"
 )
 
-func init() {
-
-}
-
 func main() {
-	r := bootstrap.New()
+	engine := bootstrap.New()
 
-	// 微信消息处理
-	r.POST("/talk", handler.ReceiveMsg)
+	// 公众号消息处理
+	engine.POST("/talk", handler.Talk)
 	// 用于公众号自动验证
-	r.GET("/talk", handler.WechatCheck)
-
-	// 用于测试
-	r.GET("/bypass_wechat/talk_in_text", handler.TestReplyToText)
-
+	engine.GET("/talk", handler.Check)
 	// Use webpage to display timeout or long message
-	r.GET("/index", handler.Index)
+	engine.GET("/index", handler.Index)
 	// Provide reply content for the webpage
-	r.GET("/reply", handler.GetReply)
+	engine.GET("/reply", handler.GetReply)
 
-	// 设置日志
 	SetLog()
-
-	fmt.Printf("启动服务，使用 curl 'http://127.0.0.1:%s/test?msg=你好' 测试一下吧\n", config.C.Http.Port)
-	if err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, r); err != nil {
+	if err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, engine); err != nil {
 		panic(err)
 	}
 }
@@ -45,7 +33,9 @@ func SetLog() {
 	path := dir + "/data.log"
 	_, err := os.Stat(dir)
 	if err != nil && os.IsNotExist(err) {
-		os.Mkdir(dir, 0755)
+		if err := os.Mkdir(dir, 0755); err != nil {
+			panic(err)
+		}
 	}
 	file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0755)
 	if err != nil {
@@ -53,5 +43,4 @@ func SetLog() {
 	}
 	mw := io.MultiWriter(os.Stdout, file)
 	log.SetOutput(mw)
-	fmt.Println("查看日志请使用 tail -f " + path)
 }
