@@ -116,3 +116,11 @@ func FetchShortMsgId(longMsgId string) (string, error) {
 func buildShortMsgIdKey(longMsgId string) string {
 	return "long-msg-id:" + longMsgId + ":short-msg-id"
 }
+
+func IncAccessTimes(shortMsgId string) (int64, error) {
+	times, err := Inc("short-msg-id:" + shortMsgId + ":access-times")
+	if err != nil {
+		return 0, nil
+	}
+	return times, nil
+}

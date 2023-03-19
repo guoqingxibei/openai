@@ -83,23 +83,15 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		return
 	}
 
-	reply, err := gptredis.FetchReply(shortMsgId)
 	answerUrl := buildAnswerURL(shortMsgId)
-	if err == nil {
-		if reply == "" {
-			// WeChat server retries
-			echoWechatMsg(writer, inMsg, answerUrl)
-			return
-		}
-		echoWechatMsg(writer, inMsg, reply)
+	times, _ := gptredis.IncAccessTimes(shortMsgId)
+	// when WeChat server retries
+	if times > 1 {
+		replyWhenRetry(inMsg, writer, times, shortMsgId)
 		return
 	}
 
-	if err != redis.Nil {
-		log.Println(err)
-		return
-	}
-
+	// when WeChat server accesses at the first time
 	// indicate reply is loading
 	err = gptredis.SetReply(shortMsgId, "")
 	if err != nil {
@@ -151,6 +143,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		}
 	}()
 
+	var reply string
 	select {
 	case reply = <-answerChan:
 		if len(reply) > 2000 {
@@ -161,14 +154,47 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 				log.Println("gptredis.Del failed", err)
 			}
 		}
-	// 超时不要回答，会重试的
-	case <-time.After(time.Millisecond * 4500):
-		reply = answerUrl
+		echoWechatMsg(writer, inMsg, reply)
+	// wait for greater than 5s so that WeChat server retries
+	case <-time.After(time.Millisecond * 5001):
 		go func() {
 			leaveChan <- true
 		}()
 	}
-	echoWechatMsg(writer, inMsg, reply)
+}
+
+func replyWhenRetry(inMsg *wechat.Msg, writer http.ResponseWriter, times int64, shortMsgId string) {
+	if times == 2 {
+		pollReplyFromRedis(shortMsgId, inMsg, writer, false)
+		// wait for greater than 5s so that WeChat server retries
+		time.Sleep(time.Millisecond * 1001)
+	} else {
+		pollReplyFromRedis(shortMsgId, inMsg, writer, true)
+	}
+}
+
+// poll reply from redis every second until reply is not "" in 4 seconds
+func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.ResponseWriter, ensureFinalEcho bool) {
+	cnt := 0
+	for cnt < 4 {
+		reply, err := gptredis.FetchReply(shortMsgId)
+		if err != nil {
+			log.Println(err)
+			continue
+		}
+		if reply != "" {
+			if len(reply) > 2000 {
+				reply = buildAnswerURL(shortMsgId)
+			}
+			echoWechatMsg(writer, inMsg, reply)
+			return
+		}
+		cnt++
+		time.Sleep(time.Second)
+	}
+	if ensureFinalEcho {
+		echoWechatMsg(writer, inMsg, buildAnswerURL(shortMsgId))
+	}
 }
 
 func rotateMessages(messages []openai.Message) ([]openai.Message, error) {
