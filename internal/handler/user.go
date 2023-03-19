@@ -126,6 +126,10 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		answer, err := openai.Completions(messages, time.Second*180)
 		if err != nil {
 			log.Println("openai.Completions failed", err)
+			err = gptredis.DelReply(shortMsgId)
+			if err != nil {
+				log.Println("gptredis.DelReply failed", err)
+			}
 			answer = "出错了，请重新提问"
 		} else {
 			messages = append(messages, openai.Message{

@@ -47,7 +47,7 @@
 <body>
 <article>
     <div id="spinner"></div>
-    <p id="content">您的消息正在处理中, 预计&nbsp;<b id="countDown"></b>&nbsp;秒内回复，不要离开此页面。</p>
+    <p id="content">您的消息正在处理中, 预计&nbsp;<b id="countDown"></b>&nbsp;秒内回复，别离开此页面哈，mua~</p>
 </article>
 <script>
     // Function to fetch the value from the specified URL
@@ -77,7 +77,7 @@
                     setTimeout(checkValue, 1000);
                 }
             } else if (data.code === 1) {
-                setContent("消息已经过期了");
+                setContent("消息已经过期，请重新提问，mua~");
             } else {
                 setTimeout(checkValue, 1000);
             }
