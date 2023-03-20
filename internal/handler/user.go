@@ -115,7 +115,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		if err != nil {
 			return
 		}
-		answer, err := openai.Completions(messages, time.Second*180)
+		answer, err := openai.Completions(messages, time.Second*300)
 		if err != nil {
 			log.Println("openai.Completions failed", err)
 			err = gptredis.DelReply(shortMsgId)
