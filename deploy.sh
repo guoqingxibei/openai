@@ -20,6 +20,7 @@ GO_ENV=prod nohup ./openaiBin > openai.log 2>&1 &
 # Check if the program started successfully
 if [ $? -eq 0 ]; then
   echo "Go program restarted successfully"
+  tail -f log/data.log
 else
   echo "Failed to restart Go program"
 fi
