@@ -3,6 +3,7 @@ package openai
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -54,6 +55,13 @@ type choiceItem struct {
 
 // Completions https://beta.openai.com/docs/api-reference/making-requests
 func Completions(messages []Message, timeout time.Duration) (string, error) {
+	// append this system message
+	systemMessage := Message{
+		Role:    "system",
+		Content: fmt.Sprintf("你是ChatGPT，一个由OpenAI训练的大型语言模型。请尽可能简洁地回答，现在时间是为 %s。", time.Now()),
+	}
+	messages = append([]Message{systemMessage}, messages...)
+
 	start := time.Now()
 	var r request
 	r.Model = "gpt-3.5-turbo"
