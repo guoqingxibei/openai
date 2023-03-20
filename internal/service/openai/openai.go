@@ -102,7 +102,7 @@ func Completions(messages []Message, timeout time.Duration) (string, error) {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
 
 		reply := replyMsg(data.Choices[0].Message.Content)
-		log.Printf("Duration: %ds，request token：%d, response token: %d, \nquestion: %s, \nanswer: %s",
+		log.Printf("Duration: %ds，request token：%d, response token: %d \nQuestion: %s \nAnswer: %s",
 			int(time.Since(start).Seconds()),
 			data.Usage.PromptTokens,
 			data.Usage.CompletionTokens,
