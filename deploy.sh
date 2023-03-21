@@ -1,5 +1,4 @@
-#!/bin/bash
-
+#!/bin/bash -e
 cd ~/openai
 echo "Fetching Go code..."
 git fetch && git reset --hard origin/main
@@ -8,10 +7,10 @@ go build -o openaiBin
 
 # Stop the running Go program
 echo "Stopping Go program..."
-pkill -f openaiBin
+pkill -f openaiBin || true
 
 # Wait for the program to stop
-sleep 5
+sleep 2
 
 # Start the Go program
 echo "Starting Go program..."
