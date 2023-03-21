@@ -66,7 +66,7 @@
         }
 
         if (tryCount <= 0) {
-            setContent('出错了，请重新提问');
+            setContent('嗯，出错了，重新提问啦，mua~');
         } else {
             const data = await fetchValue();
             if (!data.code) {
@@ -76,7 +76,7 @@
                     setTimeout(pollReply, 1000);
                 }
             } else if (data.code === 1) {
-                setContent("消息已经过期，请重新提问，mua~");
+                setContent("消息过期咯，重新提问啦，mua~");
             } else {
                 setTimeout(pollReply, 1000);
             }
@@ -86,7 +86,7 @@
 
     function setCountDown(countDown) {
         const contentEle = document.getElementById("content");
-        contentEle.innerHTML = `您的消息正在处理中, 预计 <b>${countDown}</b> 秒内回复，别离开此页面哈~`;
+        contentEle.innerHTML = `您的消息正在处理中, 预计还有 <b>${countDown}</b> 秒钟到达战场，不要离开哦，mua~`;
     }
 
     function setContent(content) {
