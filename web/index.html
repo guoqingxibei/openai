@@ -17,14 +17,19 @@
         }
 
         /* Style for the article content */
-        article {
-            max-width: 600px;
+        pre {
             line-height: 1.5;
             padding: 20px;
             background-color: #f2f2f2;
             border-radius: 10px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
             margin: 20px;
+            white-space: pre-wrap;
+            white-space: -moz-pre-wrap;
+            white-space: -o-pre-wrap;
+            *word-wrap: break-word;
+            *white-space: normal;
+            word-break: break-word;
         }
 
         #spinner {
@@ -34,7 +39,7 @@
             border: 4px solid rgba(0, 0, 0, 0.1);
             border-top-color: #333;
             animation: spin 1s ease-in-out infinite;
-            margin: auto;
+            margin: 50px auto 10px;
         }
 
         @keyframes spin {
@@ -42,39 +47,24 @@
                 transform: rotate(360deg);
             }
         }
-
-        pre {
-            white-space: pre-wrap;
-            white-space: -moz-pre-wrap;
-            white-space: -pre-wrap;
-            white-space: -o-pre-wrap;
-            *word-wrap: break-word;
-            *white-space: normal;
-        }
     </style>
 </head>
 <body>
-<article>
-    <div id="spinner"></div>
-    <p id="content">您的消息正在处理中, 预计&nbsp;<b id="countDown"></b>&nbsp;秒内回复，别离开此页面哈，mua~</p>
-</article>
+<div id="spinner"></div>
+<pre id="content">
+</pre>
 <script>
-    // Function to fetch the value from the specified URL
     async function fetchValue() {
         const response = await fetch(url);
         return response.json();
     }
 
-    // Function to check for the value every second and update the page when found
     async function pollReply() {
-        const countDownEle = document.getElementById("countDown");
-        if (countDownEle) {
-            countDownEle.innerText = countDown + "";
-            countDown--;
-            if (countDown <= 0) {
-                countDown = initCountDown;
-            }
+        setCountDown(countDown--);
+        if (countDown <= 0) {
+            countDown = initCountDown;
         }
+
         if (tryCount <= 0) {
             setContent('出错了，请重新提问');
         } else {
@@ -94,12 +84,16 @@
         tryCount--;
     }
 
-    function setContent(content) {
-        document.getElementById("spinner").remove();
-        document.getElementById("content").innerHTML = `<pre>${content}</pre>`;
+    function setCountDown(countDown) {
+        const contentEle = document.getElementById("content");
+        contentEle.innerHTML = `您的消息正在处理中, 预计 <b>${countDown}</b> 秒内回复，别离开此页面哈~`;
     }
 
-    // Call the pollReply function to start fetching the value
+    function setContent(content) {
+        document.getElementById("spinner").remove();
+        document.getElementById("content").innerText = content;
+    }
+
     let tryCount = 300, initCountDown = 30, countDown = initCountDown;
     const segments = window.location.pathname.split("/");
     segments.pop();
