@@ -103,7 +103,8 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	go func() {
 		// 15s不回复微信，则失效
 		question := strings.TrimSpace(inMsg.Content)
-		messages, err := gptredis.FetchMessages(inMsg.FromUserName)
+		userName := inMsg.FromUserName
+		messages, err := gptredis.FetchMessages(userName)
 		if err != nil {
 			log.Println("fetchMessagesFromRedis failed", err)
 			return
@@ -116,27 +117,32 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		if err != nil {
 			return
 		}
-		answer, err := openai.Completions(messages, time.Second*300)
+		answer, err := openai.ChatCompletions(messages, shortMsgId, inMsg)
 		if err != nil {
-			log.Println("openai.Completions failed", err)
+			log.Println("openai.ChatCompletions failed", err)
 			err = gptredis.DelReply(shortMsgId)
 			if err != nil {
 				log.Println("gptredis.DelReply failed", err)
 			}
-			answer = "出错了，请重新提问"
+			answer = "哎呀，出错啦，重新提问下~"
 		} else {
-			messages = append(messages, openai.Message{
-				Role:    "assistant",
-				Content: answer,
-			})
-			err = gptredis.SetMessages(inMsg.FromUserName, messages)
-			if err != nil {
-				log.Println("setMessagesToRedis failed", err)
-			}
-			err = gptredis.SetReply(shortMsgId, answer)
-			if err != nil {
-				log.Println("gptredis.Set failed", err)
-			}
+			go func() {
+				err = gptredis.SetReply(shortMsgId, answer)
+				if err != nil {
+					log.Println("gptredis.Set failed", err)
+				}
+
+			}()
+			go func() {
+				messages = append(messages, openai.Message{
+					Role:    "assistant",
+					Content: answer,
+				})
+				err = gptredis.SetMessages(userName, messages)
+				if err != nil {
+					log.Println("setMessagesToRedis failed", err)
+				}
+			}()
 		}
 		select {
 		case answerChan <- answer:
@@ -147,13 +153,8 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	var reply string
 	select {
 	case reply = <-answerChan:
-		if len(reply) > 2000 {
+		if len(reply) > 4000 {
 			reply = answerUrl
-		} else {
-			err := gptredis.DelReply(shortMsgId)
-			if err != nil {
-				log.Println("gptredis.Del failed", err)
-			}
 		}
 		echoWechatMsg(writer, inMsg, reply)
 	// wait for greater than 5s so that WeChat server retries

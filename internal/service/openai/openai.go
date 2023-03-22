@@ -3,20 +3,20 @@ package openai
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"openai/internal/config"
+	"openai/internal/service/wechat"
 	"strings"
 	"sync/atomic"
 	"time"
 )
 
-const (
-	api          = "https://api.openai.com/v1/chat/completions"
-	exchangeRate = 6.9
-)
+const chatUrl = "https://api.openai.com/v1/chat/completions"
 
 var totalTokens int64
 
@@ -52,8 +52,8 @@ type choiceItem struct {
 	} `json:"message"`
 }
 
-// Completions https://beta.openai.com/docs/api-reference/making-requests
-func Completions(messages []Message, timeout time.Duration) (string, error) {
+// ChatCompletions https://beta.openai.com/docs/api-reference/making-requests
+func ChatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
 	start := time.Now()
 	var r request
 	r.Model = "gpt-3.5-turbo"
@@ -64,8 +64,8 @@ func Completions(messages []Message, timeout time.Duration) (string, error) {
 		return "", err
 	}
 
-	client := &http.Client{Timeout: timeout}
-	req, _ := http.NewRequest("POST", api, bytes.NewReader(bs))
+	client := &http.Client{Timeout: time.Second * 300}
+	req, _ := http.NewRequest("POST", chatUrl, bytes.NewReader(bs))
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Authorization", "Bearer "+config.C.OpenAI.Key)
 
@@ -90,48 +90,29 @@ func Completions(messages []Message, timeout time.Duration) (string, error) {
 
 	var data response
 	json.Unmarshal(body, &data)
-	if len(data.Choices) > 0 {
+	statusCode := resp.StatusCode
+	if statusCode >= 200 && statusCode < 300 && len(data.Choices) > 0 {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
-
-		reply := replyMsg(data.Choices[0].Message.Content)
-		log.Printf("Duration: %ds，Request token：%d, Response token: %d\nQuestion: %s\nAnswer: %s\nRaw messages: %v",
+		lastAnswer := strings.TrimSpace(data.Choices[0].Message.Content)
+		lastQuestion := messages[len(messages)-1].Content
+		log.Printf("User: %s, msgId: %d, shortMsgId: %s, duration: %ds, "+
+			"request tokens：%d, response tokens: %d, question: 「%s」, answer: 「%s」",
+			inMsg.FromUserName,
+			inMsg.MsgId,
+			shortMsgId,
 			int(time.Since(start).Seconds()),
 			data.Usage.PromptTokens,
 			data.Usage.CompletionTokens,
-			messages[len(messages)-1].Content,
-			reply,
-			messages,
+			escapeNewline(lastQuestion),
+			escapeNewline(lastAnswer),
 		)
 
-		return reply, nil
+		return lastAnswer, nil
 	}
 
-	return data.Error.Message, nil
+	return "", errors.New(fmt.Sprintf("Error %d: %s", statusCode, data.Error.Message))
 }
 
-func replyMsg(reply string) string {
-	idx := strings.Index(reply, "\n\n")
-	if idx > -1 && reply[len(reply)-2] != '\n' {
-		reply = reply[idx+2:]
-	}
-	start := 0
-	for i, v := range reply {
-		if !isSymbol(v) {
-			start = i
-			break
-		}
-	}
-
-	return reply[start:]
-}
-
-var symbols = []rune{'\n', ' ', '，', '。', '？', '?', ',', '.', '!', '！', ':', '：'}
-
-func isSymbol(w rune) bool {
-	for _, v := range symbols {
-		if v == w {
-			return true
-		}
-	}
-	return false
+func escapeNewline(originStr string) string {
+	return strings.ReplaceAll(originStr, "\n", `\n`)
 }
