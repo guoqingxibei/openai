@@ -79,7 +79,8 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	longMsgId := strconv.FormatInt(inMsg.MsgId, 10)
 	shortMsgId, err := gptredis.FetchShortMsgId(longMsgId)
 	if err != nil {
-		log.Println(err)
+		log.Println("gptredis.FetchShortMsgId failed", err)
+		time.Sleep(time.Millisecond * 5001)
 		return
 	}
 
@@ -177,9 +178,10 @@ func replyWhenRetry(inMsg *wechat.Msg, writer http.ResponseWriter, times int64, 
 func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.ResponseWriter, ensureFinalEcho bool) {
 	cnt := 0
 	for cnt < 4 {
+		cnt++
 		reply, err := gptredis.FetchReply(shortMsgId)
 		if err != nil {
-			log.Println(err)
+			log.Println("gptredis.FetchReply failed", err)
 			continue
 		}
 		if reply != "" {
@@ -189,7 +191,6 @@ func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.Respon
 			echoWechatMsg(writer, inMsg, reply)
 			return
 		}
-		cnt++
 		time.Sleep(time.Second)
 	}
 	if ensureFinalEcho {
