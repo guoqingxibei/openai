@@ -91,12 +91,12 @@ func ChatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 	var data response
 	json.Unmarshal(body, &data)
 	statusCode := resp.StatusCode
+	lastQuestion := messages[len(messages)-1].Content
 	if statusCode >= 200 && statusCode < 300 && len(data.Choices) > 0 {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
 		lastAnswer := strings.TrimSpace(data.Choices[0].Message.Content)
-		lastQuestion := messages[len(messages)-1].Content
-		log.Printf("User: %s, msgId: %d, shortMsgId: %s, duration: %ds, "+
-			"request tokens：%d, response tokens: %d, question: 「%s」, answer: 「%s」",
+		log.Printf("User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
+			"request tokens：%d, response tokens: %d, question:「%s」, answer:「%s」",
 			inMsg.FromUserName,
 			inMsg.MsgId,
 			shortMsgId,
@@ -110,7 +110,17 @@ func ChatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 		return lastAnswer, nil
 	}
 
-	return "", errors.New(fmt.Sprintf("Error %d: %s", statusCode, data.Error.Message))
+	errorMsg := data.Error.Message
+	log.Printf("User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
+		"question:「%s」, error:「%s」",
+		inMsg.FromUserName,
+		inMsg.MsgId,
+		shortMsgId,
+		int(time.Since(start).Seconds()),
+		escapeNewline(lastQuestion),
+		escapeNewline(errorMsg),
+	)
+	return "", errors.New(fmt.Sprintf("Error %d: %s", statusCode, errorMsg))
 }
 
 func escapeNewline(originStr string) string {

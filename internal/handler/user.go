@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	WechatConfig = config.C.Wechat
+	wechatConfig = config.C.Wechat
 	success      = []byte("success")
 )
 
@@ -34,7 +34,7 @@ func Check(w http.ResponseWriter, r *http.Request) {
 	echostr := query.Get("echostr")
 
 	// 校验
-	if wechat.CheckSignature(signature, timestamp, nonce, WechatConfig.Token) {
+	if wechat.CheckSignature(signature, timestamp, nonce, wechatConfig.Token) {
 		w.Write([]byte(echostr))
 		return
 	}
@@ -59,19 +59,19 @@ func Talk(writer http.ResponseWriter, request *http.Request) {
 		switch inMsg.Event {
 		case "subscribe":
 			log.Println("新增关注:", inMsg.FromUserName)
-			echoWeChat(writer, inMsg.BuildOutMsg(WechatConfig.ReplyWhenSubscribe))
+			echoWechatMsg(writer, inMsg, wechatConfig.ReplyWhenSubscribe)
 		case "unsubscribe":
 			log.Println("取消关注:", inMsg.FromUserName)
 			echoWeChat(writer, success)
 		default:
-			log.Printf("未实现的事件%s\n", inMsg.Event)
+			log.Printf("未实现的事件: %s\n", inMsg.Event)
 			echoWeChat(writer, success)
 		}
 	case "text":
 		replyToText(inMsg, writer)
 	default:
-		log.Printf("未实现的消息类型%s\n", inMsg.MsgType)
-		echoWeChat(writer, success)
+		log.Printf("未实现的消息类型: %s\n", inMsg.MsgType)
+		echoWechatMsg(writer, inMsg, "现在还只支持文本消息哦~")
 	}
 }
 
@@ -213,7 +213,7 @@ func rotateMessages(messages []openai.Message) ([]openai.Message, error) {
 }
 
 func buildAnswerURL(msgId string) string {
-	return WechatConfig.MessageUrlPrefix + "/index?msgId=" + msgId
+	return wechatConfig.MessageUrlPrefix + "/index?msgId=" + msgId
 }
 
 func Index(w http.ResponseWriter, r *http.Request) {
