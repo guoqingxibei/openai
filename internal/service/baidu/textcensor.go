@@ -72,7 +72,13 @@ func refreshAccessToken() {
 }
 
 func Censor(text string) bool {
-	passedChan := make(chan bool, 1)
+	passedChan := make(chan bool, 3)
+	go func() {
+		passedChan <- censor(text)
+	}()
+	go func() {
+		passedChan <- censor(text)
+	}()
 	go func() {
 		passedChan <- censor(text)
 	}()
