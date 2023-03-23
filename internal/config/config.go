@@ -24,6 +24,10 @@ type conf struct {
 		Addr string `json:"addr"`
 		DB   int    `json:"db"`
 	}
+	Baidu struct {
+		ApiKey    string `json:"api_key"`
+		SecretKey string `json:"secret_key"`
+	}
 }
 
 var (

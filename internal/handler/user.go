@@ -7,10 +7,10 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/config"
+	"openai/internal/service/baidu"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/openai"
 	"openai/internal/service/wechat"
-	"openai/internal/util"
 	"strconv"
 	"strings"
 	"time"
@@ -100,7 +100,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	if err != nil {
 		log.Println("setReplyToRedis failed", err)
 	}
-	answerChan := make(chan string, 2)
+	answerChan := make(chan string, 1)
 	go func() {
 		// 15s不回复微信，则失效
 		question := strings.TrimSpace(inMsg.Content)
@@ -130,6 +130,10 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 			}
 			answer = tryAgain
 		} else {
+			passedCensor := baidu.Censor(answer)
+			if !passedCensor {
+				answer = "这样的问题，你让人家怎么回答嘛😅"
+			}
 			go func() {
 				err = gptredis.SetReply(shortMsgId, answer)
 				if err != nil {
@@ -137,10 +141,12 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 				}
 			}()
 			go func() {
-				messages = append(messages, openai.Message{
-					Role:    "assistant",
-					Content: answer,
-				})
+				if passedCensor {
+					messages = append(messages, openai.Message{
+						Role:    "assistant",
+						Content: answer,
+					})
+				}
 				err = gptredis.SetMessages(userName, messages)
 				if err != nil {
 					log.Println("setMessagesToRedis failed", err)
@@ -197,10 +203,10 @@ func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.Respon
 }
 
 func rotateMessages(messages []openai.Message) ([]openai.Message, error) {
-	str, err := util.StringifyMessages(messages)
+	str, err := openai.StringifyMessages(messages)
 	for len(str) > 3000 {
 		messages = messages[1:]
-		str, err = util.StringifyMessages(messages)
+		str, err = openai.StringifyMessages(messages)
 		if err != nil {
 			log.Println("stringifyMessages failed", err)
 			return nil, err

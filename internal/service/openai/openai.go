@@ -11,6 +11,7 @@ import (
 	"net/url"
 	"openai/internal/config"
 	"openai/internal/service/wechat"
+	"openai/internal/util"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -53,8 +54,8 @@ type choiceItem struct {
 }
 
 func ChatCompletionsEx(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
-	answerChan := make(chan string, 3)
-	errChan := make(chan error, 3)
+	answerChan := make(chan string, 2)
+	errChan := make(chan error, 2)
 	go func() {
 		answer, err := chatCompletions(messages, shortMsgId, inMsg)
 		answerChan <- answer
@@ -118,7 +119,7 @@ func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 	if statusCode >= 200 && statusCode < 300 && len(data.Choices) > 0 {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
 		lastAnswer := strings.TrimSpace(data.Choices[0].Message.Content)
-		log.Printf("User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
+		log.Printf("[CompletionAPI]User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
 			"request tokens：%d, response tokens: %d, question:「%s」, answer:「%s」",
 			inMsg.FromUserName,
 			inMsg.MsgId,
@@ -126,26 +127,39 @@ func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 			int(time.Since(start).Seconds()),
 			data.Usage.PromptTokens,
 			data.Usage.CompletionTokens,
-			escapeNewline(lastQuestion),
-			escapeNewline(lastAnswer),
+			util.EscapeNewline(lastQuestion),
+			util.EscapeNewline(lastAnswer),
 		)
 
 		return lastAnswer, nil
 	}
 
 	errorMsg := data.Error.Message
-	log.Printf("User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
+	log.Printf("[CompletionAPI]User: %s, message ID: %d, short message ID: %s, duration: %dms, "+
 		"question:「%s」, error:「%s」",
 		inMsg.FromUserName,
 		inMsg.MsgId,
 		shortMsgId,
-		int(time.Since(start).Seconds()),
-		escapeNewline(lastQuestion),
-		escapeNewline(errorMsg),
+		int(time.Since(start).Milliseconds()),
+		util.EscapeNewline(lastQuestion),
+		util.EscapeNewline(errorMsg),
 	)
 	return "", errors.New(fmt.Sprintf("Error %d: %s", statusCode, errorMsg))
 }
 
-func escapeNewline(originStr string) string {
-	return strings.ReplaceAll(originStr, "\n", `\n`)
+func StringifyMessages(messages []Message) (string, error) {
+	bytes, err := json.Marshal(messages)
+	if err != nil {
+		return "", nil
+	}
+	return string(bytes), nil
+}
+
+func ParseMessages(messagesStr string) ([]Message, error) {
+	var messages []Message
+	err := json.Unmarshal([]byte(messagesStr), &messages)
+	if err != nil {
+		return nil, err
+	}
+	return messages, nil
 }

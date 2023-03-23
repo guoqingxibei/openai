@@ -5,7 +5,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"openai/internal/config"
 	"openai/internal/service/openai"
-	"openai/internal/util"
 	"strconv"
 	"time"
 )
@@ -50,7 +49,7 @@ func SetReply(shortMsgId string, reply string) error {
 }
 
 func SetMessages(toUserName string, messages []openai.Message) error {
-	newRoundsStr, err := util.StringifyMessages(messages)
+	newRoundsStr, err := openai.StringifyMessages(messages)
 	if err != nil {
 		return err
 	}
@@ -66,7 +65,7 @@ func FetchMessages(toUserName string) ([]openai.Message, error) {
 		}
 		return nil, err
 	}
-	messages, err = util.ParseMessages(messagesStr)
+	messages, err = openai.ParseMessages(messagesStr)
 	if err != nil {
 		return nil, err
 	}
@@ -123,4 +122,16 @@ func IncAccessTimes(shortMsgId string) (int64, error) {
 		return 0, nil
 	}
 	return times, nil
+}
+
+func FetchBaiduApiAccessToken() (string, error) {
+	return Get(getBaiduApiAccessTokenKey())
+}
+
+func SetBaiduApiAccessToken(accessToken string, expiration time.Duration) error {
+	return Set(getBaiduApiAccessTokenKey(), accessToken, expiration)
+}
+
+func getBaiduApiAccessTokenKey() string {
+	return "baidu-api-access-token"
 }
