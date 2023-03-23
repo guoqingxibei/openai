@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
-	"github.com/redis/go-redis/v9"
 	"io"
 	"log"
 	"net/http"
@@ -25,22 +23,6 @@ var (
 type ChatRound struct {
 	question string
 	answer   string
-}
-
-func Check(w http.ResponseWriter, r *http.Request) {
-	query := r.URL.Query()
-	signature := query.Get("signature")
-	timestamp := query.Get("timestamp")
-	nonce := query.Get("nonce")
-	echostr := query.Get("echostr")
-
-	// 校验
-	if wechat.CheckSignature(signature, timestamp, nonce, wechatConfig.Token) {
-		w.Write([]byte(echostr))
-		return
-	}
-
-	log.Println("此接口为公众号验证，不应该被手动调用，公众号接入校验失败")
 }
 
 // Talk https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
@@ -102,7 +84,6 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	}
 	answerChan := make(chan string, 1)
 	go func() {
-		// 15s不回复微信，则失效
 		question := strings.TrimSpace(inMsg.Content)
 		userName := inMsg.FromUserName
 		messages, err := gptredis.FetchMessages(userName)
@@ -115,15 +96,15 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 			Role:    "user",
 			Content: question,
 		})
-		messages, err = rotateMessages(messages)
+		messages, err = openai.RotateMessages(messages)
 		if err != nil {
 			log.Println("rotateMessages failed", err)
 			echoWechatMsg(writer, inMsg, tryAgain)
 			return
 		}
-		answer, err := openai.ChatCompletionsEx(messages, shortMsgId, inMsg)
+		answer, err := openai.ChatCompletions(messages, shortMsgId, inMsg)
 		if err != nil {
-			log.Println("openai.ChatCompletionsEx failed", err)
+			log.Println("openai.ChatCompletions failed", err)
 			err = gptredis.DelReply(shortMsgId)
 			if err != nil {
 				log.Println("gptredis.DelReply failed", err)
@@ -189,7 +170,7 @@ func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.Respon
 			continue
 		}
 		if reply != "" {
-			if len(reply) > 2000 {
+			if len(reply) > 4000 {
 				reply = buildAnswerURL(shortMsgId)
 			}
 			echoWechatMsg(writer, inMsg, reply)
@@ -202,49 +183,8 @@ func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.Respon
 	}
 }
 
-func rotateMessages(messages []openai.Message) ([]openai.Message, error) {
-	str, err := openai.StringifyMessages(messages)
-	for len(str) > 3000 {
-		messages = messages[1:]
-		str, err = openai.StringifyMessages(messages)
-		if err != nil {
-			log.Println("stringifyMessages failed", err)
-			return nil, err
-		}
-	}
-	return messages, nil
-}
-
 func buildAnswerURL(msgId string) string {
 	return wechatConfig.MessageUrlPrefix + "/index?msgId=" + msgId
-}
-
-func Index(w http.ResponseWriter, r *http.Request) {
-	http.ServeFile(w, r, "./web/index.html")
-}
-
-func GetReply(w http.ResponseWriter, r *http.Request) {
-	shortMsgId := r.URL.Query().Get("msgId")
-	reply, err := gptredis.FetchReply(shortMsgId)
-	if err == nil {
-		echoJson(w, 0, reply)
-	} else if err == redis.Nil {
-		echoJson(w, 1, "Not found or expired")
-	} else {
-		log.Println("GetReply failed", err)
-		echoJson(w, 2, "Internal error")
-	}
-}
-
-func echoJson(w http.ResponseWriter, code int, message string) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	data, _ := json.Marshal(map[string]interface{}{
-		"code":    code,
-		"message": message,
-	})
-	w.Write(data)
 }
 
 func echoWeChat(w http.ResponseWriter, data []byte) {

@@ -53,7 +53,7 @@ type choiceItem struct {
 	} `json:"message"`
 }
 
-func ChatCompletionsEx(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
+func ChatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
 	answerChan := make(chan string, 2)
 	errChan := make(chan error, 2)
 	go func() {
@@ -160,6 +160,19 @@ func ParseMessages(messagesStr string) ([]Message, error) {
 	err := json.Unmarshal([]byte(messagesStr), &messages)
 	if err != nil {
 		return nil, err
+	}
+	return messages, nil
+}
+
+func RotateMessages(messages []Message) ([]Message, error) {
+	str, err := StringifyMessages(messages)
+	for len(str) > 3000 {
+		messages = messages[1:]
+		str, err = StringifyMessages(messages)
+		if err != nil {
+			log.Println("stringifyMessages failed", err)
+			return nil, err
+		}
 	}
 	return messages, nil
 }
