@@ -19,6 +19,7 @@ import (
 var (
 	wechatConfig = config.C.Wechat
 	success      = []byte("success")
+	tryAgain     = "哎呀，出错啦，重新提问下~"
 )
 
 type ChatRound struct {
@@ -80,6 +81,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	shortMsgId, err := gptredis.FetchShortMsgId(longMsgId)
 	if err != nil {
 		log.Println("gptredis.FetchShortMsgId failed", err)
+		// Let WeChat server retries
 		time.Sleep(time.Millisecond * 5001)
 		return
 	}
@@ -98,8 +100,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	if err != nil {
 		log.Println("setReplyToRedis failed", err)
 	}
-	answerChan := make(chan string)
-	leaveChan := make(chan bool)
+	answerChan := make(chan string, 2)
 	go func() {
 		// 15s不回复微信，则失效
 		question := strings.TrimSpace(inMsg.Content)
@@ -107,6 +108,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		messages, err := gptredis.FetchMessages(userName)
 		if err != nil {
 			log.Println("fetchMessagesFromRedis failed", err)
+			echoWechatMsg(writer, inMsg, tryAgain)
 			return
 		}
 		messages = append(messages, openai.Message{
@@ -115,23 +117,24 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		})
 		messages, err = rotateMessages(messages)
 		if err != nil {
+			log.Println("rotateMessages failed", err)
+			echoWechatMsg(writer, inMsg, tryAgain)
 			return
 		}
-		answer, err := openai.ChatCompletions(messages, shortMsgId, inMsg)
+		answer, err := openai.ChatCompletionsEx(messages, shortMsgId, inMsg)
 		if err != nil {
-			log.Println("openai.ChatCompletions failed", err)
+			log.Println("openai.ChatCompletionsEx failed", err)
 			err = gptredis.DelReply(shortMsgId)
 			if err != nil {
 				log.Println("gptredis.DelReply failed", err)
 			}
-			answer = "哎呀，出错啦，重新提问下~"
+			answer = tryAgain
 		} else {
 			go func() {
 				err = gptredis.SetReply(shortMsgId, answer)
 				if err != nil {
 					log.Println("gptredis.Set failed", err)
 				}
-
 			}()
 			go func() {
 				messages = append(messages, openai.Message{
@@ -144,10 +147,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 				}
 			}()
 		}
-		select {
-		case answerChan <- answer:
-		case <-leaveChan:
-		}
+		answerChan <- answer
 	}()
 
 	var reply string
@@ -159,9 +159,6 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		echoWechatMsg(writer, inMsg, reply)
 	// wait for greater than 5s so that WeChat server retries
 	case <-time.After(time.Millisecond * 5001):
-		go func() {
-			leaveChan <- true
-		}()
 	}
 }
 

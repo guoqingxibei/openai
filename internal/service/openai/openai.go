@@ -52,8 +52,31 @@ type choiceItem struct {
 	} `json:"message"`
 }
 
-// ChatCompletions https://beta.openai.com/docs/api-reference/making-requests
-func ChatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
+func ChatCompletionsEx(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
+	answerChan := make(chan string, 3)
+	errChan := make(chan error, 3)
+	go func() {
+		answer, err := chatCompletions(messages, shortMsgId, inMsg)
+		answerChan <- answer
+		errChan <- err
+	}()
+	go func() {
+		answer, err := chatCompletions(messages, shortMsgId, inMsg)
+		answerChan <- answer
+		errChan <- err
+	}()
+	go func() {
+		answer, err := chatCompletions(messages, shortMsgId, inMsg)
+		answerChan <- answer
+		errChan <- err
+	}()
+	answer := <-answerChan
+	err := <-errChan
+	return answer, err
+}
+
+// chatCompletions https://beta.openai.com/docs/api-reference/making-requests
+func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
 	start := time.Now()
 	var r request
 	r.Model = "gpt-3.5-turbo"
