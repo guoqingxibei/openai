@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -187,7 +188,8 @@ func pollReplyFromRedis(shortMsgId string, pollCnt int, inMsg *wechat.Msg,
 }
 
 func buildAnswerURL(msgId string) string {
-	return wechatConfig.MessageUrlPrefix + "/index?msgId=" + msgId
+	url := wechatConfig.MessageUrlPrefix + "/index?msgId=" + msgId
+	return fmt.Sprintf("<a href=\"%s\">点击查看回复</a>", url)
 }
 
 func echoWeChat(w http.ResponseWriter, data []byte) {
