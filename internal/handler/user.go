@@ -14,6 +14,10 @@ import (
 	"time"
 )
 
+const (
+	maxLengthOfReply = 4000
+)
+
 var (
 	wechatConfig  = config.C.Wechat
 	success       = []byte("success")
@@ -141,7 +145,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	var reply string
 	select {
 	case reply = <-answerChan:
-		if len(reply) > 4000 {
+		if len(reply) > maxLengthOfReply {
 			reply = answerUrl
 		}
 		echoWechatMsg(writer, inMsg, reply)
@@ -152,18 +156,18 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 func replyWhenRetry(inMsg *wechat.Msg, writer http.ResponseWriter, times int64, shortMsgId string) {
 	if times == 2 {
-		pollReplyFromRedis(shortMsgId, inMsg, writer, false)
 		// wait for greater than 5s so that WeChat server retries
-		time.Sleep(time.Millisecond * 1001)
+		pollReplyFromRedis(shortMsgId, 51, inMsg, writer)
 	} else {
-		pollReplyFromRedis(shortMsgId, inMsg, writer, true)
+		pollReplyFromRedis(shortMsgId, 40, inMsg, writer)
 	}
 }
 
-// poll reply from redis every second until reply is not "" in 4 seconds
-func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.ResponseWriter, ensureFinalEcho bool) {
+// poll reply from redis every 0.1 second until reply is not "" in 5 seconds
+func pollReplyFromRedis(shortMsgId string, pollCnt int, inMsg *wechat.Msg,
+	writer http.ResponseWriter) {
 	cnt := 0
-	for cnt < 4 {
+	for cnt < pollCnt {
 		cnt++
 		reply, err := gptredis.FetchReply(shortMsgId)
 		if err != nil {
@@ -171,17 +175,15 @@ func pollReplyFromRedis(shortMsgId string, inMsg *wechat.Msg, writer http.Respon
 			continue
 		}
 		if reply != "" {
-			if len(reply) > 4000 {
+			if len(reply) > maxLengthOfReply {
 				reply = buildAnswerURL(shortMsgId)
 			}
 			echoWechatMsg(writer, inMsg, reply)
 			return
 		}
-		time.Sleep(time.Second)
+		time.Sleep(time.Millisecond * 100)
 	}
-	if ensureFinalEcho {
-		echoWechatMsg(writer, inMsg, buildAnswerURL(shortMsgId))
-	}
+	echoWechatMsg(writer, inMsg, buildAnswerURL(shortMsgId))
 }
 
 func buildAnswerURL(msgId string) string {
