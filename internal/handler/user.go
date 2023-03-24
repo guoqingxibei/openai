@@ -15,9 +15,10 @@ import (
 )
 
 var (
-	wechatConfig = config.C.Wechat
-	success      = []byte("success")
-	tryAgain     = "哎呀，出错啦，重新提问下~"
+	wechatConfig  = config.C.Wechat
+	success       = []byte("success")
+	tryAgain      = "哎呀，出错啦，重新提问下~"
+	censorWarning = "【警告】我是公众号作者，检测到你的发言可能涉嫌违规。如果你继续违规使用，公众号将拒绝为你提供服务。"
 )
 
 type ChatRound struct {
@@ -113,7 +114,7 @@ func replyToText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		} else {
 			passedCensor := baidu.Censor(answer)
 			if !passedCensor {
-				answer = "这样的问题，你让人家怎么回答嘛😅"
+				answer = censorWarning
 			}
 			go func() {
 				err = gptredis.SetReply(shortMsgId, answer)
