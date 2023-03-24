@@ -88,7 +88,7 @@ func Censor(text string) bool {
 	case passed = <-passedChan:
 		return passed
 	case <-time.After(time.Millisecond * 500):
-		log.Printf("[Censor]Skipped the censorship for text:「%s」", util.EscapeNewline(text))
+		log.Printf("[Censor] Skipped the censorship for text:「%s」", util.EscapeNewline(text))
 		return true
 	}
 }
@@ -118,7 +118,7 @@ func censor(text string) bool {
 	}
 	var censorResp censorResponse
 	_ = json.Unmarshal(body, &censorResp)
-	log.Printf("[CensorAPI]Conclusion: %s, duration: %dms, text:「%s」, detail: %s",
+	log.Printf("[CensorAPI] Conclusion: %s, duration: %dms, text:「%s」, detail: %s",
 		censorResp.Conclusion,
 		int(time.Since(start).Milliseconds()),
 		util.EscapeNewline(text),

@@ -119,7 +119,7 @@ func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 	if statusCode >= 200 && statusCode < 300 && len(data.Choices) > 0 {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
 		lastAnswer := strings.TrimSpace(data.Choices[0].Message.Content)
-		log.Printf("[CompletionAPI]User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
+		log.Printf("[CompletionAPI] User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
 			"request tokens：%d, response tokens: %d, question:「%s」, answer:「%s」",
 			inMsg.FromUserName,
 			inMsg.MsgId,
@@ -135,7 +135,7 @@ func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 	}
 
 	errorMsg := data.Error.Message
-	log.Printf("[CompletionAPI]User: %s, message ID: %d, short message ID: %s, duration: %dms, "+
+	log.Printf("[CompletionAPI] User: %s, message ID: %d, short message ID: %s, duration: %dms, "+
 		"question:「%s」, error:「%s」",
 		inMsg.FromUserName,
 		inMsg.MsgId,
