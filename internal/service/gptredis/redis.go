@@ -20,32 +20,32 @@ func init() {
 	})
 }
 
-func Set(key string, value string, expiration time.Duration) error {
+func set(key string, value string, expiration time.Duration) error {
 	return rdb.Set(ctx, key, value, expiration).Err()
 }
 
-func Get(key string) (string, error) {
+func get(key string) (string, error) {
 	return rdb.Get(ctx, key).Result()
 }
 
-func Del(key string) error {
+func del(key string) error {
 	return rdb.Del(ctx, key).Err()
 }
 
-func Inc(key string) (int64, error) {
+func inc(key string) (int64, error) {
 	return rdb.Incr(ctx, key).Result()
 }
 
-func FetchReply(shortMsgId string) (string, error) {
-	reply, err := Get(buildReplyKey(shortMsgId))
+func FetchReply(msgId int64) (string, error) {
+	reply, err := get(buildReplyKey(msgId))
 	if err == nil {
 		return reply, nil
 	}
 	return "", err
 }
 
-func SetReply(shortMsgId string, reply string) error {
-	return Set(buildReplyKey(shortMsgId), reply, time.Hour*24*7)
+func SetReply(msgId int64, reply string) error {
+	return set(buildReplyKey(msgId), reply, time.Hour*24*7)
 }
 
 func SetMessages(toUserName string, messages []openai.Message) error {
@@ -53,12 +53,12 @@ func SetMessages(toUserName string, messages []openai.Message) error {
 	if err != nil {
 		return err
 	}
-	return Set(buildMessagesKey(toUserName), newRoundsStr, time.Minute*10)
+	return set(buildMessagesKey(toUserName), newRoundsStr, time.Minute*10)
 }
 
 func FetchMessages(toUserName string) ([]openai.Message, error) {
 	var messages []openai.Message
-	messagesStr, err := Get(buildMessagesKey(toUserName))
+	messagesStr, err := get(buildMessagesKey(toUserName))
 	if err != nil {
 		if err == redis.Nil {
 			return messages, nil
@@ -76,48 +76,17 @@ func buildMessagesKey(toUserName string) string {
 	return "user:" + toUserName + ":messages"
 }
 
-func DelReply(shortMsgId string) error {
-	return Del(buildReplyKey(shortMsgId))
+func DelReply(msgId int64) error {
+	return del(buildReplyKey(msgId))
 }
 
-func buildReplyKey(shortMsgId string) string {
-	return "short-msg-id:" + shortMsgId + ":reply"
+func buildReplyKey(msgId int64) string {
+	return "msg-id:" + strconv.FormatInt(msgId, 10) + ":reply"
 }
 
-func generateShortMsgId() (string, error) {
-	shortMsgId, err := Inc("current-max-short-id")
-	if err == nil {
-		return strconv.FormatInt(shortMsgId, 10), nil
-	}
-	return "", err
-}
-
-func FetchShortMsgId(longMsgId string) (string, error) {
-	key := buildShortMsgIdKey(longMsgId)
-	shortMsgId, err := Get(key)
-	if err == nil {
-		return shortMsgId, nil
-	}
-	if err == redis.Nil {
-		shortMsgId, err := generateShortMsgId()
-		if err == nil {
-			err := Set(key, shortMsgId, time.Hour*24*7)
-			if err == nil {
-				return shortMsgId, nil
-			}
-			return "", err
-		}
-		return "", err
-	}
-	return "", err
-}
-
-func buildShortMsgIdKey(longMsgId string) string {
-	return "long-msg-id:" + longMsgId + ":short-msg-id"
-}
-
-func IncAccessTimes(shortMsgId string) (int64, error) {
-	times, err := Inc("short-msg-id:" + shortMsgId + ":access-times")
+func IncAccessTimes(msgId int64) (int64, error) {
+	msgIdStr := strconv.FormatInt(msgId, 10)
+	times, err := inc("msg-id:" + msgIdStr + ":access-times")
 	if err != nil {
 		return 0, nil
 	}
@@ -125,13 +94,37 @@ func IncAccessTimes(shortMsgId string) (int64, error) {
 }
 
 func FetchBaiduApiAccessToken() (string, error) {
-	return Get(getBaiduApiAccessTokenKey())
+	return get(getBaiduApiAccessTokenKey())
 }
 
 func SetBaiduApiAccessToken(accessToken string, expiration time.Duration) error {
-	return Set(getBaiduApiAccessTokenKey(), accessToken, expiration)
+	return set(getBaiduApiAccessTokenKey(), accessToken, expiration)
 }
 
 func getBaiduApiAccessTokenKey() string {
 	return "baidu-api-access-token"
+}
+
+func FetchWechatApiAccessToken() (string, error) {
+	return get(getWechatApiAccessTokenKey())
+}
+
+func SetWechatApiAccessToken(accessToken string, expiration time.Duration) error {
+	return set(getWechatApiAccessTokenKey(), accessToken, expiration)
+}
+
+func getWechatApiAccessTokenKey() string {
+	return "wechat-api-access-token"
+}
+
+func SetModeForUser(user string, mode string) error {
+	return set(buildModeKey(user), mode, 0)
+}
+
+func FetchModeForUser(user string) (string, error) {
+	return get(buildModeKey(user))
+}
+
+func buildModeKey(user string) string {
+	return "user:" + user + ":mode"
 }

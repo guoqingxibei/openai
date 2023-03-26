@@ -13,8 +13,12 @@ type Msg struct {
 	MsgType      string   `xml:"MsgType"`
 	Event        string   `xml:"Event"`
 	Content      string   `xml:"Content"`
+	Image        Image    `xml:"Image"`
+	MsgId        int64    `xml:"MsgId,omitempty"`
+}
 
-	MsgId int64 `xml:"MsgId,omitempty"`
+type Image struct {
+	MediaId string `xml:"MediaId"`
 }
 
 func NewInMsg(data []byte) *Msg {
@@ -25,13 +29,27 @@ func NewInMsg(data []byte) *Msg {
 	return &msg
 }
 
-func (msg *Msg) BuildOutMsg(reply string) []byte {
+func (msg *Msg) BuildTextMsg(reply string) []byte {
 	data := Msg{
 		ToUserName:   msg.FromUserName,
 		FromUserName: msg.ToUserName,
 		CreateTime:   time.Now().Unix(),
 		MsgType:      "text",
 		Content:      reply,
+	}
+	bs, _ := xml.Marshal(&data)
+	return bs
+}
+
+func (msg *Msg) BuildImageMsg(mediaId string) []byte {
+	data := Msg{
+		ToUserName:   msg.FromUserName,
+		FromUserName: msg.ToUserName,
+		CreateTime:   time.Now().Unix(),
+		MsgType:      "image",
+		Image: Image{
+			MediaId: mediaId,
+		},
 	}
 	bs, _ := xml.Marshal(&data)
 	return bs

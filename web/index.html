@@ -32,6 +32,12 @@
             word-break: break-word;
         }
 
+        img {
+            margin: 2rem;
+            width: 90%;
+            display: block;
+        }
+
         #spinner {
             width: 30px;
             height: 30px;
@@ -70,8 +76,13 @@
         } else {
             const data = await fetchValue();
             if (!data.code) {
-                if (data.message) {
-                    setContent(data.message);
+                let reply = data.reply;
+                if (reply.content || reply.url) {
+                    if (reply.type === 'text') {
+                        setContent(reply.content);
+                    } else {
+                        setImage(reply.url)
+                    }
                 } else {
                     setTimeout(pollReply, 1000);
                 }
@@ -92,6 +103,14 @@
     function setContent(content) {
         document.getElementById("spinner").remove();
         document.getElementById("content").innerText = content;
+    }
+
+    function setImage(imageUrl) {
+        document.getElementById("spinner").remove();
+        document.getElementById("content").remove();
+        const img = document.createElement('img');
+        img.src = imageUrl;
+        document.body.appendChild(img);
     }
 
     let tryCount = 300, initCountDown = 30, countDown = initCountDown;

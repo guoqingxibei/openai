@@ -19,6 +19,8 @@ type conf struct {
 		Token              string `json:"token"`
 		ReplyWhenSubscribe string `json:"reply_when_subscribe"`
 		MessageUrlPrefix   string `json:"message_url_prefix"`
+		AppId              string `json:"app_id"`
+		AppSecret          string `json:"app_secret"`
 	} `json:"wechat"`
 	Redis struct {
 		Addr string `json:"addr"`

@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"openai/internal/config"
-	"openai/internal/service/wechat"
 	"openai/internal/util"
 	"strings"
 	"sync/atomic"
@@ -53,21 +52,21 @@ type choiceItem struct {
 	} `json:"message"`
 }
 
-func ChatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
+func ChatCompletions(messages []Message) (string, error) {
 	answerChan := make(chan string, 2)
 	errChan := make(chan error, 2)
 	go func() {
-		answer, err := chatCompletions(messages, shortMsgId, inMsg)
+		answer, err := chatCompletions(messages)
 		answerChan <- answer
 		errChan <- err
 	}()
 	go func() {
-		answer, err := chatCompletions(messages, shortMsgId, inMsg)
+		answer, err := chatCompletions(messages)
 		answerChan <- answer
 		errChan <- err
 	}()
 	go func() {
-		answer, err := chatCompletions(messages, shortMsgId, inMsg)
+		answer, err := chatCompletions(messages)
 		answerChan <- answer
 		errChan <- err
 	}()
@@ -77,7 +76,7 @@ func ChatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 }
 
 // chatCompletions https://beta.openai.com/docs/api-reference/making-requests
-func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (string, error) {
+func chatCompletions(messages []Message) (string, error) {
 	start := time.Now()
 	var r request
 	r.Model = "gpt-3.5-turbo"
@@ -119,14 +118,9 @@ func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 	if statusCode >= 200 && statusCode < 300 && len(data.Choices) > 0 {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
 		lastAnswer := strings.TrimSpace(data.Choices[0].Message.Content)
-		log.Printf("[CompletionAPI] User: %s, message ID: %d, short message ID: %s, duration: %ds, "+
-			"request tokens：%d, response tokens: %d, question:「%s」, answer:「%s」",
-			inMsg.FromUserName,
-			inMsg.MsgId,
-			shortMsgId,
-			int(time.Since(start).Seconds()),
-			data.Usage.PromptTokens,
-			data.Usage.CompletionTokens,
+		log.Printf(
+			"[CompletionAPI] Duration: %dms, question:「%s」, answer:「%s」",
+			int(time.Since(start).Milliseconds()),
 			util.EscapeNewline(lastQuestion),
 			util.EscapeNewline(lastAnswer),
 		)
@@ -135,16 +129,13 @@ func chatCompletions(messages []Message, shortMsgId string, inMsg *wechat.Msg) (
 	}
 
 	errorMsg := data.Error.Message
-	log.Printf("[CompletionAPI] User: %s, message ID: %d, short message ID: %s, duration: %dms, "+
-		"question:「%s」, error:「%s」",
-		inMsg.FromUserName,
-		inMsg.MsgId,
-		shortMsgId,
+	errorMsg = util.EscapeNewline(fmt.Sprintf("%d: %s", statusCode, errorMsg))
+	log.Printf("[CompletionAPI] Duration: %dms, question:「%s」, error:「%s」",
 		int(time.Since(start).Milliseconds()),
 		util.EscapeNewline(lastQuestion),
-		util.EscapeNewline(errorMsg),
+		errorMsg,
 	)
-	return "", errors.New(fmt.Sprintf("Error %d: %s", statusCode, errorMsg))
+	return "", errors.New(errorMsg)
 }
 
 func StringifyMessages(messages []Message) (string, error) {
