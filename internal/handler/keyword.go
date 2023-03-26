@@ -18,7 +18,7 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	question := inMsg.Content
 	var keyword string
 	for _, word := range keywords {
-		if question == "/"+word {
+		if question == word {
 			keyword = word
 			break
 		}

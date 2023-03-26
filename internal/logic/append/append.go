@@ -20,11 +20,11 @@ func incUsedTimes(user string) int {
 
 func shouldAppendHelpDesc(user string) bool {
 	times := incUsedTimes(user)
-	return (times-1)%triggerTimes == 0
+	return times-1 != 0 && (times-1)%triggerTimes == 0
 }
 
 func appendHelpDesc(answer string) string {
-	return answer + "\n\n回复 /help，可查看使用方法。\n回复 /donate，可捐赠作者。"
+	return answer + "\n\n回复 help，可查看使用方法。\n回复 donate，可捐赠作者。"
 }
 
 func AppendHelpDescIfPossible(user string, answer string) string {
