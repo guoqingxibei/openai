@@ -1,16 +1,16 @@
 package bootstrap
 
 import (
+	"bytes"
 	"github.com/felixge/httpsnoop"
+	"io"
+	"io/ioutil"
 	"log"
 	"net/http"
+	"openai/internal/service/wechat"
+	"openai/internal/util"
 	"strings"
-	"sync"
 	"time"
-)
-
-var (
-	muLogHTTP sync.Mutex
 )
 
 // HTTPReqInfo LogReqInfo describes info about HTTP request
@@ -27,15 +27,28 @@ type HTTPReqInfo struct {
 	// how long did it take to
 	duration  time.Duration
 	userAgent string
+	user      string
+	msgId     int64
+	content   string
 }
 
 func LogRequestHandler(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
+		bodyBytes, _ := io.ReadAll(r.Body)
+		r.Body.Close()
+		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
+		inMsg := wechat.NewInMsg(bodyBytes)
+		if inMsg == nil {
+			inMsg = &wechat.Msg{}
+		}
 		ri := &HTTPReqInfo{
 			method:    r.Method,
-			uri:       r.URL.String(),
+			uri:       r.URL.Path,
 			referer:   r.Header.Get("Referer"),
 			userAgent: r.Header.Get("User-Agent"),
+			user:      inMsg.FromUserName,
+			msgId:     inMsg.MsgId,
+			content:   inMsg.Content,
 		}
 
 		ri.ipaddr = requestGetRemoteAddress(r)
@@ -84,12 +97,15 @@ func requestGetRemoteAddress(r *http.Request) string {
 }
 
 func logHTTPReq(ri *HTTPReqInfo) {
-	log.Printf("[HTTP] %s %s %d %dms %s %dB",
+	log.Printf("[HTTP] %s %s %d %dms %s %dB %s %d「%s」",
 		ri.method,
 		ri.uri,
 		ri.code,
 		ri.duration.Milliseconds(),
 		ri.ipaddr,
 		ri.size,
+		ri.user,
+		ri.msgId,
+		util.EscapeNewline(ri.content),
 	)
 }
