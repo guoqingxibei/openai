@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/constant"
+	appendlogic "openai/internal/logic/append"
 	openailogic "openai/internal/logic/openai"
 	replylogic "openai/internal/logic/reply"
 	"openai/internal/service/gptredis"
@@ -22,6 +23,10 @@ const (
 
 func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	question := strings.TrimSpace(inMsg.Content)
+	if hitKeyword(inMsg, writer) {
+		return
+	}
+
 	if mode, ok := checkModeSwitch(question); ok {
 		setModeThenReply(mode, inMsg, writer)
 		return
@@ -76,6 +81,7 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 			err = gptredis.DelReply(msgId)
 			out = inMsg.BuildTextMsg(constant.TryAgain)
 		} else {
+			answer = appendlogic.AppendHelpDescIfPossible(userName, answer)
 			err = replylogic.SetTextReply(msgId, answer)
 			if err != nil {
 				log.Println("replylogic.SetReply failed", err)
@@ -86,19 +92,27 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 		}
 		out = inMsg.BuildTextMsg(answer)
 	} else {
+		balance := openailogic.FetchImageBalance(userName)
+		if balance <= 0 {
+			return inMsg.BuildTextMsg("你今天的图片次数已用完。\n\n回复 /chat，可切换到不限次数的 chat 模式。")
+		}
 		url, err := openai.GenerateImage(question)
 		if err != nil {
 			log.Println("openai.GenerateImage failed", err)
 			err = gptredis.DelReply(msgId)
 			out = inMsg.BuildTextMsg(constant.TryAgain)
 		} else {
+			_, err := gptredis.DecrImageBalance(userName)
+			if err != nil {
+				log.Println("gptredis.DecrImageBalance failed", err)
+			}
 			err = replylogic.SetImageReply(msgId, url, "")
 			if err != nil {
 				log.Println("replylogic.SetImageReply failed", err)
 			}
-			mediaId, err := wechat.UploadImage(url)
+			mediaId, err := wechat.UploadImageFromUrl(url)
 			if err != nil {
-				log.Println("wechat.UploadImage failed", err)
+				log.Println("wechat.UploadImageFromUrl failed", err)
 				out = inMsg.BuildTextMsg(url)
 			} else {
 				err = replylogic.SetImageReply(msgId, url, mediaId)

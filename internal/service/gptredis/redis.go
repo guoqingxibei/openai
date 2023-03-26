@@ -128,3 +128,43 @@ func FetchModeForUser(user string) (string, error) {
 func buildModeKey(user string) string {
 	return "user:" + user + ":mode"
 }
+
+func FetchImageBalance(user string) (int, error) {
+	balance, err := get(buildImageBalanceKey(user))
+	cnt, _ := strconv.Atoi(balance)
+	return cnt, err
+}
+
+func SetImageBalance(user string, balance int) error {
+	return set(buildImageBalanceKey(user), strconv.Itoa(balance), time.Hour*24)
+}
+
+func DecrImageBalance(user string) (int, error) {
+	balance, err := rdb.Decr(ctx, buildImageBalanceKey(user)).Result()
+	return int(balance), err
+}
+
+func buildImageBalanceKey(user string) string {
+	return "user:" + user + ":image-balance"
+}
+
+func FetchMediaIdOfDonateQr() (string, error) {
+	return get(getMediaIdKey())
+}
+
+func SetMediaIdOfDonateQr(mediaId string, expiration time.Duration) error {
+	return set(getMediaIdKey(), mediaId, expiration)
+}
+
+func getMediaIdKey() string {
+	return "media-id-of-donate-qr"
+}
+
+func buildUsageKey(user string) string {
+	return "user:" + user + ":used-times"
+}
+
+func IncUsedTimes(user string) (int, error) {
+	times, err := inc(buildUsageKey(user))
+	return int(times), err
+}
