@@ -20,7 +20,7 @@ func incUsedTimes(user string) int {
 
 func shouldAppendHelpDesc(user string) bool {
 	times := incUsedTimes(user)
-	return times-1 != 0 && (times-1)%triggerTimes == 0
+	return times%triggerTimes == 0
 }
 
 func appendHelpDesc(answer string) string {
