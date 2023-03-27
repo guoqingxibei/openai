@@ -15,10 +15,17 @@ const (
 	help   = "help"
 )
 
-var keywords = [2]string{donate, help}
+// mode
+const (
+	Chat  = "chat"
+	Image = "image"
+)
+
+var keywords = [4]string{donate, help, Chat, Image}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	question := inMsg.Content
+	question = strings.TrimSpace(question)
 	question = strings.ToLower(question)
 	var keyword string
 	for _, word := range keywords {
@@ -36,6 +43,10 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		showDonateQr(inMsg, writer)
 	case help:
 		showUsage(inMsg, writer)
+	case Chat:
+		fallthrough
+	case Image:
+		switchMode(keyword, inMsg, writer)
 	}
 	return true
 }
@@ -61,8 +72,28 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		mode = Chat
 	}
 	usage := "当前是 " + mode + " 模式。"
-	usage += "\n\n回复 chat，开启 chat 模式。此模式是默认模式，在此模式下，你问我答，多轮对话，不限次数。"
-	usage += "\n\n回复 image，开启 image 模式。在此模式下，你说一句尽可能完整的图片描述，我画一张对应的图片，单轮对话，每天仅限 5 次。"
-	usage += "\n\n回复 donate，可对作者进行捐赠。所有对话都会产生费用，你的捐赠可以减轻作者的财务压力。但捐赠与否，并不影响你对任何服务的使用。"
+	usage += "\n\n回复 chat，开启 chat 模式。此模式是默认模式，在此模式下，" + constant.ChatUsage
+	usage += "\n\n回复 image，开启 image 模式。在此模式下，" + constant.ImageUsage
+	usage += "\n\n" + constant.DonateDesc
 	echoWechatTextMsg(writer, inMsg, usage)
+}
+
+func switchMode(mode string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+	err := gptredis.SetModeForUser(inMsg.FromUserName, mode)
+	if err != nil {
+		log.Println("gptredis.SetModeForUser failed", err)
+		echoWechatTextMsg(writer, inMsg, constant.TryAgain)
+	} else {
+		echoWechatTextMsg(writer, inMsg, buildReplyWhenSwitchMode(mode))
+	}
+}
+
+func buildReplyWhenSwitchMode(mode string) string {
+	reply := "已切换到 " + mode + " 模式，"
+	if mode == Image {
+		reply += constant.ImageUsage
+	} else {
+		reply += constant.ChatUsage
+	}
+	return reply + "\n\n" + constant.UsageTail
 }

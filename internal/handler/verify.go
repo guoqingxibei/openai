@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+	"openai/internal/config"
 	"openai/internal/service/wechat"
 )
 
@@ -14,7 +15,7 @@ func Check(w http.ResponseWriter, r *http.Request) {
 	echostr := query.Get("echostr")
 
 	// 校验
-	if wechat.CheckSignature(signature, timestamp, nonce, wechatConfig.Token) {
+	if wechat.CheckSignature(signature, timestamp, nonce, config.C.Wechat.Token) {
 		w.Write([]byte(echostr))
 		return
 	}

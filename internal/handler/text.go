@@ -5,6 +5,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
+	"openai/internal/config"
 	"openai/internal/constant"
 	appendlogic "openai/internal/logic/append"
 	openailogic "openai/internal/logic/openai"
@@ -18,17 +19,11 @@ import (
 )
 
 const (
-	maxLengthOfReply = 4000
+	maxLengthOfReply = 4090
 )
 
 func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	question := strings.TrimSpace(inMsg.Content)
 	if hitKeyword(inMsg, writer) {
-		return
-	}
-
-	if mode, ok := checkModeSwitch(question); ok {
-		setModeThenReply(mode, inMsg, writer)
 		return
 	}
 
@@ -40,8 +35,8 @@ func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		return
 	}
 
-	// when WeChat server accesses at the first time
-	// indicate reply is loading
+	// set empty string when WeChat server accesses at the first time
+	// to indicate reply is loading
 	err := replylogic.SetEmptyReply(msgId)
 	if err != nil {
 		log.Println("replylogic.SetEmptyReply failed", err)
@@ -169,7 +164,7 @@ func pollReplyFromRedis(pollCnt int, inMsg *wechat.Msg, writer http.ResponseWrit
 }
 
 func buildAnswerURL(msgId int64) string {
-	url := wechatConfig.MessageUrlPrefix + "/index?msgId=" + strconv.FormatInt(msgId, 10)
+	url := config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + strconv.FormatInt(msgId, 10)
 	return fmt.Sprintf("<a href=\"%s\">点击查看回复</a>", url)
 }
 

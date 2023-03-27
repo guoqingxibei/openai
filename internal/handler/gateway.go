@@ -4,13 +4,12 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"openai/internal/config"
+	"openai/internal/constant"
 	"openai/internal/service/wechat"
 )
 
 var (
-	wechatConfig = config.C.Wechat
-	success      = []byte("success")
+	success = []byte("success")
 )
 
 type ChatRound struct {
@@ -35,7 +34,7 @@ func Talk(writer http.ResponseWriter, request *http.Request) {
 		switch inMsg.Event {
 		case "subscribe":
 			log.Println("新增关注:", inMsg.FromUserName)
-			echoWechatTextMsg(writer, inMsg, wechatConfig.ReplyWhenSubscribe)
+			echoWechatTextMsg(writer, inMsg, constant.SubscribeReply)
 		case "unsubscribe":
 			log.Println("取消关注:", inMsg.FromUserName)
 			echoWeChat(writer, success)
