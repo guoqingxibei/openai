@@ -21,7 +21,7 @@ type tokenResponse struct {
 	ExpiresIn   int    `json:"expires_in"`
 }
 
-func init() {
+func initToken() {
 	_, err := gptredis.FetchWechatApiAccessToken()
 	if err != nil {
 		if err == redis.Nil {

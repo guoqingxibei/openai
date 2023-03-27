@@ -39,6 +39,8 @@ func Talk(writer http.ResponseWriter, request *http.Request) {
 		case "unsubscribe":
 			log.Println("取消关注:", inMsg.FromUserName)
 			echoWeChat(writer, success)
+		case "CLICK":
+			echoWechatOnClick(inMsg, writer)
 		default:
 			log.Printf("未实现的事件: %s\n", inMsg.Event)
 			echoWeChat(writer, success)

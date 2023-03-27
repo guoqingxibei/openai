@@ -21,7 +21,7 @@ type uploadResponse struct {
 	MediaId string `json:"media_id"`
 }
 
-func init() {
+func initDonateQrMediaId() {
 	_, err := gptredis.FetchMediaIdOfDonateQr()
 	if err != nil {
 		if err == redis.Nil {

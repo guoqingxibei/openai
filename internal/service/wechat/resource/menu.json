@@ -1,0 +1,14 @@
+{
+  "button": [
+    {
+      "type": "click",
+      "name": "使用方法",
+      "key": "help"
+    },
+    {
+      "type": "click",
+      "name": "捐赠作者",
+      "key": "donate"
+    }
+  ]
+}
