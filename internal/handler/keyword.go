@@ -7,6 +7,7 @@ import (
 	"openai/internal/constant"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
+	"strings"
 )
 
 const (
@@ -18,6 +19,7 @@ var keywords = [2]string{donate, help}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	question := inMsg.Content
+	question = strings.ToLower(question)
 	var keyword string
 	for _, word := range keywords {
 		if question == word {
