@@ -74,6 +74,9 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 		if err != nil {
 			log.Println("openai.ChatCompletions failed", err)
 			err = gptredis.DelReply(msgId)
+			if err != nil {
+				log.Println("gptredis.DelReply failed", err)
+			}
 			out = inMsg.BuildTextMsg(constant.TryAgain)
 		} else {
 			answer = appendlogic.AppendHelpDescIfPossible(userName, answer)
@@ -93,9 +96,11 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 		}
 		url, err := openai.GenerateImage(question)
 		if err != nil {
-			log.Println("openai.GenerateImage failed", err)
+			out = inMsg.BuildTextMsg(err.Error())
 			err = gptredis.DelReply(msgId)
-			out = inMsg.BuildTextMsg(constant.TryAgain)
+			if err != nil {
+				log.Println("gptredis.DelReply failed", err)
+			}
 		} else {
 			_, err := gptredis.DecrImageBalance(userName)
 			if err != nil {

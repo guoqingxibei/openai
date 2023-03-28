@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"openai/internal/config"
+	"openai/internal/constant"
 	"openai/internal/util"
 	"time"
 )
@@ -43,7 +44,7 @@ func GenerateImage(prompt string) (string, error) {
 	bs, err := json.Marshal(r)
 	if err != nil {
 		log.Println("json.Marshal(r) failed", err)
-		return "", err
+		return "", errors.New(constant.TryAgain)
 	}
 
 	client := &http.Client{Timeout: time.Second * 300}
@@ -61,14 +62,15 @@ func GenerateImage(prompt string) (string, error) {
 
 	resp, err := client.Do(req)
 	if err != nil {
-		return "", err
+		log.Println("Failed to generate image", err)
+		return "", errors.New(constant.TryAgain)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Println("ioutil.ReadAll failed", err)
-		return "", err
+		return "", errors.New(constant.TryAgain)
 	}
 
 	var response imageResponse
@@ -85,11 +87,10 @@ func GenerateImage(prompt string) (string, error) {
 	}
 
 	errorMsg := response.Error.Message
-	errorMsg = util.EscapeNewline(fmt.Sprintf("%d: %s", statusCode, errorMsg))
 	log.Printf("[ImageAPI] Duration: %dms, prompt:「%s」, error: %s",
 		int(time.Since(start).Milliseconds()),
 		prompt,
-		errorMsg,
+		util.EscapeNewline(fmt.Sprintf("%d: %s", statusCode, errorMsg)),
 	)
 	return "", errors.New(errorMsg)
 }
