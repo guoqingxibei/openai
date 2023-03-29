@@ -6,7 +6,7 @@ import (
 	"openai/internal/service/gptredis"
 )
 
-const defaultImageBalance = 5
+const defaultImageBalance = 2
 
 func FetchImageBalance(user string) int {
 	balance, err := gptredis.FetchImageBalance(user)
