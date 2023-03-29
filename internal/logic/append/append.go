@@ -19,7 +19,7 @@ func incUsedTimes(user string) int {
 	return times
 }
 
-func shouldAppendHelpDesc(user string) bool {
+func shouldAppend(user string) bool {
 	times := incUsedTimes(user)
 	return times%triggerTimes == 0
 }
@@ -28,8 +28,8 @@ func appendHelpDesc(answer string) string {
 	return answer + "\n\n" + constant.UsageTail
 }
 
-func AppendHelpDescIfPossible(user string, answer string) string {
-	if shouldAppendHelpDesc(user) {
+func AppendIfPossible(user string, answer string) string {
+	if shouldAppend(user) {
 		return appendHelpDesc(answer)
 	}
 	return answer

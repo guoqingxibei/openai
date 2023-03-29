@@ -79,16 +79,16 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 			}
 			out = inMsg.BuildTextMsg(constant.TryAgain)
 		} else {
-			answer = appendlogic.AppendHelpDescIfPossible(userName, answer)
+			answer = appendlogic.AppendIfPossible(userName, answer)
 			err = replylogic.SetTextReply(msgId, answer)
 			if err != nil {
 				log.Println("replylogic.SetReply failed", err)
 			}
+			if len(answer) > maxLengthOfReply {
+				answer = answerUrl
+			}
+			out = inMsg.BuildTextMsg(answer)
 		}
-		if len(answer) > maxLengthOfReply {
-			answer = answerUrl
-		}
-		out = inMsg.BuildTextMsg(answer)
 	} else {
 		balance := openailogic.FetchImageBalance(userName)
 		if balance <= 0 {
