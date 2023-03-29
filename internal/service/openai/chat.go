@@ -53,13 +53,8 @@ type choiceItem struct {
 }
 
 func ChatCompletions(messages []Message) (string, error) {
-	answerChan := make(chan string, 2)
-	errChan := make(chan error, 2)
-	go func() {
-		answer, err := chatCompletions(messages)
-		answerChan <- answer
-		errChan <- err
-	}()
+	answerChan := make(chan string, 1)
+	errChan := make(chan error, 1)
 	go func() {
 		answer, err := chatCompletions(messages)
 		answerChan <- answer

@@ -15,10 +15,7 @@ type censorResponse struct {
 }
 
 func Censor(text string) bool {
-	passedChan := make(chan bool, 3)
-	go func() {
-		passedChan <- censor(text)
-	}()
+	passedChan := make(chan bool, 2)
 	go func() {
 		passedChan <- censor(text)
 	}()
