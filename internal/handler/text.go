@@ -92,7 +92,7 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 	} else {
 		balance := openailogic.FetchImageBalance(userName)
 		if balance <= 0 {
-			return inMsg.BuildTextMsg("你今天的 image 次数已用完，24 小时后再来吧。\n\n回复 help，可切换至其他模式。")
+			return inMsg.BuildTextMsg(constant.ZeroImageBalance)
 		}
 		url, err := openai.GenerateImage(question)
 		if err != nil {

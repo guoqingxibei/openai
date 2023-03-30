@@ -10,7 +10,7 @@ echo "Stopping Go program..."
 pkill -f openaiBin || true
 
 # Wait for the program to stop
-sleep 2
+sleep 1
 
 # Start the Go program
 echo "Starting Go program..."
