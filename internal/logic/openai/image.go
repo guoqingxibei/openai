@@ -1,8 +1,10 @@
 package openailogic
 
 import (
+	"fmt"
 	"github.com/redis/go-redis/v9"
 	"log"
+	"openai/internal/constant"
 	"openai/internal/service/gptredis"
 )
 
@@ -23,4 +25,8 @@ func FetchImageBalance(user string) int {
 		return 0
 	}
 	return balance
+}
+
+func BuildImageUsage() string {
+	return fmt.Sprintf(constant.ImageUsage, defaultImageBalance)
 }

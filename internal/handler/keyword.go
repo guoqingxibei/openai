@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/constant"
+	openailogic "openai/internal/logic/openai"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
 	"strings"
@@ -73,7 +74,7 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	}
 	usage := "当前是 " + mode + " 模式。"
 	usage += "\n\n回复 chat，开启 chat 模式。此模式是默认模式，在此模式下，" + constant.ChatUsage
-	usage += "\n\n回复 image，开启 image 模式。在此模式下，" + constant.ImageUsage
+	usage += "\n\n回复 image，开启 image 模式。在此模式下，" + openailogic.BuildImageUsage()
 	usage += "\n\n" + constant.DonateDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
@@ -91,7 +92,7 @@ func switchMode(mode string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 func buildReplyWhenSwitchMode(mode string) string {
 	reply := "已切换到 " + mode + " 模式，"
 	if mode == Image {
-		reply += constant.ImageUsage
+		reply += openailogic.BuildImageUsage()
 	} else {
 		reply += constant.ChatUsage
 	}
