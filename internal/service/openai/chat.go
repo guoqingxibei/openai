@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"openai/internal/config"
+	"openai/internal/constant"
 	"openai/internal/util"
 	"strings"
 	"sync/atomic"
@@ -21,8 +22,9 @@ const chatUrl = "https://api.openai.com/v1/chat/completions"
 var totalTokens int64
 
 type request struct {
-	Model    string    `json:"model"`
-	Messages []Message `json:"messages"`
+	Model       string    `json:"model"`
+	Messages    []Message `json:"messages"`
+	Temperature float32   `json:"temperature"`
 }
 type Message struct {
 	Role    string `json:"role"`
@@ -73,9 +75,11 @@ func ChatCompletions(messages []Message) (string, error) {
 // chatCompletions https://beta.openai.com/docs/api-reference/making-requests
 func chatCompletions(messages []Message) (string, error) {
 	start := time.Now()
-	var r request
-	r.Model = "gpt-3.5-turbo"
-	r.Messages = messages
+	r := request{
+		Model:       "gpt-3.5-turbo",
+		Temperature: 0.5,
+		Messages:    messages,
+	}
 
 	bs, err := json.Marshal(r)
 	if err != nil {
@@ -161,4 +165,26 @@ func RotateMessages(messages []Message) ([]Message, error) {
 		}
 	}
 	return messages, nil
+}
+
+func PrependSystemMessage(messages []Message) []Message {
+	messages = append([]Message{
+		{
+			Role:    "system",
+			Content: constant.ChatSystemMessage,
+		},
+	}, messages...)
+	return messages
+}
+
+func RemoveSystemMessage(messages []Message) []Message {
+	return messages[1:]
+}
+
+func AppendAssistantMessage(messages []Message, answer string) []Message {
+	messages = append(messages, Message{
+		Role:    "assistant",
+		Content: answer,
+	})
+	return messages
 }

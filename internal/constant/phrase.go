@@ -1,6 +1,10 @@
 package constant
 
 const (
+	ChatSystemMessage = "You are a large language model trained by OpenAI." +
+		" Your job is to generate human-like text based on the input you received, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand." +
+		" If the input is a question, try your best to answer it. Otherwise, provide as much information as you can." +
+		" Knowledge cutoff: {knowledge_cutoff} Current date: {current_date}"
 	TryAgain       = "哎呀，出错啦，重试一下嘛~"
 	CensorWarning  = "【警告】我是公众号作者，检测到你的发言可能涉嫌违规。如果你继续违规使用，公众号将拒绝为你提供服务。"
 	ChatUsage      = "你问 ChatGPT 答，不限次数。"
