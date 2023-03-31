@@ -54,26 +54,8 @@ type choiceItem struct {
 	} `json:"message"`
 }
 
+// ChatCompletions https://beta.openai.com/docs/api-reference/making-requests
 func ChatCompletions(messages []Message) (string, error) {
-	answerChan := make(chan string, 1)
-	errChan := make(chan error, 1)
-	go func() {
-		answer, err := chatCompletions(messages)
-		answerChan <- answer
-		errChan <- err
-	}()
-	go func() {
-		answer, err := chatCompletions(messages)
-		answerChan <- answer
-		errChan <- err
-	}()
-	answer := <-answerChan
-	err := <-errChan
-	return answer, err
-}
-
-// chatCompletions https://beta.openai.com/docs/api-reference/making-requests
-func chatCompletions(messages []Message) (string, error) {
 	start := time.Now()
 	r := request{
 		Model:       "gpt-3.5-turbo",

@@ -45,7 +45,7 @@ func FetchReply(msgId int64) (string, error) {
 }
 
 func SetReply(msgId int64, reply string) error {
-	return set(buildReplyKey(msgId), reply, time.Hour*24*7)
+	return set(buildReplyKey(msgId), reply, time.Hour*24)
 }
 
 func SetMessages(toUserName string, messages []openai.Message) error {
@@ -53,7 +53,7 @@ func SetMessages(toUserName string, messages []openai.Message) error {
 	if err != nil {
 		return err
 	}
-	return set(buildMessagesKey(toUserName), newRoundsStr, time.Minute*10)
+	return set(buildMessagesKey(toUserName), newRoundsStr, time.Minute*5)
 }
 
 func FetchMessages(toUserName string) ([]openai.Message, error) {

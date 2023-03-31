@@ -5,7 +5,7 @@ const (
 		" Your job is to generate human-like text based on the input you received, allowing it to engage in natural-sounding conversations and provide responses that are coherent and relevant to the topic at hand." +
 		" If the input is a question, try your best to answer it. Otherwise, provide as much information as you can."
 	TryAgain         = "哎呀，出错啦，重试一下嘛~"
-	CensorWarning    = "【警告】我是公众号作者，检测到你的发言可能涉嫌违规。如果你继续违规使用，公众号将拒绝为你提供服务。"
+	CensorWarning    = "【警告】我是公众号作者，检测到你的发言可能涉嫌违规。如果你继续故意违规使用，公众号将拒绝为你提供服务。"
 	ChatUsage        = "你问 ChatGPT 答，不限次数。"
 	ImageUsage       = "你说一句描述，ChatGPT 画一张图，每天仅限 %d 次（成本昂贵，敬请谅解）。"
 	UsageTail        = "回复 help，可查看详细用法。\n回复 donate，可捐赠作者。"
