@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	donate = "donate"
-	help   = "help"
+	donate  = "donate"
+	help    = "help"
+	contact = "contact"
 )
 
 // mode
@@ -22,7 +23,7 @@ const (
 	Image = "image"
 )
 
-var keywords = [4]string{donate, help, Chat, Image}
+var keywords = [5]string{donate, help, contact, Chat, Image}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	question := inMsg.Content
@@ -40,6 +41,8 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	}
 
 	switch keyword {
+	case contact:
+		showContactInfo(inMsg, writer)
 	case donate:
 		showDonateQr(inMsg, writer)
 	case help:
@@ -50,6 +53,10 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		switchMode(keyword, inMsg, writer)
 	}
 	return true
+}
+
+func showContactInfo(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	echoWechatTextMsg(writer, inMsg, constant.ContactInfo)
 }
 
 func showDonateQr(inMsg *wechat.Msg, writer http.ResponseWriter) {
@@ -76,6 +83,7 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	usage += "\n\n回复 chat，开启 chat 模式。此模式是默认模式，在此模式下，" + constant.ChatUsage
 	usage += "\n\n回复 image，开启 image 模式。在此模式下，" + openailogic.BuildImageUsage()
 	usage += "\n\n" + constant.DonateDesc
+	usage += "\n" + constant.ContactDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
 

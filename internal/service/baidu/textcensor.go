@@ -15,22 +15,6 @@ type censorResponse struct {
 }
 
 func Censor(text string) bool {
-	passedChan := make(chan bool, 1)
-	go func() {
-		passedChan <- censor(text)
-	}()
-
-	var passed bool
-	select {
-	case passed = <-passedChan:
-		return passed
-	case <-time.After(time.Millisecond * 500):
-		log.Printf("[Censor] Skipped the censorship for text:「%s」", util.EscapeNewline(text))
-		return true
-	}
-}
-
-func censor(text string) bool {
 	start := time.Now()
 	token, err := getAccessToken()
 	if err != nil {
