@@ -25,7 +25,7 @@ func shouldAppend(user string) bool {
 }
 
 func appendHelpDesc(answer string) string {
-	return answer + "\n\n" + constant.UsageTail
+	return answer + "\n\n" + constant.DonateReminder
 }
 
 func AppendIfPossible(user string, answer string) string {

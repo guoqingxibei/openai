@@ -82,8 +82,7 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	usage := "当前是 " + mode + " 模式。"
 	usage += "\n\n回复 chat，开启 chat 模式。此模式是默认模式，在此模式下，" + constant.ChatUsage
 	usage += "\n\n回复 image，开启 image 模式。在此模式下，" + openailogic.BuildImageUsage()
-	usage += "\n\n" + constant.DonateDesc
-	usage += "\n" + constant.ContactDesc
+	usage += "\n\n" + constant.ContactDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
 
@@ -104,5 +103,5 @@ func buildReplyWhenSwitchMode(mode string) string {
 	} else {
 		reply += constant.ChatUsage
 	}
-	return reply + "\n\n" + constant.UsageTail
+	return reply
 }
