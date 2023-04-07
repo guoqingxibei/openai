@@ -44,11 +44,13 @@ func Talk(writer http.ResponseWriter, request *http.Request) {
 			log.Printf("未实现的事件: %s\n", inMsg.Event)
 			echoWeChat(writer, success)
 		}
+	case "voice":
+		fallthrough
 	case "text":
 		echoText(inMsg, writer)
 	default:
 		log.Printf("未实现的消息类型: %s\n", inMsg.MsgType)
-		echoWechatTextMsg(writer, inMsg, "现在还只支持文本消息哦~")
+		echoWechatTextMsg(writer, inMsg, "目前还只支持文本和语音消息哦~")
 	}
 }
 

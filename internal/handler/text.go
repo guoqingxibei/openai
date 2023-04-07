@@ -23,6 +23,10 @@ const (
 )
 
 func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	// be compatible with voice message
+	if inMsg.Recognition != "" {
+		inMsg.Content = inMsg.Recognition
+	}
 	if hitKeyword(inMsg, writer) {
 		return
 	}
@@ -80,6 +84,7 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 			out = inMsg.BuildTextMsg(constant.TryAgain)
 		} else {
 			answer = appendlogic.AppendIfPossible(userName, answer)
+			answer = prependRecognition(inMsg, answer)
 			err = replylogic.SetTextReply(msgId, answer)
 			if err != nil {
 				log.Println("replylogic.SetReply failed", err)
@@ -166,6 +171,13 @@ func pollReplyFromRedis(pollCnt int, inMsg *wechat.Msg, writer http.ResponseWrit
 		time.Sleep(time.Millisecond * 100)
 	}
 	echoWechatTextMsg(writer, inMsg, buildAnswerURL(msgId))
+}
+
+func prependRecognition(inMsg *wechat.Msg, content string) string {
+	if inMsg.Recognition != "" {
+		content = "识别结果：" + inMsg.Recognition + "\n--------------------\n" + content
+	}
+	return content
 }
 
 func buildAnswerURL(msgId int64) string {

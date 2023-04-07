@@ -16,6 +16,7 @@ type Msg struct {
 	Image        Image    `xml:"Image"`
 	MsgId        int64    `xml:"MsgId,omitempty"`
 	EventKey     string   `xml:"EventKey"`
+	Recognition  string   `xml:"Recognition"`
 }
 
 type Image struct {
