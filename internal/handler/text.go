@@ -7,9 +7,7 @@ import (
 	"net/http"
 	"openai/internal/config"
 	"openai/internal/constant"
-	appendlogic "openai/internal/logic/append"
-	openailogic "openai/internal/logic/openai"
-	replylogic "openai/internal/logic/reply"
+	"openai/internal/logic"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/openai"
 	"openai/internal/service/wechat"
@@ -41,7 +39,7 @@ func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 	// set empty string when WeChat server accesses at the first time
 	// to indicate reply is loading
-	err := replylogic.SetEmptyReply(msgId)
+	err := logic.SetEmptyReply(msgId)
 	if err != nil {
 		log.Println("replylogic.SetEmptyReply failed", err)
 	}
@@ -61,6 +59,7 @@ func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 }
 
 func genAnswer4Text(inMsg *wechat.Msg) []byte {
+	var out []byte
 	msgId := inMsg.MsgId
 	userName := inMsg.FromUserName
 	question := strings.TrimSpace(inMsg.Content)
@@ -70,11 +69,14 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 		if err != redis.Nil {
 			log.Println("ptredis.FetchModeForUser failed", err)
 		}
-		mode = Chat
+		mode = constant.Chat
 	}
-	var out []byte
-	if mode == Chat {
-		answer, err := openailogic.ChatCompletion(userName, question)
+	ok, out := logic.CheckBalance(inMsg, mode)
+	if !ok {
+		return out
+	}
+	if mode == constant.Chat {
+		answer, err := logic.ChatCompletion(userName, question)
 		if err != nil {
 			log.Println("openai.ChatCompletions failed", err)
 			err = gptredis.DelReply(msgId)
@@ -83,9 +85,13 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 			}
 			out = inMsg.BuildTextMsg(constant.TryAgain)
 		} else {
-			answer = appendlogic.AppendIfPossible(userName, answer)
+			_, err := logic.DecrBalanceOfToday(userName, mode)
+			if err != nil {
+				log.Println("gptredis.DecrBalance failed", err)
+			}
+			answer = logic.AppendIfPossible(userName, answer)
 			answer = prependRecognition(inMsg, answer)
-			err = replylogic.SetTextReply(msgId, answer)
+			err = logic.SetTextReply(msgId, answer)
 			if err != nil {
 				log.Println("replylogic.SetReply failed", err)
 			}
@@ -95,10 +101,6 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 			out = inMsg.BuildTextMsg(answer)
 		}
 	} else {
-		balance := openailogic.FetchImageBalance(userName)
-		if balance <= 0 {
-			return inMsg.BuildTextMsg(constant.ZeroImageBalance)
-		}
 		url, err := openai.GenerateImage(question)
 		if err != nil {
 			out = inMsg.BuildTextMsg(err.Error())
@@ -107,11 +109,11 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 				log.Println("gptredis.DelReply failed", err)
 			}
 		} else {
-			_, err := gptredis.DecrImageBalance(userName)
+			_, err := logic.DecrBalanceOfToday(userName, mode)
 			if err != nil {
-				log.Println("gptredis.DecrImageBalance failed", err)
+				log.Println("gptredis.DecrBalance failed", err)
 			}
-			err = replylogic.SetImageReply(msgId, url, "")
+			err = logic.SetImageReply(msgId, url, "")
 			if err != nil {
 				log.Println("replylogic.SetImageReply failed", err)
 			}
@@ -120,7 +122,7 @@ func genAnswer4Text(inMsg *wechat.Msg) []byte {
 				log.Println("wechat.UploadImageFromUrl failed", err)
 				out = inMsg.BuildTextMsg(url)
 			} else {
-				err = replylogic.SetImageReply(msgId, url, mediaId)
+				err = logic.SetImageReply(msgId, url, mediaId)
 				if err != nil {
 					log.Println("replylogic.SetImageReply failed", err)
 				}
@@ -146,14 +148,14 @@ func pollReplyFromRedis(pollCnt int, inMsg *wechat.Msg, writer http.ResponseWrit
 	msgId := inMsg.MsgId
 	for cnt < pollCnt {
 		cnt++
-		reply, err := replylogic.FetchReply(msgId)
+		reply, err := logic.FetchReply(msgId)
 		if err != nil {
 			log.Println("gptredis.FetchReply failed", err)
 			continue
 		}
 		replyType := reply.ReplyType
 		if replyType != "" {
-			if replyType == replylogic.Text {
+			if replyType == logic.Text {
 				content := reply.Content
 				if len(content) > maxLengthOfReply {
 					content = buildAnswerURL(msgId)

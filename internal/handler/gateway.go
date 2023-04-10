@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"openai/internal/constant"
 	"openai/internal/service/wechat"
 )
 
@@ -33,8 +32,7 @@ func Talk(writer http.ResponseWriter, request *http.Request) {
 	case "event":
 		switch inMsg.Event {
 		case "subscribe":
-			log.Println("新增关注:", inMsg.FromUserName)
-			echoWechatTextMsg(writer, inMsg, constant.SubscribeReply)
+			onSubscribe(inMsg, writer)
 		case "unsubscribe":
 			log.Println("取消关注:", inMsg.FromUserName)
 			echoWeChat(writer, success)

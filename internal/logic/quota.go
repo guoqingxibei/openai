@@ -1,0 +1,81 @@
+package logic
+
+import (
+	"fmt"
+	"github.com/redis/go-redis/v9"
+	"log"
+	"openai/internal/constant"
+	"openai/internal/service/gptredis"
+	"openai/internal/service/wechat"
+	"time"
+)
+
+const boundaryTimestamp = 1681401600 // Thu Apr 14 2023 00:00:00 GMT+0800 (China Standard Time)
+const oldChatQuota = 100
+
+var quotaMap = map[string]int{
+	constant.Chat:  50,
+	constant.Image: 1,
+}
+
+func getChatQuota(user string) int {
+	timestamp, _ := gptredis.FetchSubscribeTimestamp(user)
+	if timestamp < boundaryTimestamp {
+		return oldChatQuota
+	}
+	return quotaMap[constant.Chat]
+}
+
+func CheckBalance(inMsg *wechat.Msg, mode string) (bool, []byte) {
+	balance := FetchBalance(inMsg.FromUserName, mode)
+	if balance <= 0 {
+		return false, inMsg.BuildTextMsg(fmt.Sprintf(constant.ZeroBalance, mode))
+	}
+
+	return true, nil
+}
+
+func FetchBalance(user string, mode string) int {
+	quota := quotaMap[mode]
+	balance, err := fetchBalanceOfToday(user, mode)
+	if err != nil {
+		if err == redis.Nil {
+			if mode == constant.Chat {
+				quota = getChatQuota(user)
+			}
+			err := setBalanceOfToday(user, mode, quota)
+			if err != nil {
+				log.Println("gptredis.SetBalance failed", err)
+				return 0
+			}
+			return quota
+		}
+		log.Println("gptredis.FetchBalance failed", err)
+		return 0
+	}
+	return balance
+}
+
+func BuildImageUsage(user string) string {
+	return fmt.Sprintf(constant.ImageUsage, quotaMap[constant.Image], FetchBalance(user, constant.Image))
+}
+
+func BuildChatUsage(user string) string {
+	return fmt.Sprintf(constant.ChatUsage, getChatQuota(user), FetchBalance(user, constant.Chat))
+}
+
+func fetchBalanceOfToday(user string, mode string) (int, error) {
+	return gptredis.FetchBalance(user, mode, today())
+}
+
+func setBalanceOfToday(user string, mode string, balance int) error {
+	return gptredis.SetBalance(user, mode, today(), balance)
+}
+
+func DecrBalanceOfToday(user string, mode string) (int, error) {
+	return gptredis.DecrBalance(user, mode, today())
+}
+
+func today() string {
+	return time.Now().Format("2006-01-02")
+}

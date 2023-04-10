@@ -20,24 +20,8 @@ func init() {
 	})
 }
 
-func set(key string, value string, expiration time.Duration) error {
-	return rdb.Set(ctx, key, value, expiration).Err()
-}
-
-func get(key string) (string, error) {
-	return rdb.Get(ctx, key).Result()
-}
-
-func del(key string) error {
-	return rdb.Del(ctx, key).Err()
-}
-
-func inc(key string) (int64, error) {
-	return rdb.Incr(ctx, key).Result()
-}
-
 func FetchReply(msgId int64) (string, error) {
-	reply, err := get(buildReplyKey(msgId))
+	reply, err := rdb.Get(ctx, buildReplyKey(msgId)).Result()
 	if err == nil {
 		return reply, nil
 	}
@@ -45,7 +29,7 @@ func FetchReply(msgId int64) (string, error) {
 }
 
 func SetReply(msgId int64, reply string) error {
-	return set(buildReplyKey(msgId), reply, time.Hour*24)
+	return rdb.Set(ctx, buildReplyKey(msgId), reply, time.Hour*24).Err()
 }
 
 func SetMessages(toUserName string, messages []openai.Message) error {
@@ -53,12 +37,12 @@ func SetMessages(toUserName string, messages []openai.Message) error {
 	if err != nil {
 		return err
 	}
-	return set(buildMessagesKey(toUserName), newRoundsStr, time.Minute*5)
+	return rdb.Set(ctx, buildMessagesKey(toUserName), newRoundsStr, time.Minute*5).Err()
 }
 
 func FetchMessages(toUserName string) ([]openai.Message, error) {
 	var messages []openai.Message
-	messagesStr, err := get(buildMessagesKey(toUserName))
+	messagesStr, err := rdb.Get(ctx, buildMessagesKey(toUserName)).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return messages, nil
@@ -77,7 +61,7 @@ func buildMessagesKey(toUserName string) string {
 }
 
 func DelReply(msgId int64) error {
-	return del(buildReplyKey(msgId))
+	return rdb.Del(ctx, buildReplyKey(msgId)).Err()
 }
 
 func buildReplyKey(msgId int64) string {
@@ -86,19 +70,27 @@ func buildReplyKey(msgId int64) string {
 
 func IncAccessTimes(msgId int64) (int64, error) {
 	msgIdStr := strconv.FormatInt(msgId, 10)
-	times, err := inc("msg-id:" + msgIdStr + ":access-times")
+	key := buildAccessTimes(msgIdStr)
+	times, err := rdb.Incr(ctx, key).Result()
+	if times == 1 {
+		rdb.Expire(ctx, key, time.Second*30)
+	}
 	if err != nil {
 		return 0, nil
 	}
 	return times, nil
 }
 
+func buildAccessTimes(msgIdStr string) string {
+	return "msg-id:" + msgIdStr + ":access-times"
+}
+
 func FetchBaiduApiAccessToken() (string, error) {
-	return get(getBaiduApiAccessTokenKey())
+	return rdb.Get(ctx, getBaiduApiAccessTokenKey()).Result()
 }
 
 func SetBaiduApiAccessToken(accessToken string, expiration time.Duration) error {
-	return set(getBaiduApiAccessTokenKey(), accessToken, expiration)
+	return rdb.Set(ctx, getBaiduApiAccessTokenKey(), accessToken, expiration).Err()
 }
 
 func getBaiduApiAccessTokenKey() string {
@@ -106,11 +98,11 @@ func getBaiduApiAccessTokenKey() string {
 }
 
 func FetchWechatApiAccessToken() (string, error) {
-	return get(getWechatApiAccessTokenKey())
+	return rdb.Get(ctx, getWechatApiAccessTokenKey()).Result()
 }
 
 func SetWechatApiAccessToken(accessToken string, expiration time.Duration) error {
-	return set(getWechatApiAccessTokenKey(), accessToken, expiration)
+	return rdb.Set(ctx, getWechatApiAccessTokenKey(), accessToken, expiration).Err()
 }
 
 func getWechatApiAccessTokenKey() string {
@@ -118,42 +110,42 @@ func getWechatApiAccessTokenKey() string {
 }
 
 func SetModeForUser(user string, mode string) error {
-	return set(buildModeKey(user), mode, 0)
+	return rdb.Set(ctx, buildModeKey(user), mode, 0).Err()
 }
 
 func FetchModeForUser(user string) (string, error) {
-	return get(buildModeKey(user))
+	return rdb.Get(ctx, buildModeKey(user)).Result()
 }
 
 func buildModeKey(user string) string {
 	return "user:" + user + ":mode"
 }
 
-func FetchImageBalance(user string) (int, error) {
-	balance, err := get(buildImageBalanceKey(user))
+func FetchBalance(user string, mode string, day string) (int, error) {
+	balance, err := rdb.Get(ctx, buildBalanceKey(user, mode, day)).Result()
 	cnt, _ := strconv.Atoi(balance)
 	return cnt, err
 }
 
-func SetImageBalance(user string, balance int) error {
-	return set(buildImageBalanceKey(user), strconv.Itoa(balance), time.Hour*24)
+func SetBalance(user string, mode string, day string, balance int) error {
+	return rdb.Set(ctx, buildBalanceKey(user, mode, day), strconv.Itoa(balance), time.Hour*24).Err()
 }
 
-func DecrImageBalance(user string) (int, error) {
-	balance, err := rdb.Decr(ctx, buildImageBalanceKey(user)).Result()
+func DecrBalance(user string, mode string, day string) (int, error) {
+	balance, err := rdb.Decr(ctx, buildBalanceKey(user, mode, day)).Result()
 	return int(balance), err
 }
 
-func buildImageBalanceKey(user string) string {
-	return "user:" + user + ":image-balance"
+func buildBalanceKey(user string, mode string, day string) string {
+	return "user:" + user + ":mode:" + mode + ":day:" + day + ":balance"
 }
 
 func FetchMediaIdOfDonateQr() (string, error) {
-	return get(getMediaIdKey())
+	return rdb.Get(ctx, getMediaIdKey()).Result()
 }
 
 func SetMediaIdOfDonateQr(mediaId string, expiration time.Duration) error {
-	return set(getMediaIdKey(), mediaId, expiration)
+	return rdb.Set(ctx, getMediaIdKey(), mediaId, expiration).Err()
 }
 
 func getMediaIdKey() string {
@@ -165,6 +157,22 @@ func buildUsageKey(user string) string {
 }
 
 func IncUsedTimes(user string) (int, error) {
-	times, err := inc(buildUsageKey(user))
+	times, err := rdb.Incr(ctx, buildUsageKey(user)).Result()
 	return int(times), err
+}
+
+func buildSubscribeTimestampKey(user string) string {
+	return "user:" + user + ":subscribe-timestamp"
+}
+
+func SetSubscribeTimestamp(user string, timestamp int64) error {
+	return rdb.Set(ctx, buildSubscribeTimestampKey(user), strconv.FormatInt(timestamp, 10), 0).Err()
+}
+
+func FetchSubscribeTimestamp(user string) (int64, error) {
+	timestampStr, err := rdb.Get(ctx, buildSubscribeTimestampKey(user)).Result()
+	if err != nil {
+		return 0, err
+	}
+	return strconv.ParseInt(timestampStr, 10, 64)
 }

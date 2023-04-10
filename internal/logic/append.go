@@ -1,4 +1,4 @@
-package appendlogic
+package logic
 
 import (
 	"log"

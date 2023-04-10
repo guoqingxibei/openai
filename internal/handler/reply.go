@@ -5,7 +5,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
-	replylogic "openai/internal/logic/reply"
+	replylogic "openai/internal/logic"
 	"strconv"
 )
 

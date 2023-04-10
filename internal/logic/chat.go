@@ -1,4 +1,4 @@
-package openailogic
+package logic
 
 import (
 	"openai/internal/constant"

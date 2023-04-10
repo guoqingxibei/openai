@@ -1,4 +1,4 @@
-package replylogic
+package logic
 
 import (
 	"encoding/json"

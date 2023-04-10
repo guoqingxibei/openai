@@ -1,11 +1,12 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
 	"openai/internal/constant"
-	openailogic "openai/internal/logic/openai"
+	"openai/internal/logic"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
 	"strings"
@@ -17,13 +18,7 @@ const (
 	contact = "contact"
 )
 
-// mode
-const (
-	Chat  = "chat"
-	Image = "image"
-)
-
-var keywords = [5]string{donate, help, contact, Chat, Image}
+var keywords = [5]string{donate, help, contact, constant.Chat, constant.Image}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	question := inMsg.Content
@@ -47,9 +42,9 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		showDonateQr(inMsg, writer)
 	case help:
 		showUsage(inMsg, writer)
-	case Chat:
+	case constant.Chat:
 		fallthrough
-	case Image:
+	case constant.Image:
 		switchMode(keyword, inMsg, writer)
 	}
 	return true
@@ -70,38 +65,40 @@ func showDonateQr(inMsg *wechat.Msg, writer http.ResponseWriter) {
 }
 
 func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	mode, err := gptredis.FetchModeForUser(inMsg.FromUserName)
+	userName := inMsg.FromUserName
+	mode, err := gptredis.FetchModeForUser(userName)
 	if err != nil {
 		if err != redis.Nil {
 			log.Println("gptredis.FetchModeForUser failed", err)
 			echoWechatTextMsg(writer, inMsg, constant.TryAgain)
 			return
 		}
-		mode = Chat
+		mode = constant.Chat
 	}
-	usage := "当前是 " + mode + " 模式。"
-	usage += "\n\n回复 chat，开启 chat 模式。此模式是默认模式，在此模式下，" + constant.ChatUsage
-	usage += "\n\n回复 image，开启 image 模式。在此模式下，" + openailogic.BuildImageUsage()
+	usage := fmt.Sprintf("当前是%s模式。", mode)
+	usage += "\n\n回复chat，开启chat模式，" + logic.BuildChatUsage(userName)
+	usage += "\n\n回复image，开启image模式，" + logic.BuildImageUsage(userName)
 	usage += "\n\n" + constant.ContactDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
 
 func switchMode(mode string, inMsg *wechat.Msg, writer http.ResponseWriter) {
-	err := gptredis.SetModeForUser(inMsg.FromUserName, mode)
+	userName := inMsg.FromUserName
+	err := gptredis.SetModeForUser(userName, mode)
 	if err != nil {
 		log.Println("gptredis.SetModeForUser failed", err)
 		echoWechatTextMsg(writer, inMsg, constant.TryAgain)
 	} else {
-		echoWechatTextMsg(writer, inMsg, buildReplyWhenSwitchMode(mode))
+		echoWechatTextMsg(writer, inMsg, buildReplyWhenSwitchMode(userName, mode))
 	}
 }
 
-func buildReplyWhenSwitchMode(mode string) string {
-	reply := "已切换到 " + mode + " 模式，"
-	if mode == Image {
-		reply += openailogic.BuildImageUsage()
+func buildReplyWhenSwitchMode(userName string, mode string) string {
+	reply := "已切换到" + mode + "模式，"
+	if mode == constant.Image {
+		reply += logic.BuildImageUsage(userName)
 	} else {
-		reply += constant.ChatUsage
+		reply += logic.BuildChatUsage(userName)
 	}
 	return reply
 }
