@@ -10,7 +10,7 @@ import (
 	"time"
 )
 
-const boundaryTimestamp = 1681401600 // Thu Apr 14 2023 00:00:00 GMT+0800 (China Standard Time)
+const boundaryTimestamp = 1681315200 // Thu Apr 13 2023 00:00:00 GMT+0800 (China Standard Time)
 const oldChatQuota = 100
 
 var quotaMap = map[string]int{
