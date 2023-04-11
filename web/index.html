@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChatGPT</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@11.3.1/styles/github.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/showdown@1.9.1/dist/showdown.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
     <style>
         /* Center the content */
         body {
@@ -17,7 +20,7 @@
         }
 
         /* Style for the article content */
-        pre {
+        #content {
             line-height: 1.5;
             padding: 20px;
             background-color: #f2f2f2;
@@ -30,6 +33,15 @@
             *word-wrap: break-word;
             *white-space: normal;
             word-break: break-word;
+        }
+
+        #content * {
+            margin: 0;
+        }
+
+        code {
+            white-space: pre-wrap;
+            font-size: 16px;
         }
 
         img {
@@ -57,8 +69,7 @@
 </head>
 <body>
 <div id="spinner"></div>
-<pre id="content">
-</pre>
+<div id="content"></div>
 <script>
     async function fetchValue() {
         const response = await fetch(url);
@@ -102,7 +113,9 @@
 
     function setContent(content) {
         document.getElementById("spinner").remove();
-        document.getElementById("content").innerText = content;
+        const converter = new showdown.Converter();
+        document.getElementById("content").innerHTML = converter.makeHtml(content);
+        hljs.highlightAll();
     }
 
     function setImage(imageUrl) {
