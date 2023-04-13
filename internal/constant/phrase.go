@@ -9,6 +9,6 @@ const (
 	ContactDesc       = "回复contact，可联系作者。"
 	DonateReminder    = "❤️如果你觉得体验不错的话，可回复【donate】对作者进行捐赠哦。每一次对话都会产生不少的费用，你的捐赠可以减轻作者的经济压力，以维持服务更好、更久的运行下去️❤️"
 	ContactInfo       = "微信：programmer_guy\n邮箱：guoqingxibei@gmail.com"
-	SubscribeReply    = "此公众号已接入ChatGPT 3.5。\n\n回复help，可查看详细用法。\n回复donate，可捐赠作者。"
+	SubscribeReply    = "此公众号已接入ChatGPT 3.5。\n\n回复contact，可联系作者。\n回复donate，可捐赠作者。"
 	ZeroBalance       = "今天的%s次数用完了，明天再来吧。回复help，获取更多帮助。"
 )
