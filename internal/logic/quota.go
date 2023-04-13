@@ -73,6 +73,7 @@ func setBalanceOfToday(user string, mode string, balance int) error {
 }
 
 func DecrBalanceOfToday(user string, mode string) (int, error) {
+	FetchBalance(user, mode) // ensure KEY exists before DESC operation while request crosses day
 	return gptredis.DecrBalance(user, mode, today())
 }
 
