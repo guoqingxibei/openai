@@ -20,12 +20,10 @@ func ChatCompletion(userName string, question string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	messages = openai.PrependSystemMessage(messages)
 	answer, err := openai.ChatCompletions(messages)
 	if err != nil {
 		return "", err
 	}
-	messages = openai.RemoveSystemMessage(messages)
 	messages = openai.AppendAssistantMessage(messages, answer)
 	err = gptredis.SetMessages(userName, messages)
 	if err != nil {
