@@ -177,7 +177,7 @@ func pollReplyFromRedis(pollCnt int, inMsg *wechat.Msg, writer http.ResponseWrit
 
 func prependRecognition(inMsg *wechat.Msg, content string) string {
 	if inMsg.Recognition != "" {
-		content = "识别结果：" + inMsg.Recognition + "\n--------------------\n" + content
+		content = "「" + inMsg.Recognition + "」\n\n" + content
 	}
 	return content
 }
