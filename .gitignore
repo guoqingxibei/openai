@@ -1,7 +1,7 @@
 .vscode
 .DS_Store
 build.sh
-openaiBin
+openai
 log/*
 test.html
 .idea
