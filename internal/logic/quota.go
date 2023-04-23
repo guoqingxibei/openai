@@ -29,7 +29,11 @@ func getChatQuota(user string) int {
 func CheckBalance(inMsg *wechat.Msg, mode string) (bool, []byte) {
 	balance := FetchBalance(inMsg.FromUserName, mode)
 	if balance <= 0 {
-		return false, inMsg.BuildTextMsg(fmt.Sprintf(constant.ZeroBalance, mode))
+		msg := constant.ZeroChatBalance
+		if mode == constant.Image {
+			msg = constant.ZeroImageBalance
+		}
+		return false, inMsg.BuildTextMsg(msg)
 	}
 
 	return true, nil

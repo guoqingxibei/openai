@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"openai/internal/constant"
 	"openai/internal/service/wechat"
 )
 
@@ -21,6 +23,14 @@ type ChatRound struct {
 func Talk(writer http.ResponseWriter, request *http.Request) {
 	bs, _ := io.ReadAll(request.Body)
 	inMsg := wechat.NewInMsg(bs)
+
+	// unhandled exception
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Println("Captured panic:", r)
+			echoWechatTextMsg(writer, inMsg, constant.TryAgain)
+		}
+	}()
 
 	if inMsg == nil {
 		echoWeChat(writer, []byte("xml格式公众号消息接口，请勿手动调用"))

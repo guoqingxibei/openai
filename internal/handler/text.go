@@ -17,13 +17,18 @@ import (
 )
 
 const (
-	maxLengthOfReply = 4090
+	maxLengthOfReply    = 4090
+	maxLengthOfQuestion = 2000
 )
 
 func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	// be compatible with voice message
 	if inMsg.Recognition != "" {
 		inMsg.Content = inMsg.Recognition
+	}
+	if len(inMsg.Content) > maxLengthOfQuestion {
+		echoWechatTextMsg(writer, inMsg, constant.TooLongQuestion)
+		return
 	}
 	if hitKeyword(inMsg, writer) {
 		return

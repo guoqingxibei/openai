@@ -18,6 +18,7 @@ import (
 )
 
 const chatUrl = "https://api.openai.com/v1/chat/completions"
+const maxLengthOfMessages = 3000
 
 var totalTokens int64
 
@@ -95,7 +96,10 @@ func ChatCompletions(messages []Message) (string, error) {
 	var data response
 	json.Unmarshal(body, &data)
 	statusCode := resp.StatusCode
-	lastQuestion := messages[len(messages)-1].Content
+	var lastQuestion string
+	if len(messages) > 0 {
+		lastQuestion = messages[len(messages)-1].Content
+	}
 	if statusCode >= 200 && statusCode < 300 && len(data.Choices) > 0 {
 		atomic.AddInt64(&totalTokens, int64(data.Usage.TotalTokens))
 		lastAnswer := strings.TrimSpace(data.Choices[0].Message.Content)
@@ -138,7 +142,7 @@ func ParseMessages(messagesStr string) ([]Message, error) {
 
 func RotateMessages(messages []Message) ([]Message, error) {
 	str, err := StringifyMessages(messages)
-	for len(str) > 3000 {
+	for len(str) > maxLengthOfMessages {
 		messages = messages[1:]
 		str, err = StringifyMessages(messages)
 		if err != nil {
