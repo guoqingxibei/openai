@@ -156,6 +156,10 @@ func pollReplyFromRedis(pollCnt int, inMsg *wechat.Msg, writer http.ResponseWrit
 		reply, err := logic.FetchReply(msgId)
 		if err != nil {
 			log.Println("gptredis.FetchReply failed", err)
+			if err == redis.Nil {
+				echoWechatTextMsg(writer, inMsg, constant.TryAgain)
+				return
+			}
 			continue
 		}
 		replyType := reply.ReplyType
