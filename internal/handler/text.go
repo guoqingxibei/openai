@@ -2,23 +2,22 @@ package handler
 
 import (
 	"fmt"
-	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/gptredis"
-	"openai/internal/service/openai"
 	"openai/internal/service/wechat"
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 )
 
 const (
-	maxLengthOfReply    = 4090
-	maxLengthOfQuestion = 2000
+	maxLengthOfReply     = 4000
+	maxRuneLengthOfReply = 200
+	maxLengthOfQuestion  = 2000
 )
 
 func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
@@ -26,174 +25,94 @@ func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	if inMsg.Recognition != "" {
 		inMsg.Content = inMsg.Recognition
 	}
+
 	if len(inMsg.Content) > maxLengthOfQuestion {
 		echoWechatTextMsg(writer, inMsg, constant.TooLongQuestion)
 		return
 	}
+
 	if hitKeyword(inMsg, writer) {
 		return
 	}
 
-	msgId := inMsg.MsgId
-	times, _ := gptredis.IncAccessTimes(msgId)
-	// when WeChat server retries
-	if times > 1 {
-		replyWhenRetry(inMsg, writer, times)
-		return
-	}
-
-	// set empty string when WeChat server accesses at the first time
-	// to indicate reply is loading
-	err := logic.SetEmptyReply(msgId)
-	if err != nil {
-		log.Println("replylogic.SetEmptyReply failed", err)
-	}
-	outChan := make(chan []byte, 1)
-	go func() {
-		out := genAnswer4Text(inMsg)
-		outChan <- out
-	}()
-
-	var out []byte
-	select {
-	case out = <-outChan:
-		echoWeChat(writer, out)
-	// wait for greater than 5s so that WeChat server retries
-	case <-time.After(time.Millisecond * 5001):
-	}
+	echoWechatTextMsg(writer, inMsg, genAnswer4Text(inMsg))
 }
 
-func genAnswer4Text(inMsg *wechat.Msg) []byte {
-	var out []byte
+func genAnswer4Text(inMsg *wechat.Msg) string {
 	msgId := inMsg.MsgId
 	userName := inMsg.FromUserName
 	question := strings.TrimSpace(inMsg.Content)
-	answerUrl := buildAnswerURL(msgId)
-	mode, err := gptredis.FetchModeForUser(userName)
-	if err != nil {
-		if err != redis.Nil {
-			log.Println("ptredis.FetchModeForUser failed", err)
-		}
-		mode = constant.Chat
-	}
-	ok, out := logic.CheckBalance(inMsg, mode)
+	ok, msg := logic.CheckBalance(inMsg, constant.Chat)
 	if !ok {
-		return out
+		return msg
 	}
-	if mode == constant.Chat {
-		answer, err := logic.ChatCompletion(userName, question)
+
+	answerChan := make(chan string, 1)
+	go func() {
+		err := logic.ChatCompletionStream(userName, msgId, question, inMsg.Recognition != "")
 		if err != nil {
-			log.Println("openai.ChatCompletions failed", err)
-			err = gptredis.DelReply(msgId)
-			if err != nil {
-				log.Println("gptredis.DelReply failed", err)
-			}
-			out = inMsg.BuildTextMsg(constant.TryAgain)
+			log.Println("logic.ChatCompletionStream error", err)
+			answerChan <- constant.TryAgain
 		} else {
-			_, err := logic.DecrBalanceOfToday(userName, mode)
+			_, err := logic.DecrBalanceOfToday(userName, constant.Chat)
 			if err != nil {
 				log.Println("gptredis.DecrBalance failed", err)
 			}
-			answer = logic.AppendIfPossible(userName, answer)
-			answer = prependRecognition(inMsg, answer)
-			err = logic.SetTextReply(msgId, answer)
-			if err != nil {
-				log.Println("replylogic.SetReply failed", err)
-			}
-			if len(answer) > maxLengthOfReply {
-				answer = answerUrl
-			}
-			out = inMsg.BuildTextMsg(answer)
+			answerChan <- buildAnswer(msgId)
 		}
+	}()
+	select {
+	case answer := <-answerChan:
+		return answer
+	case <-time.After(time.Millisecond * 4500):
+		return buildAnswer(msgId)
+	}
+}
+
+func buildAnswer(msgId int64) string {
+	answer, reachEnd := logic.FetchAnswer(msgId)
+	if len(answer) > maxLengthOfReply {
+		answer = buildAnswerWithShowMore(trimAnswerAsRune(answer), msgId)
 	} else {
-		url, err := openai.GenerateImage(question)
-		if err != nil {
-			out = inMsg.BuildTextMsg(err.Error())
-			err = gptredis.DelReply(msgId)
-			if err != nil {
-				log.Println("gptredis.DelReply failed", err)
-			}
+		if reachEnd {
+			answer = answer + "\n" + buildAnswerURL(msgId, "查看网页版")
 		} else {
-			_, err := logic.DecrBalanceOfToday(userName, mode)
-			if err != nil {
-				log.Println("gptredis.DecrBalance failed", err)
-			}
-			err = logic.SetImageReply(msgId, url, "")
-			if err != nil {
-				log.Println("replylogic.SetImageReply failed", err)
-			}
-			mediaId, err := wechat.UploadImageFromUrl(url)
-			if err != nil {
-				log.Println("wechat.UploadImageFromUrl failed", err)
-				out = inMsg.BuildTextMsg(url)
+			if answer == "" {
+				answer = buildAnswerURL(msgId, "点击查看回复")
 			} else {
-				err = logic.SetImageReply(msgId, url, mediaId)
-				if err != nil {
-					log.Println("replylogic.SetImageReply failed", err)
-				}
-				out = inMsg.BuildImageMsg(mediaId)
+				answer = buildAnswerWithShowMore(answer, msgId)
 			}
 		}
 	}
-	return out
+	return answer
 }
 
-func replyWhenRetry(inMsg *wechat.Msg, writer http.ResponseWriter, times int64) {
-	if times == 2 {
-		// wait for greater than 5s so that WeChat server retries
-		pollReplyFromRedis(51, inMsg, writer)
-	} else {
-		pollReplyFromRedis(40, inMsg, writer)
+func trimAnswerAsRune(answer string) string {
+	return string([]rune(answer)[:maxRuneLengthOfReply])
+}
+
+func buildAnswerWithShowMore(answer string, msgId int64) string {
+	return trimTailingPuncts(answer) + "...\n" + buildAnswerURL(msgId, "查看更多")
+}
+
+func trimTailingPuncts(answer string) string {
+	runeAnswer := []rune(answer)
+	if len(runeAnswer) <= 0 {
+		return ""
 	}
-}
-
-// poll reply from redis every 0.1 second until reply is not "" in 5 seconds
-func pollReplyFromRedis(pollCnt int, inMsg *wechat.Msg, writer http.ResponseWriter) {
-	cnt := 0
-	msgId := inMsg.MsgId
-	for cnt < pollCnt {
-		cnt++
-		reply, err := logic.FetchReply(msgId)
-		if err != nil {
-			log.Println("gptredis.FetchReply failed", err)
-			if err == redis.Nil {
-				echoWechatTextMsg(writer, inMsg, constant.TryAgain)
-				return
-			}
-			continue
+	tailIdx := -1
+	for i := len(runeAnswer) - 1; i >= 0; i-- {
+		if !unicode.IsPunct(runeAnswer[i]) {
+			tailIdx = i
+			break
 		}
-		replyType := reply.ReplyType
-		if replyType != "" {
-			if replyType == logic.Text {
-				content := reply.Content
-				if len(content) > maxLengthOfReply {
-					content = buildAnswerURL(msgId)
-				}
-				echoWechatTextMsg(writer, inMsg, content)
-				return
-			} else {
-				mediaId := reply.MediaId
-				if mediaId != "" {
-					echoWechatImageMsg(writer, inMsg, mediaId)
-					return
-				}
-			}
-		}
-		time.Sleep(time.Millisecond * 100)
 	}
-	echoWechatTextMsg(writer, inMsg, buildAnswerURL(msgId))
+	return string(runeAnswer[:tailIdx+1])
 }
 
-func prependRecognition(inMsg *wechat.Msg, content string) string {
-	if inMsg.Recognition != "" {
-		content = "「" + inMsg.Recognition + "」\n\n" + content
-	}
-	return content
-}
-
-func buildAnswerURL(msgId int64) string {
-	url := config.C.Wechat.MessageUrlPrefix + "/index?msgId=" + strconv.FormatInt(msgId, 10)
-	return fmt.Sprintf("<a href=\"%s\">点击查看回复</a>", url)
+func buildAnswerURL(msgId int64, desc string) string {
+	url := config.C.Wechat.MessageUrlPrefix + "/answer/#/?msgId=" + strconv.FormatInt(msgId, 10)
+	return fmt.Sprintf("<a href=\"%s\">%s</a>", url, desc)
 }
 
 func echoWechatImageMsg(writer http.ResponseWriter, inMsg *wechat.Msg, mediaId string) {

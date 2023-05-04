@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"openai/internal/constant"
 	"openai/internal/service/wechat"
+	"runtime/debug"
 )
 
 var (
@@ -27,7 +28,7 @@ func Talk(writer http.ResponseWriter, request *http.Request) {
 	// unhandled exception
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Captured panic:", r)
+			fmt.Println("Captured panic:", r, string(debug.Stack()))
 			echoWechatTextMsg(writer, inMsg, constant.TryAgain)
 		}
 	}()

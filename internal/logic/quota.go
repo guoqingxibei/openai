@@ -26,17 +26,17 @@ func getChatQuota(user string) int {
 	return quotaMap[constant.Chat]
 }
 
-func CheckBalance(inMsg *wechat.Msg, mode string) (bool, []byte) {
+func CheckBalance(inMsg *wechat.Msg, mode string) (bool, string) {
 	balance := FetchBalance(inMsg.FromUserName, mode)
 	if balance <= 0 {
 		msg := constant.ZeroChatBalance
 		if mode == constant.Image {
 			msg = constant.ZeroImageBalance
 		}
-		return false, inMsg.BuildTextMsg(msg)
+		return false, msg
 	}
 
-	return true, nil
+	return true, ""
 }
 
 func FetchBalance(user string, mode string) int {

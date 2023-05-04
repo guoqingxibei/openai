@@ -15,6 +15,10 @@ type censorResponse struct {
 }
 
 func Censor(text string) bool {
+	if text == "" {
+		return true
+	}
+
 	start := time.Now()
 	token, err := getAccessToken()
 	if err != nil {
@@ -43,7 +47,7 @@ func Censor(text string) bool {
 	}
 	var censorResp censorResponse
 	_ = json.Unmarshal(body, &censorResp)
-	log.Printf("[CensorAPI] Conclusion: %s, duration: %dms, text:「%s」, detail: %s",
+	log.Printf("[CensorAPI] Conclusion: %s, duration: %dms, text: 「%s」, detail: %s",
 		censorResp.Conclusion,
 		int(time.Since(start).Milliseconds()),
 		util.EscapeNewline(text),

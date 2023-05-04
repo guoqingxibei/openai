@@ -1,37 +1,94 @@
 package logic
 
 import (
+	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/constant"
 	"openai/internal/service/baidu"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/openai"
+	"openai/internal/util"
+	"strings"
+	"unicode"
 )
 
-func ChatCompletion(userName string, question string) (string, error) {
+const (
+	StartMark = "[START]"
+	EndMark   = "[END]"
+)
+
+func ChatCompletionStream(userName string, msgId int64, question string, isVoice bool) error {
+	_ = gptredis.AppendReplyChunk(msgId, StartMark)
 	messages, err := gptredis.FetchMessages(userName)
 	if err != nil {
-		return "", err
+		return err
 	}
-	messages = append(messages, openai.Message{
-		Role:    "user",
+	messages = append(messages, _openai.ChatCompletionMessage{
+		Role:    _openai.ChatMessageRoleUser,
 		Content: question,
 	})
-	messages, err = openai.RotateMessages(messages)
+	messages, err = util.RotateMessages(messages, openai.CurrentModel)
 	if err != nil {
-		return "", err
+		return err
 	}
-	answer, err := openai.ChatCompletions(messages)
-	if err != nil {
-		return "", err
+
+	if isVoice {
+		_ = gptredis.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 	}
-	messages = openai.AppendAssistantMessage(messages, answer)
-	err = gptredis.SetMessages(userName, messages)
-	if err != nil {
-		return "", err
+	var chunk, answer string
+	openai.ChatCompletionsStream(messages, func(word string) bool {
+		chunk += word
+		answer += word
+		if len(chunk) >= 90 && endsWithPunct(word) || len(chunk) >= 180 {
+			passedCensor := baidu.Censor(chunk)
+			if !passedCensor {
+				chunk = "\n\n" + constant.CensorWarning
+			}
+			_ = gptredis.AppendReplyChunk(msgId, chunk)
+			chunk = ""
+			if !passedCensor {
+				_ = gptredis.AppendReplyChunk(msgId, EndMark)
+				return false
+			}
+		}
+		return true
+	}, func() {
+		passedCensor := baidu.Censor(chunk)
+		if !passedCensor {
+			chunk = "\n\n" + constant.CensorWarning
+		}
+		_ = gptredis.AppendReplyChunk(msgId, chunk)
+		if ShouldAppend(userName) {
+			_ = gptredis.AppendReplyChunk(msgId, "\n\n"+constant.DonateReminder)
+		}
+		_ = gptredis.AppendReplyChunk(msgId, EndMark)
+		messages = util.AppendAssistantMessage(messages, answer)
+		_ = gptredis.SetMessages(userName, messages)
+	}, func(_err error) {
+		_ = gptredis.AppendReplyChunk(msgId, constant.TryAgain)
+		_ = gptredis.AppendReplyChunk(msgId, EndMark)
+		err = _err
+	})
+	return err
+}
+
+func endsWithPunct(word string) bool {
+	runeWord := []rune(word)
+	if len(runeWord) <= 0 {
+		return false
 	}
-	passedCensor := baidu.Censor(answer)
-	if !passedCensor {
-		answer = constant.CensorWarning
+	return unicode.IsPunct(runeWord[len(runeWord)-1])
+}
+
+func FetchAnswer(msgId int64) (string, bool) {
+	chunks, _ := gptredis.GetReplyChunks(msgId, 1, -1)
+	if len(chunks) <= 0 {
+		return "", false
 	}
-	return answer, err
+
+	reachEnd := chunks[len(chunks)-1] == EndMark
+	if reachEnd {
+		chunks = chunks[:len(chunks)-1]
+	}
+	answer := strings.Join(chunks, "")
+	return answer, reachEnd
 }
