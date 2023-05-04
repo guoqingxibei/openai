@@ -97,7 +97,7 @@ func requestGetRemoteAddress(r *http.Request) string {
 }
 
 func logHTTPReq(ri *HTTPReqInfo) {
-	log.Printf("[HTTP] %s %s %d %dms %s %dB %s %d「%s」",
+	log.Printf("[HTTP] %s %s %d %dms %s %dB %s %d 「%s」",
 		ri.method,
 		ri.uri,
 		ri.code,

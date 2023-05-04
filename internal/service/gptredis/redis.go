@@ -3,8 +3,9 @@ package gptredis
 import (
 	"context"
 	"github.com/redis/go-redis/v9"
+	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/config"
-	"openai/internal/service/openai"
+	"openai/internal/util"
 	"strconv"
 	"time"
 )
@@ -32,16 +33,42 @@ func SetReply(msgId int64, reply string) error {
 	return rdb.Set(ctx, buildReplyKey(msgId), reply, time.Hour*24).Err()
 }
 
-func SetMessages(toUserName string, messages []openai.Message) error {
-	newRoundsStr, err := openai.StringifyMessages(messages)
+func AppendReplyChunk(msgId int64, chunk string) error {
+	err := rdb.RPush(ctx, buildReplyChunksKey(msgId), chunk).Err()
+	if err != nil {
+		return err
+	}
+	err = rdb.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24).Err()
+	return err
+}
+
+func ReplyChunksExists(msgId int64) (bool, error) {
+	code, err := rdb.Exists(ctx, buildReplyChunksKey(msgId)).Result()
+	return code == 1, err
+}
+
+func GetLengthOfReplyChunks(msgId int64) (int64, error) {
+	return rdb.LLen(ctx, buildReplyChunksKey(msgId)).Result()
+}
+
+func GetReplyChunks(msgId int64, from int64, to int64) ([]string, error) {
+	return rdb.LRange(ctx, buildReplyChunksKey(msgId), from, to).Result()
+}
+
+func buildReplyChunksKey(msgId int64) string {
+	return "msg-id:" + strconv.FormatInt(msgId, 10) + ":reply-chunks"
+}
+
+func SetMessages(toUserName string, messages []_openai.ChatCompletionMessage) error {
+	newRoundsStr, err := util.StringifyMessages(messages)
 	if err != nil {
 		return err
 	}
 	return rdb.Set(ctx, buildMessagesKey(toUserName), newRoundsStr, time.Minute*5).Err()
 }
 
-func FetchMessages(toUserName string) ([]openai.Message, error) {
-	var messages []openai.Message
+func FetchMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
+	var messages []_openai.ChatCompletionMessage
 	messagesStr, err := rdb.Get(ctx, buildMessagesKey(toUserName)).Result()
 	if err != nil {
 		if err == redis.Nil {
@@ -49,7 +76,7 @@ func FetchMessages(toUserName string) ([]openai.Message, error) {
 		}
 		return nil, err
 	}
-	messages, err = openai.ParseMessages(messagesStr)
+	messages, err = util.ParseMessages(messagesStr)
 	if err != nil {
 		return nil, err
 	}

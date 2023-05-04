@@ -78,7 +78,7 @@ func GenerateImage(prompt string) (string, error) {
 	statusCode := resp.StatusCode
 	if statusCode >= 200 && statusCode < 300 && len(response.Items) > 0 {
 		url := response.Items[0].Url
-		log.Printf("[ImageAPI] Duration: %dms, prompt:「%s」, image: %s",
+		log.Printf("[ImageAPI] Duration: %dms, prompt: 「%s」, image: %s",
 			int(time.Since(start).Milliseconds()),
 			prompt,
 			url,
@@ -87,7 +87,7 @@ func GenerateImage(prompt string) (string, error) {
 	}
 
 	errorMsg := response.Error.Message
-	log.Printf("[ImageAPI] Duration: %dms, prompt:「%s」, error: %s",
+	log.Printf("[ImageAPI] Duration: %dms, prompt: 「%s」, error: %s",
 		int(time.Since(start).Milliseconds()),
 		prompt,
 		util.EscapeNewline(fmt.Sprintf("%d: %s", statusCode, errorMsg)),

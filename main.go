@@ -14,21 +14,26 @@ var (
 )
 
 func main() {
-	engine := bootstrap.New()
+	ConfigLog()
 
+	engine := bootstrap.New()
 	// 公众号消息处理
 	engine.POST("/talk", handler.Talk)
 	// 用于公众号自动验证
 	engine.GET("/talk", handler.Check)
-	// Use webpage to display timeout or long message
-	engine.GET("/index", handler.Index)
 	// Provide reply content for the webpage
-	engine.GET("/reply", handler.GetReply)
+	engine.GET("/reply-stream", handler.GetReplyStream)
 
 	ConfigLog()
 
 	handlerWithRequestLog := bootstrap.LogRequestHandler(engine)
-	err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, handlerWithRequestLog)
+
+	http.Handle("/talk", handlerWithRequestLog)
+	http.Handle("/reply-stream", handlerWithRequestLog)
+	http.Handle("/answer/", http.StripPrefix("/answer", http.FileServer(http.Dir("./public"))))
+
+	log.Println("Sever started in port " + config.C.Http.Port)
+	err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, nil)
 	if err != nil {
 		panic(err)
 	}

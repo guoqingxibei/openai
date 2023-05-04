@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"fmt"
-	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
 	"openai/internal/constant"
@@ -42,10 +40,6 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		showDonateQr(inMsg, writer)
 	case help:
 		showUsage(inMsg, writer)
-	case constant.Chat:
-		fallthrough
-	case constant.Image:
-		switchMode(keyword, inMsg, writer)
 	}
 	return true
 }
@@ -66,19 +60,8 @@ func showDonateQr(inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
-	mode, err := gptredis.FetchModeForUser(userName)
-	if err != nil {
-		if err != redis.Nil {
-			log.Println("gptredis.FetchModeForUser failed", err)
-			echoWechatTextMsg(writer, inMsg, constant.TryAgain)
-			return
-		}
-		mode = constant.Chat
-	}
-	usage := fmt.Sprintf("当前是%s模式。", mode)
-	usage += "\n\n回复chat，开启chat模式，" + logic.BuildChatUsage(userName)
-	usage += "\n\n回复image，开启image模式，" + logic.BuildImageUsage(userName)
-	usage += "\n\n" + constant.ContactDesc
+	usage := logic.BuildChatUsage(userName)
+	usage += "\n\n" + constant.ContactDesc + "\n" + constant.DonateDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
 
