@@ -14,9 +14,10 @@ const (
 	donate  = "donate"
 	help    = "help"
 	contact = "contact"
+	report  = "report"
 )
 
-var keywords = [5]string{donate, help, contact, constant.Chat, constant.Image}
+var keywords = [5]string{donate, help, contact, report}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	question := inMsg.Content
@@ -40,12 +41,18 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		showDonateQr(inMsg, writer)
 	case help:
 		showUsage(inMsg, writer)
+	case report:
+		showReport(inMsg, writer)
 	}
 	return true
 }
 
 func showContactInfo(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	echoWechatTextMsg(writer, inMsg, constant.ContactInfo)
+}
+
+func showReport(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	echoWechatTextMsg(writer, inMsg, constant.ReportInfo)
 }
 
 func showDonateQr(inMsg *wechat.Msg, writer http.ResponseWriter) {
