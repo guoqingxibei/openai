@@ -32,7 +32,7 @@ func ChatCompletionsStream(
 		Model:     _openai.GPT3Dot5Turbo,
 		Messages:  messages,
 		Stream:    true,
-		MaxTokens: min(4000-tokenCount, 2400+tokenCount),
+		MaxTokens: min(4000-tokenCount, 2400),
 	}
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
