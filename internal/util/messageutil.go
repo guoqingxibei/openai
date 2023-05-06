@@ -36,9 +36,9 @@ func CalTokenCount4Messages(messages []_openai.ChatCompletionMessage, model stri
 	var tokensPerMessage, tokensPerName int
 	switch model {
 	case _openai.GPT3Dot5Turbo:
-		model = _openai.GPT3Dot5Turbo0301
+		return CalTokenCount4Messages(messages, _openai.GPT3Dot5Turbo0301)
 	case _openai.GPT4:
-		model = _openai.GPT40314
+		return CalTokenCount4Messages(messages, _openai.GPT40314)
 	case _openai.GPT3Dot5Turbo0301:
 		tokensPerMessage = 4
 		tokensPerName = -1

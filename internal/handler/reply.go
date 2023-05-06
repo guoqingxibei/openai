@@ -31,6 +31,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 		echoJson(w, nil, 1)
 		return
 	}
+
 	w.Header().Set("Content-Type", "text/event-stream")
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
@@ -48,6 +49,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 		if fetchTimes > maxFetchTimes {
 			break
 		}
+
 		chunks, _ := gptredis.GetReplyChunks(msgId, startIndex, -1)
 		length := len(chunks)
 		if length >= 1 {

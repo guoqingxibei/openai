@@ -9,6 +9,7 @@ else
   SERVICE_NAME="openai"
 fi
 
+ssh root@jiaguoqing.ml "cd /root/${SERVICE_NAME}/ && git fetch && git reset --hard origin/${BRANCH}"
 ssh guoqingj@52.29.29.173 "./build_openai.sh ${ENV}"
 ssh root@jiaguoqing.ml "rm -f /root/${SERVICE_NAME}/${SERVICE_NAME}"
 cd /tmp
