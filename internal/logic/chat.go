@@ -35,10 +35,12 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 		_ = gptredis.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 	}
 	var chunk, answer string
+	chunkLen := 60
 	openai.ChatCompletionsStream(messages, func(word string) bool {
 		chunk += word
 		answer += word
-		if len(chunk) >= 90 && endsWithPunct(word) || len(chunk) >= 180 {
+		if len(chunk) >= chunkLen && endsWithPunct(word) || len(chunk) >= chunkLen*2 {
+			chunkLen = 600
 			passedCensor := baidu.Censor(chunk)
 			if !passedCensor {
 				chunk = "\n\n" + constant.CensorWarning
