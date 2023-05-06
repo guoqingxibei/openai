@@ -7,6 +7,7 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
+	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
 	"strconv"
 	"strings"
@@ -35,7 +36,19 @@ func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		return
 	}
 
+	msgId := inMsg.MsgId
+	times, _ := gptredis.IncAccessTimes(msgId)
+	// when WeChat server retries
+	if times > 1 {
+		replyWhenRetry(inMsg, writer)
+		return
+	}
+
 	echoWechatTextMsg(writer, inMsg, genAnswer4Text(inMsg))
+}
+
+func replyWhenRetry(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	echoWechatTextMsg(writer, inMsg, buildAnswer(inMsg.MsgId))
 }
 
 func genAnswer4Text(inMsg *wechat.Msg) string {
