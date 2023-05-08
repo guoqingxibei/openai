@@ -40,7 +40,7 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 		chunk += word
 		answer += word
 		if len(chunk) >= chunkLen && endsWithPunct(word) || len(chunk) >= chunkLen*2 {
-			chunkLen = 600
+			chunkLen = 300
 			passedCensor := baidu.Censor(chunk)
 			if !passedCensor {
 				chunk = "\n\n" + constant.CensorWarning

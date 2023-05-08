@@ -8,7 +8,6 @@ import (
 	"openai/internal/constant"
 	replylogic "openai/internal/logic"
 	"openai/internal/service/gptredis"
-	"openai/internal/util"
 	"strconv"
 	"strings"
 	"time"
@@ -62,7 +61,6 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 			flusher, ok := w.(http.Flusher)
 			if ok {
 				flusher.Flush()
-				log.Println("Flushed: " + util.EscapeNewline(strings.Join(chunks, "")))
 			}
 			startIndex += int64(length)
 			if reachEnd {
