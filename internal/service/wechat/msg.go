@@ -2,6 +2,7 @@ package wechat
 
 import (
 	"encoding/xml"
+	"log"
 	"time"
 )
 
@@ -26,6 +27,8 @@ type Image struct {
 func NewInMsg(data []byte) *Msg {
 	var msg Msg
 	if err := xml.Unmarshal(data, &msg); err != nil {
+		log.Println("xml.Unmarshal error", err)
+		log.Println("data is " + string(data))
 		return nil
 	}
 	return &msg
