@@ -203,3 +203,36 @@ func FetchSubscribeTimestamp(user string) (int64, error) {
 	}
 	return strconv.ParseInt(timestampStr, 10, 64)
 }
+
+func buildCodeKey(code string) string {
+	return "code:" + code
+}
+
+func SetCodeDetail(code string, codeDetail string) error {
+	return rdb.Set(ctx, buildCodeKey(code), codeDetail, 0).Err()
+}
+
+func FetchCodeDetail(code string) (string, error) {
+	return rdb.Get(ctx, buildCodeKey(code)).Result()
+}
+
+func SetPaidBalance(user string, balance int) error {
+	return rdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
+}
+
+func FetchPaidBalance(user string) (int, error) {
+	balanceStr, err := rdb.Get(ctx, buildPaidBalance(user)).Result()
+	if err != nil {
+		return 0, err
+	}
+	balance, err := strconv.Atoi(balanceStr)
+	return balance, err
+}
+
+func DecrPaidBalance(usr string) (int64, error) {
+	return rdb.Decr(ctx, buildPaidBalance(usr)).Result()
+}
+
+func buildPaidBalance(user string) string {
+	return "user:" + user + ":paid-balance"
+}

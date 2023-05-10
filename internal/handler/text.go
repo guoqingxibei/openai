@@ -67,7 +67,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 			log.Println("logic.ChatCompletionStream error", err)
 			answerChan <- constant.TryAgain
 		} else {
-			_, err := logic.DecrBalanceOfToday(userName, constant.Chat)
+			err := logic.DecrBalanceOfToday(userName, constant.Chat)
 			if err != nil {
 				log.Println("gptredis.DecrBalance failed", err)
 			}
