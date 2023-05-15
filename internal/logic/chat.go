@@ -36,15 +36,15 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 	}
 	var chunk, answer string
 	chunkLen := 60
+	isFirstChunk := true
+	passedCensor := true
 	openai.ChatCompletionsStream(messages, func(word string) bool {
 		chunk += word
 		answer += word
 		if len(chunk) >= chunkLen && endsWithPunct(word) || len(chunk) >= chunkLen*2 {
 			chunkLen = 300
-			passedCensor := baidu.Censor(chunk)
-			if !passedCensor {
-				chunk = "\n\n" + constant.CensorWarning
-			}
+			passedCensor, chunk = censorChunk(chunk, isFirstChunk)
+			isFirstChunk = false
 			_ = gptredis.AppendReplyChunk(msgId, chunk)
 			chunk = ""
 			if !passedCensor {
@@ -54,10 +54,7 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 		}
 		return true
 	}, func() {
-		passedCensor := baidu.Censor(chunk)
-		if !passedCensor {
-			chunk = "\n\n" + constant.CensorWarning
-		}
+		_, chunk = censorChunk(chunk, isFirstChunk)
 		_ = gptredis.AppendReplyChunk(msgId, chunk)
 		if ShouldAppend(userName) {
 			_ = gptredis.AppendReplyChunk(msgId, "\n\n"+constant.DonateReminder)
@@ -71,6 +68,18 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 		err = _err
 	})
 	return err
+}
+
+func censorChunk(chunk string, isFirstChunk bool) (bool, string) {
+	passedCensor := baidu.Censor(chunk)
+	if !passedCensor {
+		if isFirstChunk {
+			chunk = constant.CensorWarning
+		} else {
+			chunk = "\n\n" + constant.CensorWarning
+		}
+	}
+	return passedCensor, chunk
 }
 
 func endsWithPunct(word string) bool {

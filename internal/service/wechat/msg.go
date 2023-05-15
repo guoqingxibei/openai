@@ -28,7 +28,7 @@ func NewInMsg(data []byte) *Msg {
 	var msg Msg
 	if err := xml.Unmarshal(data, &msg); err != nil {
 		log.Println("xml.Unmarshal error", err)
-		log.Println("data is " + string(data))
+		log.Printf("data is [%s]", string(data))
 		return nil
 	}
 	return &msg

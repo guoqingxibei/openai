@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	triggerTimes = 40
+	triggerTimes = 20
 )
 
 func incUsedTimes(user string) int {
