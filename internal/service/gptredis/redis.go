@@ -38,7 +38,7 @@ func AppendReplyChunk(msgId int64, chunk string) error {
 	if err != nil {
 		return err
 	}
-	err = rdb.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24).Err()
+	err = rdb.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24*7).Err()
 	return err
 }
 
