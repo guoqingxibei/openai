@@ -37,7 +37,7 @@ func LogRequestHandler(h http.Handler) http.Handler {
 		bodyBytes, _ := io.ReadAll(r.Body)
 		r.Body.Close()
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-		inMsg := wechat.NewInMsg(bodyBytes)
+		inMsg, _ := wechat.NewInMsg(bodyBytes)
 		if inMsg == nil {
 			inMsg = &wechat.Msg{}
 		}

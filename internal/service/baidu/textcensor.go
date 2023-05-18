@@ -53,5 +53,5 @@ func Censor(text string) bool {
 		util.EscapeNewline(text),
 		string(body),
 	)
-	return censorResp.Conclusion == "合规"
+	return censorResp.Conclusion == "" || censorResp.Conclusion == "合规"
 }

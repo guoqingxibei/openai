@@ -23,7 +23,10 @@ type ChatRound struct {
 // 微信服务器在五秒内收不到响应会断掉连接，并且重新发起请求，总共重试三次
 func Talk(writer http.ResponseWriter, request *http.Request) {
 	bs, _ := io.ReadAll(request.Body)
-	inMsg := wechat.NewInMsg(bs)
+	inMsg, err := wechat.NewInMsg(bs)
+	if err != nil {
+		log.Printf("xml.Unmarshal error is %v, input is %s", err, string(bs))
+	}
 
 	// unhandled exception
 	defer func() {

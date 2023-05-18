@@ -2,7 +2,6 @@ package wechat
 
 import (
 	"encoding/xml"
-	"log"
 	"time"
 )
 
@@ -24,14 +23,12 @@ type Image struct {
 	MediaId string `xml:"MediaId"`
 }
 
-func NewInMsg(data []byte) *Msg {
+func NewInMsg(data []byte) (*Msg, error) {
 	var msg Msg
 	if err := xml.Unmarshal(data, &msg); err != nil {
-		log.Println("xml.Unmarshal error", err)
-		log.Printf("data is [%s]", string(data))
-		return nil
+		return nil, err
 	}
-	return &msg
+	return &msg, nil
 }
 
 func (msg *Msg) BuildTextMsg(reply string) []byte {
