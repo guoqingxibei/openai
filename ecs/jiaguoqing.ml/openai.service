@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenAI GO Service
+
+[Service]
+Type=simple
+User=openai
+Group=openai
+
+Restart=always
+RestartSec=5s
+
+WorkingDirectory=/root/openai
+ExecStart=/root/openai/openai
+Environment=GO_ENV=prod
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=openai
+
+[Install]
+WantedBy=multi-user.target

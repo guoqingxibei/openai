@@ -1,0 +1,21 @@
+[Unit]
+Description=OpenAI GO Service in Staging
+
+[Service]
+Type=simple
+User=openai-staging
+Group=openai-staging
+
+Restart=always
+RestartSec=5s
+
+WorkingDirectory=/root/openai-staging
+ExecStart=/root/openai-staging/openai-staging
+Environment=GO_ENV=staging
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=openai-staging
+
+[Install]
+WantedBy=multi-user.target

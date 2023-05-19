@@ -1,0 +1,39 @@
+cxyds.top, www.cxyds.top {
+	# Set this path to your site's directory.
+	root * /var/www/cxyds.top/
+
+	# Enable the static file server.
+	file_server
+
+	# Another common task is to set up a reverse proxy:
+	# reverse_proxy localhost:8080
+	reverse_proxy /wechat/* https://jiaguoqing.ml {
+		header_up Host {http.reverse_proxy.upstream.hostport}
+	}
+
+	# Or serve a PHP site through php-fpm:
+	# php_fastcgi localhost:9000
+
+	log {
+		level debug
+		output file /var/log/access.log
+	}
+}
+
+staging.cxyds.top {
+	reverse_proxy /* https://staging.jiaguoqing.ml {
+		header_up Host {http.reverse_proxy.upstream.hostport}
+	}
+}
+
+prod.cxyds.top {
+        reverse_proxy https://prod.jiaguoqing.ml {
+                header_up Host {http.reverse_proxy.upstream.hostport}
+        }
+}
+
+chat.cxyds.top {
+	reverse_proxy /* https://chat.jiaguoqing.ml {
+                header_up Host {http.reverse_proxy.upstream.hostport}
+        }
+}
