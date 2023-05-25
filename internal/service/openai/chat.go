@@ -6,6 +6,7 @@ import (
 	"errors"
 	_openai "github.com/sashabaranov/go-openai"
 	"io"
+	"log"
 	"openai/internal/config"
 	"openai/internal/util"
 )
@@ -53,9 +54,13 @@ func ChatCompletionsStream(
 			return
 		}
 
-		ok := processWord(response.Choices[0].Delta.Content)
-		if !ok {
-			break
+		if len(response.Choices) > 0 {
+			ok := processWord(response.Choices[0].Delta.Content)
+			if !ok {
+				break
+			}
+		} else {
+			log.Printf("error: reponse.Choices is empty, current response is %v", response)
 		}
 	}
 }
