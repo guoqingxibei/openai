@@ -13,8 +13,14 @@ import (
 
 const CurrentModel = _openai.GPT3Dot5Turbo
 
-var client = _openai.NewClient(config.C.OpenAI.Key)
+var client *_openai.Client
 var ctx = context.Background()
+
+func init() {
+	var defaultConfig = _openai.DefaultConfig(config.C.OpenAI.Key)
+	defaultConfig.BaseURL = config.C.OpenAI.BaseURL
+	client = _openai.NewClientWithConfig(defaultConfig)
+}
 
 func min(a int, b int) int {
 	if a < b {

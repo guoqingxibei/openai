@@ -13,7 +13,8 @@ type conf struct {
 		Proxy string `json:"proxy"`
 	} `json:"http"`
 	OpenAI struct {
-		Key string `json:"key"`
+		Key     string `json:"key"`
+		BaseURL string `json:"base_url"`
 	} `json:"openai"`
 	Wechat struct {
 		Token            string `json:"token"`

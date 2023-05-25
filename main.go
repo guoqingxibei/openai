@@ -32,7 +32,7 @@ func main() {
 	http.Handle("/reply-stream", handlerWithRequestLog)
 	http.Handle("/answer/", http.StripPrefix("/answer", http.FileServer(http.Dir("./public"))))
 
-	log.Println("Sever started in port " + config.C.Http.Port)
+	log.Println("Server started in port " + config.C.Http.Port)
 	err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, nil)
 	if err != nil {
 		panic(err)
