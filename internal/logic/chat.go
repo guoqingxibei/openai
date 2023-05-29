@@ -41,7 +41,7 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 	openai.ChatCompletionsStream(messages, func(word string) bool {
 		chunk += word
 		answer += word
-		if len(chunk) >= chunkLen && endsWithPunct(word) || len(chunk) >= chunkLen*2 {
+		if len(chunk) >= chunkLen && endsWithPunct(word) || len(chunk) >= 0 {
 			chunkLen = 300
 			passedCensor, chunk = censorChunk(chunk, isFirstChunk)
 			isFirstChunk = false
@@ -71,7 +71,7 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 }
 
 func censorChunk(chunk string, isFirstChunk bool) (bool, string) {
-	passedCensor := baidu.Censor(chunk)
+	passedCensor := true || baidu.Censor(chunk)
 	if !passedCensor {
 		if isFirstChunk {
 			chunk = constant.CensorWarning

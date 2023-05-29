@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	maxFetchTimes = 600
+	maxFetchTimes = 6000
 )
 
 func GetReplyStream(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 				break
 			}
 		}
-		time.Sleep(500 * time.Millisecond)
+		time.Sleep(100 * time.Millisecond)
 	}
 }
 
