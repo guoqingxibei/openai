@@ -77,7 +77,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	select {
 	case answer := <-answerChan:
 		return answer
-	case <-time.After(time.Millisecond * 4500):
+	case <-time.After(time.Millisecond * 3000):
 		return buildAnswer(msgId)
 	}
 }
