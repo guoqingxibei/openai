@@ -7,6 +7,7 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
+	"openai/internal/service/baidu"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
 	"strconv"
@@ -60,6 +61,11 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 		return msg
 	}
 
+	censor := baidu.Censor(question)
+	if !censor {
+		return constant.CensorWarning
+	}
+
 	answerChan := make(chan string, 1)
 	go func() {
 		err := logic.ChatCompletionStream(userName, msgId, question, inMsg.Recognition != "")
@@ -77,7 +83,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	select {
 	case answer := <-answerChan:
 		return answer
-	case <-time.After(time.Millisecond * 3000):
+	case <-time.After(time.Millisecond * 3500):
 		return buildAnswer(msgId)
 	}
 }
