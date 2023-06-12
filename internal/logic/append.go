@@ -2,6 +2,7 @@ package logic
 
 import (
 	"log"
+	"math/rand"
 	"openai/internal/constant"
 	"openai/internal/service/gptredis"
 )
@@ -24,13 +25,9 @@ func ShouldAppend(user string) bool {
 	return times%triggerTimes == 0
 }
 
-func appendHelpDesc(answer string) string {
-	return answer + "\n\n" + constant.DonateReminder
-}
-
-func AppendIfPossible(user string, answer string) string {
-	if ShouldAppend(user) {
-		return appendHelpDesc(answer)
+func selectAppending() string {
+	if rand.Intn(2) == 0 {
+		return constant.DonateReminder
 	}
-	return answer
+	return "【温馨提示】为了方便大家反馈问题和互相交流，uncle特地建了个群👇\n![](./images/group_qr.jpg)"
 }

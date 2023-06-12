@@ -57,7 +57,7 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 		_, chunk = censorChunk(chunk, isFirstChunk)
 		_ = gptredis.AppendReplyChunk(msgId, chunk)
 		if ShouldAppend(userName) {
-			_ = gptredis.AppendReplyChunk(msgId, "\n\n"+constant.DonateReminder)
+			_ = gptredis.AppendReplyChunk(msgId, "\n\n"+selectAppending())
 		}
 		_ = gptredis.AppendReplyChunk(msgId, EndMark)
 		messages = util.AppendAssistantMessage(messages, answer)
