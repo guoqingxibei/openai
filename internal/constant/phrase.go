@@ -13,6 +13,6 @@ const (
 	ReportInfo        = "bug报给jia.guoqing@qq.com，尽可能描述详细噢~"
 	SubscribeReply    = "此公众号已接入ChatGPT 3.5，直接用文字或语音向我提问吧~\n\n回复group，可加入交流群。\n回复contact，可联系作者。\n回复donate，可捐赠作者。\n回复help，可查看更多。"
 	ZeroImageBalance  = "很抱歉，今天的画图次数（每天1次）用完了，明天再来吧。费用昂贵，敬请谅解❤️\n\n回复chat，可切换到聊天模式。"
-	ZeroChatBalance   = "很抱歉，今天的对话次数（每天20次）用完了，明天再来吧。费用昂贵（一次长对话约0.1元），敬请谅解❤️\n\n如果使用量确实很大，可回复contact联系作者。如果此公众号帮助到了你，可回复donate捐赠作者。"
+	ZeroChatBalance   = "很抱歉，今天的对话次数（每天20次）用完了，明天再来吧。费用昂贵（一次长对话约0.1元），敬请谅解❤️\n\n如果使用量确实很大，可回复contact联系作者进行购买（20元300次，50元900次，100元2000次）。"
 	TooLongQuestion   = "哎呀，输入太长了~"
 )
