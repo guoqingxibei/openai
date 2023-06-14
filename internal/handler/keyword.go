@@ -65,7 +65,7 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 
 	switch keyword {
 	case contact:
-		showContactInfo(inMsg, writer)
+		fallthrough
 	case donate:
 		fallthrough
 	case group:
@@ -132,17 +132,18 @@ func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWrit
 	echoWechatTextMsg(writer, inMsg, "code:"+code)
 }
 
-func showContactInfo(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	echoWechatTextMsg(writer, inMsg, constant.ContactInfo)
-}
-
 func showReport(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	echoWechatTextMsg(writer, inMsg, constant.ReportInfo)
 }
 
 func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
-	mediaName := constant.GroupQrImage
-	if keyword == donate {
+	mediaName := constant.WriterQrImage
+	switch keyword {
+	case contact:
+		mediaName = constant.WriterQrImage
+	case group:
+		mediaName = constant.GroupQrImage
+	case donate:
 		mediaName = constant.DonateQrImage
 	}
 	QrMediaId, err := wechat.GetMediaId(mediaName)
