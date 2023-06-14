@@ -12,6 +12,6 @@ func echoWechatOnClick(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	case help:
 		showUsage(inMsg, writer)
 	case donate:
-		showDonateQr(inMsg, writer)
+		showImage(inMsg.EventKey, inMsg, writer)
 	}
 }

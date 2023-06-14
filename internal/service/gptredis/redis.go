@@ -2,6 +2,7 @@ package gptredis
 
 import (
 	"context"
+	"fmt"
 	"github.com/redis/go-redis/v9"
 	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/config"
@@ -167,16 +168,16 @@ func buildBalanceKey(user string, mode string, day string) string {
 	return "user:" + user + ":mode:" + mode + ":day:" + day + ":balance"
 }
 
-func FetchMediaIdOfDonateQr() (string, error) {
-	return rdb.Get(ctx, getMediaIdKey()).Result()
+func FetchMediaId(imageName string) (string, error) {
+	return rdb.Get(ctx, getMediaIdKey(imageName)).Result()
 }
 
-func SetMediaIdOfDonateQr(mediaId string, expiration time.Duration) error {
-	return rdb.Set(ctx, getMediaIdKey(), mediaId, expiration).Err()
+func SetMediaId(mediaId string, mediaName string, expiration time.Duration) error {
+	return rdb.Set(ctx, getMediaIdKey(mediaName), mediaId, expiration).Err()
 }
 
-func getMediaIdKey() string {
-	return "media-id-of-donate-qr"
+func getMediaIdKey(mediaName string) string {
+	return fmt.Sprintf("media-id-of-%s", mediaName)
 }
 
 func buildUsageKey(user string) string {

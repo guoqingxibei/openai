@@ -17,6 +17,7 @@ import (
 
 const (
 	donate  = "donate"
+	group   = "group"
 	help    = "help"
 	contact = "contact"
 	report  = "report"
@@ -38,7 +39,7 @@ const (
 	used    = "used"
 )
 
-var keywords = []string{donate, help, contact, report}
+var keywords = []string{donate, group, help, contact, report}
 var keywordPrefixes = []string{generateCode, code}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
@@ -66,7 +67,9 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	case contact:
 		showContactInfo(inMsg, writer)
 	case donate:
-		showDonateQr(inMsg, writer)
+		fallthrough
+	case group:
+		showImage(keyword, inMsg, writer)
 	case help:
 		showUsage(inMsg, writer)
 	case report:
@@ -137,10 +140,14 @@ func showReport(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	echoWechatTextMsg(writer, inMsg, constant.ReportInfo)
 }
 
-func showDonateQr(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	QrMediaId, err := wechat.GetMediaIdOfDonateQr()
+func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+	mediaName := constant.GroupQrImage
+	if keyword == donate {
+		mediaName = constant.DonateQrImage
+	}
+	QrMediaId, err := wechat.GetMediaId(mediaName)
 	if err != nil {
-		log.Println("wechat.GetMediaIdOfDonateQr failed", err)
+		log.Println("wechat.GetMediaId failed", err)
 		echoWechatTextMsg(writer, inMsg, constant.TryAgain)
 		return
 	}
@@ -154,7 +161,7 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	if err == nil {
 		usage += fmt.Sprintf("付费剩余次数为%d。", balance)
 	}
-	usage += "\n\n" + constant.ContactDesc + "\n" + constant.DonateDesc
+	usage += "\n\n" + constant.HelpDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
 

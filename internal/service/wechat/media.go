@@ -14,27 +14,49 @@ import (
 	"net/http"
 	"openai/internal/service/gptredis"
 	"os"
+	"path/filepath"
 	"time"
+)
+
+const (
+	resourcePath = "internal/service/wechat/resource/images"
 )
 
 type uploadResponse struct {
 	MediaId string `json:"media_id"`
 }
 
-func initDonateQrMediaId() {
-	_, err := gptredis.FetchMediaIdOfDonateQr()
+func initMedias() {
+	err := filepath.Walk(resourcePath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if !info.IsDir() {
+			initMediaId(filepath.Base(path))
+		}
+
+		return nil
+	})
+	if err != nil {
+		log.Println("filepath.Walk error:", err)
+	}
+}
+
+func initMediaId(imageName string) {
+	_, err := gptredis.FetchMediaId(imageName)
 	if err != nil {
 		if err == redis.Nil {
-			_, _ = refreshDonateQrImage()
+			_, _ = refreshImage(imageName)
 		} else {
-			log.Println("gptredis.FetchMediaIdOfDonateQr failed", err)
+			log.Println("gptredis.FetchMediaId failed", err)
 		}
 	}
 
 	c := cron.New()
 	// Execute once every hour
 	err = c.AddFunc("0 0 0 * * *", func() {
-		_, _ = refreshDonateQrImage()
+		_, _ = refreshImage(imageName)
 	})
 	if err != nil {
 		log.Println("AddFunc failed:", err)
@@ -43,13 +65,13 @@ func initDonateQrMediaId() {
 	c.Start()
 }
 
-func GetMediaIdOfDonateQr() (string, error) {
-	mediaId, err := gptredis.FetchMediaIdOfDonateQr()
+func GetMediaId(imageName string) (string, error) {
+	mediaId, err := gptredis.FetchMediaId(imageName)
 	if err != nil {
 		if err == redis.Nil {
-			mediaId, err = refreshDonateQrImage()
+			mediaId, err = refreshImage(imageName)
 			if err != nil {
-				log.Println("refreshDonateQrImage failed", err)
+				log.Println("refreshImage failed", err)
 				return "", err
 			}
 			return mediaId, nil
@@ -59,23 +81,23 @@ func GetMediaIdOfDonateQr() (string, error) {
 	return mediaId, nil
 }
 
-func refreshDonateQrImage() (string, error) {
-	mediaId, err := uploadDonateQrImage()
+func refreshImage(imageName string) (string, error) {
+	mediaId, err := uploadImage(imageName)
 	if err != nil {
-		log.Println("uploadDonateQrImage failed", err)
+		log.Println("uploadImage failed", err)
 		return "", err
 	}
-	err = gptredis.SetMediaIdOfDonateQr(mediaId, time.Hour*24*2)
+	err = gptredis.SetMediaId(mediaId, imageName, time.Hour*24*2)
 	if err != nil {
-		log.Println("gptredis.SetMediaIdOfDonateQr failed", err)
+		log.Println("gptredis.SetMediaId failed", err)
 		return "", err
 	}
 	log.Println("Refreshed the media id of donate qr")
 	return mediaId, nil
 }
 
-func uploadDonateQrImage() (string, error) {
-	file, err := os.Open("internal/service/wechat/resource/donate_qr.JPG")
+func uploadImage(imageName string) (string, error) {
+	file, err := os.Open(fmt.Sprintf("%s/%s", resourcePath, imageName))
 	if err != nil {
 		log.Println("failed to open file", err)
 		return "", err
