@@ -9,7 +9,6 @@ import (
 	"openai/internal/service/wechat"
 	"runtime/debug"
 	"strings"
-	"unicode"
 )
 
 var (
@@ -24,11 +23,15 @@ type ChatRound struct {
 // Talk https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
 // 微信服务器在五秒内收不到响应会断掉连接，并且重新发起请求，总共重试三次
 func Talk(writer http.ResponseWriter, request *http.Request) {
-	bs, _ := io.ReadAll(request.Body)
-	bs = []byte(filterPrintableChars(string(bs)))
-	inMsg, err := wechat.NewInMsg(bs)
+	bodyByte, _ := io.ReadAll(request.Body)
+	inMsg, err := wechat.NewInMsg(bodyByte)
 	if err != nil {
-		log.Printf("xml.Unmarshal error is [%v], input is [%s]", err, string(bs))
+		bodyStr := string(bodyByte)
+		log.Printf("xml.Unmarshal error is [%v], input is [%s]", err, bodyStr)
+		inMsg, err = parseInMsgSmartly(bodyStr)
+		if err != nil {
+			log.Printf("the second xml.Unmarshal error is [%v], input is [%s]", err, bodyStr)
+		}
 	}
 
 	// unhandled exception
@@ -69,13 +72,14 @@ func Talk(writer http.ResponseWriter, request *http.Request) {
 	}
 }
 
-func filterPrintableChars(origin string) string {
-	return strings.Map(func(r rune) rune {
-		if unicode.IsPrint(r) {
-			return r
-		}
-		return -1
-	}, origin)
+func parseInMsgSmartly(bodyStr string) (*wechat.Msg, error) {
+	start := strings.Index(bodyStr, "<Content>") + 9
+	end := strings.LastIndex(bodyStr, "</Content>")
+	content := bodyStr[start:end]
+	bodyStrWithEmptyContent := strings.Replace(bodyStr, content, "", 1)
+	inMsg, err := wechat.NewInMsg([]byte(bodyStrWithEmptyContent))
+	inMsg.Content = content[9 : len(content)-3]
+	return inMsg, err
 }
 
 func echoWeChat(w http.ResponseWriter, data []byte) {
