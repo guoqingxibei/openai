@@ -26,17 +26,17 @@ func getChatQuota(user string) int {
 	return quotaMap[constant.Chat]
 }
 
-func CheckBalance(inMsg *wechat.Msg, mode string) (bool, string) {
+func CheckBalance(inMsg *wechat.Msg, mode string) bool {
 	userName := inMsg.FromUserName
 	balance := FetchBalance(userName, mode)
 	if balance <= 0 {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
 		if paidBalance <= 0 {
-			return false, constant.ZeroChatBalance
+			return false
 		}
 	}
 
-	return true, ""
+	return true
 }
 
 func FetchBalance(user string, mode string) int {

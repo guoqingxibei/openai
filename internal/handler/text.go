@@ -56,9 +56,10 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	msgId := inMsg.MsgId
 	userName := inMsg.FromUserName
 	question := strings.TrimSpace(inMsg.Content)
-	ok, msg := logic.CheckBalance(inMsg, constant.Chat)
+	ok := logic.CheckBalance(inMsg, constant.Chat)
 	if !ok {
-		return msg
+		_ = logic.SetCompleteChunks(msgId, constant.ZeroChatBalance)
+		return buildAnswerWithShowMore(constant.ZeroChatBalanceExcerpt, msgId)
 	}
 
 	censor := baidu.Censor(question)
@@ -91,10 +92,20 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 func buildAnswer(msgId int64) string {
 	answer, reachEnd := logic.FetchAnswer(msgId)
 	if len(answer) > maxLengthOfReply {
-		answer = buildAnswerWithShowMore(trimAnswerAsRune(answer), msgId)
+		answer = buildAnswerWithShowMore(string([]rune(answer)[:maxRuneLengthOfReply]), msgId)
 	} else {
 		if reachEnd {
-			answer = answer + "\n" + buildAnswerURL(msgId, "查看网页版")
+			// Intent to display internal images via web
+			if strings.Contains(answer, "![](./images/") {
+				runes := []rune(answer)
+				length := len(runes)
+				if length > 30 {
+					length = 30
+				}
+				answer = buildAnswerWithShowMore(string(runes[:length]), msgId)
+			} else {
+				answer = answer + "\n" + buildAnswerURL(msgId, "查看网页版")
+			}
 		} else {
 			if answer == "" {
 				answer = buildAnswerURL(msgId, "点击查看回复")
@@ -104,10 +115,6 @@ func buildAnswer(msgId int64) string {
 		}
 	}
 	return answer
-}
-
-func trimAnswerAsRune(answer string) string {
-	return string([]rune(answer)[:maxRuneLengthOfReply])
 }
 
 func buildAnswerWithShowMore(answer string, msgId int64) string {

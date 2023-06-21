@@ -103,3 +103,10 @@ func FetchAnswer(msgId int64) (string, bool) {
 	answer := strings.Join(chunks, "")
 	return answer, reachEnd
 }
+
+func SetCompleteChunks(msgId int64, content string) error {
+	_ = gptredis.AppendReplyChunk(msgId, StartMark)
+	_ = gptredis.AppendReplyChunk(msgId, content)
+	_ = gptredis.AppendReplyChunk(msgId, EndMark)
+	return nil
+}
