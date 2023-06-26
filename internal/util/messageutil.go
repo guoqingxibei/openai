@@ -69,7 +69,7 @@ func RotateMessages(messages []_openai.ChatCompletionMessage, model string) ([]_
 	}
 
 	tokenCount := CalTokenCount4Messages(messages, model)
-	for tokenCount > 2048 {
+	for tokenCount > 2000 {
 		messages = messages[1:]
 		tokenCount = CalTokenCount4Messages(messages, model)
 	}
