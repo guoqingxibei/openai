@@ -121,15 +121,30 @@ func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWrit
 		return
 	}
 
-	code := uuid.New().String()
-	codeDetail := CodeDetail{
-		Code:   code,
-		Times:  times,
-		Status: created,
+	quantity := 1
+	if len(fields) > 2 {
+		quantityStr := fields[2]
+		quantity, err = strconv.Atoi(quantityStr)
+		if err != nil {
+			log.Printf("quantityStr is %s, strconv.Atoi error is %v", quantityStr, err)
+			echoWechatTextMsg(writer, inMsg, "Invalid generate-code usage")
+			return
+		}
 	}
-	codeDetailBytes, _ := json.Marshal(codeDetail)
-	_ = gptredis.SetCodeDetail(code, string(codeDetailBytes))
-	echoWechatTextMsg(writer, inMsg, "code:"+code)
+
+	var codes []string
+	for i := 0; i < quantity; i++ {
+		code := uuid.New().String()
+		codeDetail := CodeDetail{
+			Code:   code,
+			Times:  times,
+			Status: created,
+		}
+		codeDetailBytes, _ := json.Marshal(codeDetail)
+		_ = gptredis.SetCodeDetail(code, string(codeDetailBytes))
+		codes = append(codes, "code:"+code)
+	}
+	echoWechatTextMsg(writer, inMsg, strings.Join(codes, "\n"))
 }
 
 func showReport(inMsg *wechat.Msg, writer http.ResponseWriter) {
