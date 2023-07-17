@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
 	"openai/internal/constant"
@@ -10,10 +11,15 @@ import (
 )
 
 func onSubscribe(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	log.Println("新增关注:", inMsg.FromUserName)
-	err := gptredis.SetSubscribeTimestamp(inMsg.FromUserName, time.Now().Unix())
-	if err != nil {
-		log.Println("gptredis.SetSubscribeTimestamp failed", err)
+	userName := inMsg.FromUserName
+	log.Println("新增关注:", userName)
+	_, err := gptredis.FetchSubscribeTimestamp(userName)
+	if err == redis.Nil {
+		err := gptredis.SetSubscribeTimestamp(userName, time.Now().Unix())
+		if err != nil {
+			log.Println("gptredis.SetSubscribeTimestamp failed", err)
+		}
 	}
+
 	echoWechatTextMsg(writer, inMsg, constant.SubscribeReply)
 }
