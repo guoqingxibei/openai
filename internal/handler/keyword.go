@@ -86,7 +86,7 @@ func useCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	code := strings.Replace(question, code, "", 1)
 	codeDetailStr, err := gptredis.FetchCodeDetail(code)
 	if err == redis.Nil {
-		echoWechatTextMsg(writer, inMsg, "无效的code")
+		echoWechatTextMsg(writer, inMsg, "无效的code。")
 		return
 	}
 
@@ -103,7 +103,7 @@ func useCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = gptredis.SetCodeDetail(code, string(codeDetailBytes))
-	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("此code已被激活，额度为%d。", codeDetail.Times))
+	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("此code已被激活，额度为%d。回复help，可随时查看剩余次数。", codeDetail.Times))
 }
 
 func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {

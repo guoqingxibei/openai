@@ -58,8 +58,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	question := strings.TrimSpace(inMsg.Content)
 	ok := logic.CheckBalance(inMsg, constant.Chat)
 	if !ok {
-		_ = logic.SetCompleteChunks(msgId, constant.ZeroChatBalance)
-		return buildAnswerWithShowMore(constant.ZeroChatBalanceExcerpt, msgId)
+		return constant.ZeroChatBalance
 	}
 
 	censor := baidu.Censor(question)
