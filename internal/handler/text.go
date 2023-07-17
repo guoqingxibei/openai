@@ -58,7 +58,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	question := strings.TrimSpace(inMsg.Content)
 	ok := logic.CheckBalance(inMsg, constant.Chat)
 	if !ok {
-		return constant.ZeroChatBalance
+		return fmt.Sprintf(constant.ZeroChatBalance, logic.GetQuota(userName))
 	}
 
 	censor := baidu.Censor(question)

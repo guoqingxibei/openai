@@ -249,3 +249,20 @@ func FetchOpenId(authCode string) (string, error) {
 func SetOpenId(authCode string, openId string) error {
 	return rdb.Set(ctx, buildOpenIdKey(authCode), openId, time.Hour*12).Err()
 }
+
+func buildQuotaKey(user string, day string) string {
+	return "user:" + user + ":day:" + day + ":quota"
+}
+
+func SetQuota(user string, day string, quota int) error {
+	return rdb.Set(ctx, buildQuotaKey(user, day), quota, time.Hour*24).Err()
+}
+
+func GetQuota(user string, day string) (int, error) {
+	quotaStr, err := rdb.Get(ctx, buildQuotaKey(user, day)).Result()
+	if err != nil {
+		return 0, err
+	}
+	quota, err := strconv.Atoi(quotaStr)
+	return quota, err
+}

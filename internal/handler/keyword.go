@@ -180,24 +180,3 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	usage += "\n\n" + constant.HelpDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
-
-func switchMode(mode string, inMsg *wechat.Msg, writer http.ResponseWriter) {
-	userName := inMsg.FromUserName
-	err := gptredis.SetModeForUser(userName, mode)
-	if err != nil {
-		log.Println("gptredis.SetModeForUser failed", err)
-		echoWechatTextMsg(writer, inMsg, constant.TryAgain)
-	} else {
-		echoWechatTextMsg(writer, inMsg, buildReplyWhenSwitchMode(userName, mode))
-	}
-}
-
-func buildReplyWhenSwitchMode(userName string, mode string) string {
-	reply := "已切换到" + mode + "模式，"
-	if mode == constant.Image {
-		reply += logic.BuildImageUsage(userName)
-	} else {
-		reply += logic.BuildChatUsage(userName)
-	}
-	return reply
-}
