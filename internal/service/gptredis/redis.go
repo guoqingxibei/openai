@@ -237,3 +237,15 @@ func DecrPaidBalance(usr string) (int64, error) {
 func buildPaidBalance(user string) string {
 	return "user:" + user + ":paid-balance"
 }
+
+func buildOpenIdKey(authCode string) string {
+	return "auth-code:" + authCode + ":open-id"
+}
+
+func FetchOpenId(authCode string) (string, error) {
+	return rdb.Get(ctx, buildOpenIdKey(authCode)).Result()
+}
+
+func SetOpenId(authCode string, openId string) error {
+	return rdb.Set(ctx, buildOpenIdKey(authCode), openId, time.Hour*12).Err()
+}

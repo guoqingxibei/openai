@@ -92,7 +92,7 @@ func refreshImage(imageName string) (string, error) {
 		log.Println("gptredis.SetMediaId failed", err)
 		return "", err
 	}
-	log.Println("Refreshed the media id of donate qr")
+	log.Printf("Refreshed the media id of %s", imageName)
 	return mediaId, nil
 }
 

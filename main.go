@@ -23,13 +23,12 @@ func main() {
 	engine.GET("/talk", handler.Check)
 	// Provide reply content for the webpage
 	engine.GET("/reply-stream", handler.GetReplyStream)
-
-	ConfigLog()
+	engine.GET("/openid", handler.GetOpenId)
 
 	handlerWithRequestLog := bootstrap.LogRequestHandler(engine)
-
 	http.Handle("/talk", handlerWithRequestLog)
 	http.Handle("/reply-stream", handlerWithRequestLog)
+	http.Handle("/openid", handlerWithRequestLog)
 	http.Handle("/answer/", http.StripPrefix("/answer", http.FileServer(http.Dir("./public"))))
 	http.Handle("/images/", http.FileServer(http.Dir("./public")))
 
