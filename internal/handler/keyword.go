@@ -158,7 +158,7 @@ func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWrit
 		}
 		codeDetailBytes, _ := json.Marshal(codeDetail)
 		_ = gptredis.SetCodeDetail(code, string(codeDetailBytes))
-		codes = append(codes, "code:"+code)
+		codes = append(codes, code)
 	}
 	echoWechatTextMsg(writer, inMsg, strings.Join(codes, "\n"))
 }
