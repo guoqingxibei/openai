@@ -59,30 +59,42 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 			break
 		}
 	}
-	if keyword == "" {
-		return false
+
+	// hit keyword
+	if keyword != "" {
+		switch keyword {
+		case contact:
+			fallthrough
+		case donate:
+			fallthrough
+		case group:
+			showImage(keyword, inMsg, writer)
+		case help:
+			showUsage(inMsg, writer)
+		case report:
+			showReport(inMsg, writer)
+		case generateCode:
+			doGenerateCode(question, inMsg, writer)
+		case code:
+			useCodeWithPrefix(question, inMsg, writer)
+		}
+		return true
 	}
 
-	switch keyword {
-	case contact:
-		fallthrough
-	case donate:
-		fallthrough
-	case group:
-		showImage(keyword, inMsg, writer)
-	case help:
-		showUsage(inMsg, writer)
-	case report:
-		showReport(inMsg, writer)
-	case generateCode:
-		doGenerateCode(question, inMsg, writer)
-	case code:
-		useCode(question, inMsg, writer)
+	// may hit code
+	if keyword == "" && len(question) == 36 {
+		codeDetailStr, _ := gptredis.FetchCodeDetail(question)
+		if codeDetailStr != "" {
+			useCode(codeDetailStr, inMsg, writer)
+			return true
+		}
 	}
-	return true
+
+	// missed
+	return false
 }
 
-func useCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+func useCodeWithPrefix(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	code := strings.Replace(question, code, "", 1)
 	codeDetailStr, err := gptredis.FetchCodeDetail(code)
 	if err == redis.Nil {
@@ -90,6 +102,10 @@ func useCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 		return
 	}
 
+	useCode(codeDetailStr, inMsg, writer)
+}
+
+func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	var codeDetail CodeDetail
 	_ = json.Unmarshal([]byte(codeDetailStr), &codeDetail)
 	if codeDetail.Status == used {
@@ -102,7 +118,7 @@ func useCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	_ = gptredis.SetPaidBalance(userName, codeDetail.Times+balance)
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
-	_ = gptredis.SetCodeDetail(code, string(codeDetailBytes))
+	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes))
 	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("此code已被激活，额度为%d。回复help，可随时查看剩余次数。", codeDetail.Times))
 }
 
