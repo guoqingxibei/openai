@@ -26,6 +26,7 @@ func main() {
 	engine.GET("/openid", handler.GetOpenId)
 	engine.POST("/transactions", handler.Transaction)
 	engine.POST("/notify-transaction-result", handler.NotifyTransactionResult)
+	engine.GET("/trade-result", handler.GetTradeResult)
 
 	handlerWithRequestLog := bootstrap.LogRequestHandler(engine)
 	http.Handle("/talk", handlerWithRequestLog)
@@ -33,6 +34,7 @@ func main() {
 	http.Handle("/openid", handlerWithRequestLog)
 	http.Handle("/transactions", handlerWithRequestLog)
 	http.Handle("/notify-transaction-result", handlerWithRequestLog)
+	http.Handle("/trade-result", handlerWithRequestLog)
 	http.Handle("/answer/", http.StripPrefix("/answer", http.FileServer(http.Dir("./public"))))
 	http.Handle("/images/", http.FileServer(http.Dir("./public")))
 

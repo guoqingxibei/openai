@@ -24,6 +24,11 @@ type transactionRes struct {
 	OutTradeNo string                 `json:"out_trade_no"`
 }
 
+type tradeResult struct {
+	PaidBalance int  `json:"paid_balance"`
+	Redeemed    bool `json:"redeemed"`
+}
+
 func Transaction(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var transactionReq transactionReq
@@ -86,5 +91,20 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	data, _ := json.Marshal(wechat.V3NotifyRsp{Code: gopay.SUCCESS, Message: "成功"})
+	w.Write(data)
+}
+
+func GetTradeResult(w http.ResponseWriter, r *http.Request) {
+	outTradeId := r.URL.Query().Get("out_trade_no")
+	transaction, err := gptredis.FetchTransaction(outTradeId)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	balance, _ := gptredis.FetchPaidBalance(transaction.OpenId)
+
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	data, _ := json.Marshal(tradeResult{balance, transaction.Redeemed})
 	w.Write(data)
 }
