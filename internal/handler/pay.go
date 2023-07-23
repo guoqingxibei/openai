@@ -14,7 +14,7 @@ import (
 
 type transactionReq struct {
 	OpenId      string `json:"openid"`
-	Price       int    `json:"price"`
+	PriceInFen  int    `json:"price_in_fen"`
 	Times       int    `json:"times"`
 	Description string `json:"description"`
 }
@@ -29,7 +29,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	prepayId, err := logic.InitiateTransaction(
-		transactionReq.OpenId, transactionReq.Price, transactionReq.Times, transactionReq.Description,
+		transactionReq.OpenId, transactionReq.PriceInFen, transactionReq.Times, transactionReq.Description,
 	)
 	if err != nil {
 		log.Println(err)

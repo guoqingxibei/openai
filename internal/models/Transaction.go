@@ -4,7 +4,7 @@ type Transaction struct {
 	OutTradeNo  string `json:"out_trade_no"`
 	OpenId      string `json:"openid"`
 	PrepayId    string `json:"prepay_id"`
-	Price       int    `json:"price"`
+	PriceInFen  int    `json:"price_in_fen"`
 	Times       int    `json:"times"`
 	Description string `json:"description"`
 	TradeState  string `json:"trade_state"`

@@ -9,10 +9,10 @@ import (
 	"time"
 )
 
-func InitiateTransaction(openid string, price int, times int, description string) (string, error) {
+func InitiateTransaction(openid string, priceInFen int, times int, description string) (string, error) {
 	tradeNo := util.RandomString(32)
 	log.Println("tradeNo:", tradeNo)
-	prepayId, err := wechat.InitiateTransaction(openid, tradeNo, price*100, description)
+	prepayId, err := wechat.InitiateTransaction(openid, tradeNo, priceInFen, description)
 	if err != nil {
 		return "", err
 	}
@@ -23,7 +23,7 @@ func InitiateTransaction(openid string, price int, times int, description string
 		OpenId:      openid,
 		PrepayId:    prepayId,
 		TradeState:  "created",
-		Price:       price,
+		PriceInFen:  priceInFen,
 		Times:       times,
 		Description: description,
 		CreatedTime: now,
