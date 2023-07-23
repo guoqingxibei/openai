@@ -8,6 +8,7 @@ type Transaction struct {
 	Times       int    `json:"times"`
 	Description string `json:"description"`
 	TradeState  string `json:"trade_state"`
+	Redeemed    bool   `json:"redeemed"`
 	Payload     string `json:"payload"`
 	CreatedTime int64  `json:"created_time"`
 	UpdatedTime int64  `json:"updated_time"`

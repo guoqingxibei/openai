@@ -66,14 +66,17 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 	payload, _ := json.Marshal(result)
 	transaction.Payload = string(payload)
 	transaction.UpdatedTime = time.Now().Unix()
-	_ = gptredis.SetTransaction(outTradeNo, transaction)
 
 	if result.TradeState == "SUCCESS" {
-		openId := transaction.OpenId
-		times := transaction.Times
-		balance, _ := gptredis.FetchPaidBalance(openId)
-		_ = gptredis.SetPaidBalance(openId, times+balance)
+		if !transaction.Redeemed {
+			openId := transaction.OpenId
+			times := transaction.Times
+			balance, _ := gptredis.FetchPaidBalance(openId)
+			_ = gptredis.SetPaidBalance(openId, times+balance)
+			transaction.Redeemed = true
+		}
 	}
+	_ = gptredis.SetTransaction(outTradeNo, transaction)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
