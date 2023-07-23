@@ -2,13 +2,13 @@
   "button": [
     {
       "type": "click",
-      "name": "使用方法",
+      "name": "剩余次数",
       "key": "help"
     },
     {
-      "type": "click",
-      "name": "捐赠作者",
-      "key": "donate"
+      "type": "view",
+      "name": "购买次数",
+      "url": "https://brother.cxyds.top/shop"
     }
   ]
 }
