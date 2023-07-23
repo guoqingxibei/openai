@@ -9,12 +9,12 @@ import (
 	"time"
 )
 
-func InitiateTransaction(openid string, priceInFen int, times int, description string) (string, error) {
+func InitiateTransaction(openid string, priceInFen int, times int, description string) (string, string, error) {
 	tradeNo := util.RandomString(32)
 	log.Println("tradeNo:", tradeNo)
 	prepayId, err := wechat.InitiateTransaction(openid, tradeNo, priceInFen, description)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	now := time.Now().Unix()
@@ -31,5 +31,5 @@ func InitiateTransaction(openid string, priceInFen int, times int, description s
 		UpdatedTime: now,
 	}
 	_ = gptredis.SetTransaction(tradeNo, transaction)
-	return prepayId, err
+	return prepayId, tradeNo, err
 }

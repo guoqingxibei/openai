@@ -19,6 +19,11 @@ type transactionReq struct {
 	Description string `json:"description"`
 }
 
+type transactionRes struct {
+	Params     *wechat.JSAPIPayParams `json:"params"`
+	OutTradeNo string                 `json:"out_trade_no"`
+}
+
 func Transaction(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 	var transactionReq transactionReq
@@ -28,7 +33,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	prepayId, err := logic.InitiateTransaction(
+	prepayId, outTradeNo, err := logic.InitiateTransaction(
 		transactionReq.OpenId, transactionReq.PriceInFen, transactionReq.Times, transactionReq.Description,
 	)
 	if err != nil {
@@ -43,7 +48,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	data, _ := json.Marshal(params)
+	data, _ := json.Marshal(transactionRes{params, outTradeNo})
 	w.Write(data)
 }
 
