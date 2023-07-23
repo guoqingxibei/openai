@@ -21,6 +21,11 @@ type conf struct {
 		MessageUrlPrefix string `json:"message_url_prefix"`
 		AppId            string `json:"app_id"`
 		AppSecret        string `json:"app_secret"`
+		MchId            string `json:"mch_id"`
+		SerialNo         string `json:"serial_no"`
+		APIv3Key         string `json:"api_v3_key"`
+		PrivateKey       string `json:"private_key"`
+		NotifyUrl        string `json:"notify_url"`
 	} `json:"wechat"`
 	Redis struct {
 		Addr string `json:"addr"`

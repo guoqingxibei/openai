@@ -2,10 +2,12 @@ package gptredis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/config"
+	"openai/internal/models"
 	"openai/internal/util"
 	"strconv"
 	"time"
@@ -265,4 +267,24 @@ func GetQuota(user string, day string) (int, error) {
 	}
 	quota, err := strconv.Atoi(quotaStr)
 	return quota, err
+}
+
+func buildTransactionKey(outTradeNo string) (key string) {
+	key = "out-trade-no:" + outTradeNo + ":transaction"
+	return
+}
+
+func SetTransaction(outTradeNo string, transaction models.Transaction) (err error) {
+	tranBytes, _ := json.Marshal(transaction)
+	return rdb.Set(ctx, buildTransactionKey(outTradeNo), string(tranBytes), 0).Err()
+}
+
+func FetchTransaction(outTradeNo string) (models.Transaction, error) {
+	var transaction models.Transaction
+	tranStr, err := rdb.Get(ctx, buildTransactionKey(outTradeNo)).Result()
+	if err != nil {
+		return transaction, err
+	}
+	_ = json.Unmarshal([]byte(tranStr), &transaction)
+	return transaction, err
 }
