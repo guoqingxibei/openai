@@ -14,7 +14,7 @@ import (
 
 type transactionReq struct {
 	OpenId      string `json:"openid"`
-	Price       int    `json:"total"`
+	Price       int    `json:"price"`
 	Times       int    `json:"times"`
 	Description string `json:"description"`
 }
