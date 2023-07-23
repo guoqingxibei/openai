@@ -35,6 +35,7 @@ func main() {
 	http.Handle("/notify-transaction-result", handlerWithRequestLog)
 	http.Handle("/answer/", http.StripPrefix("/answer", http.FileServer(http.Dir("./public"))))
 	http.Handle("/images/", http.FileServer(http.Dir("./public")))
+	http.Handle("/shop/", http.FileServer(http.Dir("./public/")))
 
 	log.Println("Server started in port " + config.C.Http.Port)
 	err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, nil)
