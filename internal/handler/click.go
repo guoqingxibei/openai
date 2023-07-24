@@ -12,6 +12,10 @@ func echoWechatOnClick(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	case help:
 		showUsage(inMsg, writer)
 	case donate:
+		fallthrough
+	case group:
+		fallthrough
+	case contact:
 		showImage(inMsg.EventKey, inMsg, writer)
 	}
 }

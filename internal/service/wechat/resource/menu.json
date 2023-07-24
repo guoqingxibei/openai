@@ -1,14 +1,39 @@
 {
   "button": [
     {
-      "type": "click",
-      "name": "剩余次数",
-      "key": "help"
+      "name": "先读我",
+      "sub_button": [
+        {
+          "type": "view",
+          "name": "先读我",
+          "url": "https://cxyds.top/2023/07/23/faq.html"
+        },
+        {
+          "type": "click",
+          "name": "进交流群",
+          "key": "group"
+        },
+        {
+          "type": "click",
+          "name": "联系作者",
+          "key": "contact"
+        }
+      ]
     },
     {
-      "type": "view",
-      "name": "购买次数",
-      "url": "https://brother.cxyds.top/shop"
+      "name": "对话次数",
+      "sub_button": [
+        {
+          "type": "click",
+          "name": "剩余次数",
+          "key": "help"
+        },
+        {
+          "type": "view",
+          "name": "购买次数",
+          "url": "https://brother.cxyds.top/shop"
+        }
+      ]
     }
   ]
 }
