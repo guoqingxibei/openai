@@ -27,6 +27,8 @@ func CheckBalance(inMsg *wechat.Msg, mode string) bool {
 }
 
 func calculateQuota(user string) int {
+	return 5
+
 	currentTimestamp := time.Now().Unix()
 	subscribeTimestamp, _ := gptredis.FetchSubscribeTimestamp(user)
 	subscribeInterval := currentTimestamp - subscribeTimestamp
