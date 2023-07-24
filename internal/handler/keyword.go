@@ -193,6 +193,5 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	if err == nil {
 		usage += fmt.Sprintf("付费次数剩余%d次。", balance)
 	}
-	usage += "\n\n" + constant.HelpDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
