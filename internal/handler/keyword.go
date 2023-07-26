@@ -115,11 +115,13 @@ func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter
 
 	userName := inMsg.FromUserName
 	balance, _ := gptredis.FetchPaidBalance(userName, false)
-	_ = gptredis.SetPaidBalance(userName, codeDetail.Times+balance, false)
+	newBalance := codeDetail.Times + balance
+	_ = gptredis.SetPaidBalance(userName, newBalance, false)
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes))
-	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("此code已被激活，额度为%d。回复help，可随时查看剩余次数。", codeDetail.Times))
+	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。",
+		codeDetail.Times, newBalance))
 }
 
 func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
