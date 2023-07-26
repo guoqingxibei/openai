@@ -12,13 +12,18 @@ import (
 )
 
 var ctx = context.Background()
-var rdb *redis.Client
+var rdb, brotherRdb *redis.Client
 
 func init() {
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     config.C.Redis.Addr,
 		Password: "", // no password set
 		DB:       config.C.Redis.DB,
+	})
+	brotherRdb = redis.NewClient(&redis.Options{
+		Addr:     config.C.Redis.Addr,
+		Password: "", // no password set
+		DB:       config.C.Redis.BrotherDB,
 	})
 }
 
@@ -209,7 +214,10 @@ func buildCodeKey(code string) string {
 	return "code:" + code
 }
 
-func SetCodeDetail(code string, codeDetail string) error {
+func SetCodeDetail(code string, codeDetail string, useBrotherDB bool) error {
+	if useBrotherDB {
+		rdb = brotherRdb
+	}
 	return rdb.Set(ctx, buildCodeKey(code), codeDetail, 0).Err()
 }
 

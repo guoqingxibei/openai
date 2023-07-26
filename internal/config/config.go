@@ -23,8 +23,9 @@ type conf struct {
 		AppSecret        string `json:"app_secret"`
 	} `json:"wechat"`
 	Redis struct {
-		Addr string `json:"addr"`
-		DB   int    `json:"db"`
+		Addr      string `json:"addr"`
+		DB        int    `json:"db"`
+		BrotherDB int    `json:"brother_db"`
 	}
 	Baidu struct {
 		ApiKey    string `json:"api_key"`

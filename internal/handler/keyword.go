@@ -16,11 +16,12 @@ import (
 )
 
 const (
-	donate  = "donate"
-	group   = "group"
-	help    = "help"
-	contact = "contact"
-	report  = "report"
+	donate   = "donate"
+	group    = "group"
+	help     = "help"
+	contact  = "contact"
+	report   = "report"
+	transfer = "transfer"
 )
 
 const (
@@ -39,7 +40,7 @@ const (
 	used    = "used"
 )
 
-var keywords = []string{donate, group, help, contact, report}
+var keywords = []string{donate, group, help, contact, report, transfer}
 var keywordPrefixes = []string{generateCode, code}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
@@ -71,6 +72,8 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 			showImage(keyword, inMsg, writer)
 		case help:
 			showUsage(inMsg, writer)
+		case transfer:
+			doTransfer(inMsg, writer)
 		case report:
 			showReport(inMsg, writer)
 		case generateCode:
@@ -118,7 +121,7 @@ func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter
 	_ = gptredis.SetPaidBalance(userName, codeDetail.Times+balance)
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
-	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes))
+	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)
 	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("此code已被激活，额度为%d。回复help，可随时查看剩余次数。", codeDetail.Times))
 }
 
@@ -157,7 +160,7 @@ func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWrit
 			Status: created,
 		}
 		codeDetailBytes, _ := json.Marshal(codeDetail)
-		_ = gptredis.SetCodeDetail(code, string(codeDetailBytes))
+		_ = gptredis.SetCodeDetail(code, string(codeDetailBytes), false)
 		codes = append(codes, code)
 	}
 	echoWechatTextMsg(writer, inMsg, strings.Join(codes, "\n"))
@@ -193,4 +196,24 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"brother.cxyds.top/shop?uncle_openid=%s\">点我可购买次数</a>。", balance, userName)
 	usage += "\n\n" + constant.HelpDesc
 	echoWechatTextMsg(writer, inMsg, usage)
+}
+
+func doTransfer(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	userName := inMsg.FromUserName
+	paidBalance, _ := gptredis.FetchPaidBalance(userName)
+	reply := "你的付费次数剩余0次，无需迁移。"
+	if paidBalance > 0 {
+		_ = gptredis.SetPaidBalance(userName, 0)
+		code := uuid.New().String()
+		codeDetail := CodeDetail{
+			Code:   code,
+			Times:  paidBalance,
+			Status: created,
+		}
+		codeDetailBytes, _ := json.Marshal(codeDetail)
+		_ = gptredis.SetCodeDetail(code, string(codeDetailBytes), true)
+		reply = fmt.Sprintf("你的付费次数剩余%d次，已在此公众号下清零。请复制下面的code发送给新公众号「程序员brother」，"+
+			"即可完成迁移。感谢你的一路陪伴❤️\n\n%s", paidBalance, code)
+	}
+	echoWechatTextMsg(writer, inMsg, reply)
 }
