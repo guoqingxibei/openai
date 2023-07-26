@@ -225,17 +225,19 @@ func FetchCodeDetail(code string) (string, error) {
 }
 
 func SetPaidBalance(user string, balance int, useUncleDB bool) error {
+	myRdb := rdb
 	if useUncleDB {
-		rdb = uncleRdb
+		myRdb = uncleRdb
 	}
-	return rdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
+	return myRdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
 }
 
 func FetchPaidBalance(user string, useUncleDB bool) (int, error) {
+	myRdb := rdb
 	if useUncleDB {
-		rdb = uncleRdb
+		myRdb = uncleRdb
 	}
-	balanceStr, err := rdb.Get(ctx, buildPaidBalance(user)).Result()
+	balanceStr, err := myRdb.Get(ctx, buildPaidBalance(user)).Result()
 	if err != nil {
 		return 0, err
 	}
