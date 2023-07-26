@@ -33,7 +33,7 @@ func calculateQuota(user string) int {
 	quota := 0
 	if subscribeInterval < oneMonth {
 		quota = 10
-	} else if subscribeInterval < 6*oneMonth {
+	} else if subscribeInterval < 2*oneMonth {
 		quota = 5
 	} else {
 		quota = 2
