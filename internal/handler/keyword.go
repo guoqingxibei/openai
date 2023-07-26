@@ -189,10 +189,8 @@ func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
 	usage := logic.BuildChatUsage(userName)
-	balance, err := gptredis.FetchPaidBalance(userName)
-	if err == nil {
-		usage += fmt.Sprintf("付费剩余次数为%d。", balance)
-	}
+	balance, _ := gptredis.FetchPaidBalance(userName)
+	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"brother.cxyds.top/shop?uncle_openid=%s\">点我可购买次数</a>。", balance, userName)
 	usage += "\n\n" + constant.HelpDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
