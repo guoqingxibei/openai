@@ -215,10 +215,11 @@ func buildCodeKey(code string) string {
 }
 
 func SetCodeDetail(code string, codeDetail string, useBrotherDB bool) error {
+	myRdb := rdb
 	if useBrotherDB {
-		rdb = brotherRdb
+		myRdb = brotherRdb
 	}
-	return rdb.Set(ctx, buildCodeKey(code), codeDetail, 0).Err()
+	return myRdb.Set(ctx, buildCodeKey(code), codeDetail, 0).Err()
 }
 
 func FetchCodeDetail(code string) (string, error) {
