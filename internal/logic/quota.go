@@ -27,18 +27,16 @@ func CheckBalance(inMsg *wechat.Msg, mode string) bool {
 }
 
 func calculateQuota(user string) int {
-	return 5
-
 	currentTimestamp := time.Now().Unix()
 	subscribeTimestamp, _ := gptredis.FetchSubscribeTimestamp(user)
 	subscribeInterval := currentTimestamp - subscribeTimestamp
 	quota := 0
 	if subscribeInterval < oneMonth {
-		quota = 10
-	} else if subscribeInterval < 6*oneMonth {
 		quota = 5
-	} else {
+	} else if subscribeInterval < 2*oneMonth {
 		quota = 2
+	} else {
+		quota = 1
 	}
 	return quota
 }
