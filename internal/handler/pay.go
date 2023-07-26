@@ -14,6 +14,7 @@ import (
 
 type transactionReq struct {
 	OpenId      string `json:"openid"`
+	UncleOpenId string `json:"uncle_openid"`
 	PriceInFen  int    `json:"price_in_fen"`
 	Times       int    `json:"times"`
 	Description string `json:"description"`
@@ -39,7 +40,11 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	prepayId, outTradeNo, err := logic.InitiateTransaction(
-		transactionReq.OpenId, transactionReq.PriceInFen, transactionReq.Times, transactionReq.Description,
+		transactionReq.OpenId,
+		transactionReq.UncleOpenId,
+		transactionReq.PriceInFen,
+		transactionReq.Times,
+		transactionReq.Description,
 	)
 	if err != nil {
 		log.Println(err)
@@ -81,8 +86,13 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 		if !transaction.Redeemed {
 			openId := transaction.OpenId
 			times := transaction.Times
-			balance, _ := gptredis.FetchPaidBalance(openId)
-			_ = gptredis.SetPaidBalance(openId, times+balance)
+			useUncleDB := false
+			if transaction.UncleOpenId != "" {
+				openId = transaction.UncleOpenId
+				useUncleDB = true
+			}
+			balance, _ := gptredis.FetchPaidBalance(openId, useUncleDB)
+			_ = gptredis.SetPaidBalance(openId, times+balance, useUncleDB)
 			transaction.Redeemed = true
 		}
 	}
@@ -101,7 +111,14 @@ func GetTradeResult(w http.ResponseWriter, r *http.Request) {
 		log.Println(err)
 		return
 	}
-	balance, _ := gptredis.FetchPaidBalance(transaction.OpenId)
+
+	openId := transaction.OpenId
+	useUncleDB := false
+	if transaction.UncleOpenId != "" {
+		openId = transaction.UncleOpenId
+		useUncleDB = true
+	}
+	balance, _ := gptredis.FetchPaidBalance(openId, useUncleDB)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

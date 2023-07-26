@@ -17,7 +17,7 @@ func CheckBalance(inMsg *wechat.Msg, mode string) bool {
 	userName := inMsg.FromUserName
 	balance := GetBalance(userName, mode)
 	if balance <= 0 {
-		paidBalance, _ := gptredis.FetchPaidBalance(userName)
+		paidBalance, _ := gptredis.FetchPaidBalance(userName, false)
 		if paidBalance <= 0 {
 			return false
 		}
@@ -89,7 +89,7 @@ func DecrBalanceOfToday(user string, mode string) error {
 	if balance > 0 {
 		_, err = gptredis.DecrBalance(user, mode, util.Today())
 	} else {
-		paidBalance, _ := gptredis.FetchPaidBalance(user)
+		paidBalance, _ := gptredis.FetchPaidBalance(user, false)
 		if paidBalance > 0 {
 			_, err = gptredis.DecrPaidBalance(user)
 		}

@@ -9,7 +9,12 @@ import (
 	"time"
 )
 
-func InitiateTransaction(openid string, priceInFen int, times int, description string) (string, string, error) {
+func InitiateTransaction(
+	openid string,
+	uncleOpenid string,
+	priceInFen int,
+	times int,
+	description string) (string, string, error) {
 	tradeNo := util.RandomString(32)
 	log.Println("tradeNo:", tradeNo)
 	prepayId, err := wechat.InitiateTransaction(openid, tradeNo, priceInFen, description)
@@ -21,6 +26,7 @@ func InitiateTransaction(openid string, priceInFen int, times int, description s
 	transaction := models.Transaction{
 		OutTradeNo:  tradeNo,
 		OpenId:      openid,
+		UncleOpenId: uncleOpenid,
 		PrepayId:    prepayId,
 		TradeState:  "",
 		Redeemed:    false,

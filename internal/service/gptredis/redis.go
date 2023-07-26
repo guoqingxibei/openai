@@ -14,13 +14,18 @@ import (
 )
 
 var ctx = context.Background()
-var rdb *redis.Client
+var rdb, uncleRdb *redis.Client
 
 func init() {
 	rdb = redis.NewClient(&redis.Options{
 		Addr:     config.C.Redis.Addr,
 		Password: "", // no password set
 		DB:       config.C.Redis.DB,
+	})
+	uncleRdb = redis.NewClient(&redis.Options{
+		Addr:     config.C.Redis.Addr,
+		Password: "", // no password set
+		DB:       config.C.Redis.UncleDB,
 	})
 }
 
@@ -219,11 +224,17 @@ func FetchCodeDetail(code string) (string, error) {
 	return rdb.Get(ctx, buildCodeKey(code)).Result()
 }
 
-func SetPaidBalance(user string, balance int) error {
+func SetPaidBalance(user string, balance int, useUncleDB bool) error {
+	if useUncleDB {
+		rdb = uncleRdb
+	}
 	return rdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
 }
 
-func FetchPaidBalance(user string) (int, error) {
+func FetchPaidBalance(user string, useUncleDB bool) (int, error) {
+	if useUncleDB {
+		rdb = uncleRdb
+	}
 	balanceStr, err := rdb.Get(ctx, buildPaidBalance(user)).Result()
 	if err != nil {
 		return 0, err

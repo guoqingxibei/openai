@@ -114,8 +114,8 @@ func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter
 	}
 
 	userName := inMsg.FromUserName
-	balance, _ := gptredis.FetchPaidBalance(userName)
-	_ = gptredis.SetPaidBalance(userName, codeDetail.Times+balance)
+	balance, _ := gptredis.FetchPaidBalance(userName, false)
+	_ = gptredis.SetPaidBalance(userName, codeDetail.Times+balance, false)
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes))
@@ -189,7 +189,7 @@ func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
 	usage := logic.BuildChatUsage(userName)
-	balance, err := gptredis.FetchPaidBalance(userName)
+	balance, err := gptredis.FetchPaidBalance(userName, false)
 	if err == nil {
 		usage += fmt.Sprintf("付费次数剩余%d次。", balance)
 	}

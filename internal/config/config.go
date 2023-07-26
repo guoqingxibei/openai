@@ -28,8 +28,9 @@ type conf struct {
 		NotifyUrl        string `json:"notify_url"`
 	} `json:"wechat"`
 	Redis struct {
-		Addr string `json:"addr"`
-		DB   int    `json:"db"`
+		Addr    string `json:"addr"`
+		DB      int    `json:"db"`
+		UncleDB int    `json:"uncle_db"`
 	}
 	Baidu struct {
 		ApiKey    string `json:"api_key"`
