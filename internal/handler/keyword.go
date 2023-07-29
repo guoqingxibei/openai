@@ -192,6 +192,6 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
 	usage := logic.BuildChatUsage(userName)
 	balance, _ := gptredis.FetchPaidBalance(userName, false)
-	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"brother.cxyds.top/shop\">点我可购买次数</a>。", balance)
+	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"https://brother.cxyds.top/shop\">点我可购买次数</a>。", balance)
 	echoWechatTextMsg(writer, inMsg, usage)
 }
