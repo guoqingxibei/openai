@@ -29,34 +29,18 @@ func init() {
 	})
 }
 
-func FetchReply(msgId int64) (string, error) {
-	reply, err := rdb.Get(ctx, buildReplyKey(msgId)).Result()
-	if err == nil {
-		return reply, nil
-	}
-	return "", err
-}
-
-func SetReply(msgId int64, reply string) error {
-	return rdb.Set(ctx, buildReplyKey(msgId), reply, time.Hour*24*7).Err()
-}
-
 func AppendReplyChunk(msgId int64, chunk string) error {
 	err := rdb.RPush(ctx, buildReplyChunksKey(msgId), chunk).Err()
 	if err != nil {
 		return err
 	}
-	err = rdb.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24).Err()
+	err = rdb.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24*7).Err()
 	return err
 }
 
 func ReplyChunksExists(msgId int64) (bool, error) {
 	code, err := rdb.Exists(ctx, buildReplyChunksKey(msgId)).Result()
 	return code == 1, err
-}
-
-func GetLengthOfReplyChunks(msgId int64) (int64, error) {
-	return rdb.LLen(ctx, buildReplyChunksKey(msgId)).Result()
 }
 
 func GetReplyChunks(msgId int64, from int64, to int64) ([]string, error) {
@@ -93,14 +77,6 @@ func FetchMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
 
 func buildMessagesKey(toUserName string) string {
 	return "user:" + toUserName + ":messages"
-}
-
-func DelReply(msgId int64) error {
-	return rdb.Del(ctx, buildReplyKey(msgId)).Err()
-}
-
-func buildReplyKey(msgId int64) string {
-	return "msg-id:" + strconv.FormatInt(msgId, 10) + ":reply"
 }
 
 func IncAccessTimes(msgId int64) (int64, error) {
