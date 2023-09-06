@@ -36,7 +36,7 @@ func FetchReply(msgId int64) (string, error) {
 }
 
 func SetReply(msgId int64, reply string) error {
-	return rdb.Set(ctx, buildReplyKey(msgId), reply, time.Hour*24).Err()
+	return rdb.Set(ctx, buildReplyKey(msgId), reply, time.Hour*24*7).Err()
 }
 
 func AppendReplyChunk(msgId int64, chunk string) error {
