@@ -34,9 +34,9 @@ func calculateQuota(user string) int {
 	if subscribeInterval < oneMonth {
 		quota = 10
 	} else if subscribeInterval < 2*oneMonth {
-		quota = 5
+		quota = 1
 	} else {
-		quota = 2
+		quota = 1
 	}
 	return quota
 }
