@@ -21,6 +21,7 @@ const (
 	help    = "help"
 	contact = "contact"
 	report  = "report"
+	clear   = "clear"
 )
 
 const (
@@ -39,7 +40,7 @@ const (
 	used    = "used"
 )
 
-var keywords = []string{donate, group, help, contact, report}
+var keywords = []string{donate, group, help, contact, report, clear}
 var keywordPrefixes = []string{generateCode, code}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
@@ -77,6 +78,8 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 			doGenerateCode(question, inMsg, writer)
 		case code:
 			useCodeWithPrefix(question, inMsg, writer)
+		case clear:
+			clearHistory(inMsg, writer)
 		}
 		return true
 	}
@@ -92,6 +95,11 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 
 	// missed
 	return false
+}
+
+func clearHistory(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	_ = gptredis.DelMessages(inMsg.FromUserName)
+	echoWechatTextMsg(writer, inMsg, "上下文已被清除。现在，你可以开始全新的对话啦。")
 }
 
 func useCodeWithPrefix(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {

@@ -75,6 +75,10 @@ func FetchMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
 	return messages, nil
 }
 
+func DelMessages(toUserName string) error {
+	return rdb.Del(ctx, buildMessagesKey(toUserName)).Err()
+}
+
 func buildMessagesKey(toUserName string) string {
 	return "user:" + toUserName + ":messages"
 }
