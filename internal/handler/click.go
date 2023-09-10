@@ -9,6 +9,8 @@ import (
 func echoWechatOnClick(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	log.Printf("%s clicked the button 「%s」", inMsg.FromUserName, inMsg.EventKey)
 	switch inMsg.EventKey {
+	case clear:
+		clearHistory(inMsg, writer)
 	case help:
 		showUsage(inMsg, writer)
 	case donate:

@@ -1,11 +1,31 @@
 {
   "button": [
     {
-      "name": "先读我",
+      "name": "常用功能",
+      "sub_button": [
+        {
+          "type": "click",
+          "name": "剩余次数",
+          "key": "help"
+        },
+        {
+          "type": "view",
+          "name": "购买次数",
+          "url": "https://brother.cxyds.top/shop"
+        },
+        {
+          "type": "click",
+          "name": "清除上下文",
+          "key": "clear"
+        }
+      ]
+    },
+    {
+      "name": "其他",
       "sub_button": [
         {
           "type": "view",
-          "name": "先读我",
+          "name": "常见问题",
           "url": "https://cxyds.top/2023/07/23/faq.html"
         },
         {
@@ -17,21 +37,6 @@
           "type": "click",
           "name": "联系作者",
           "key": "contact"
-        }
-      ]
-    },
-    {
-      "name": "对话次数",
-      "sub_button": [
-        {
-          "type": "click",
-          "name": "剩余次数",
-          "key": "help"
-        },
-        {
-          "type": "view",
-          "name": "购买次数",
-          "url": "https://brother.cxyds.top/shop"
         }
       ]
     }
