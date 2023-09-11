@@ -12,6 +12,7 @@ import (
 )
 
 const oneMonth = 30 * 24 * 3600
+const oneWeek = 7 * 24 * 3600
 
 func CheckBalance(inMsg *wechat.Msg, mode string) bool {
 	userName := inMsg.FromUserName
@@ -31,10 +32,10 @@ func calculateQuota(user string) int {
 	subscribeTimestamp, _ := gptredis.FetchSubscribeTimestamp(user)
 	subscribeInterval := currentTimestamp - subscribeTimestamp
 	quota := 0
-	if subscribeInterval < oneMonth {
-		quota = 1
-	} else if subscribeInterval < 2*oneMonth {
-		quota = 1
+	if subscribeInterval < oneWeek {
+		quota = 5
+	} else if subscribeInterval < 2*oneWeek {
+		quota = 2
 	} else {
 		quota = 1
 	}
