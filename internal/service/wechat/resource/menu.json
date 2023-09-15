@@ -1,7 +1,7 @@
 {
   "button": [
     {
-      "name": "常用功能",
+      "name": "次数",
       "sub_button": [
         {
           "type": "click",
@@ -12,11 +12,26 @@
           "type": "view",
           "name": "购买次数",
           "url": "https://brother.cxyds.top/shop"
+        }
+      ]
+    },
+    {
+      "name": "模式",
+      "sub_button": [
+        {
+          "type": "click",
+          "name": "当前模式",
+          "key": "help"
         },
         {
           "type": "click",
-          "name": "清除上下文",
-          "key": "clear"
+          "name": "使用gpt3",
+          "key": "gpt3"
+        },
+        {
+          "type": "click",
+          "name": "使用gpt4",
+          "key": "gpt4"
         }
       ]
     },
@@ -27,6 +42,11 @@
           "type": "view",
           "name": "常见问题",
           "url": "https://cxyds.top/2023/07/23/faq.html"
+        },
+        {
+          "type": "click",
+          "name": "清除上下文",
+          "key": "clear"
         },
         {
           "type": "click",
