@@ -20,9 +20,9 @@ func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
 		if paidBalance < constant.TimesPerQuestionGPT4 {
 			gpt4BalanceTip := "【余额不足】抱歉，付费次数剩余%d次，不足以继续使用gpt4模式(每次提问消耗次数10)，" +
-				"可<a href=\"https://brother.cxyds.top/shop?uncle_openid=%s\">点我充值次数</a>。" +
+				"可<a href=\"https://brother.cxyds.top/shop\">点我充值次数</a>。" +
 				"\n\n另外，回复gpt3可切换到gpt3模式。在此模式下，每次提问仅消耗次数1。"
-			return false, fmt.Sprintf(gpt4BalanceTip, paidBalance, userName)
+			return false, fmt.Sprintf(gpt4BalanceTip, paidBalance)
 		}
 		return true, ""
 	}
@@ -32,8 +32,8 @@ func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
 		if paidBalance < 1 {
 			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费次数(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
-				"如果使用量很大，可以<a href=\"https://cxyds.top/2023/07/23/faq.html\">点我购买次数</a>。"
-			return false, fmt.Sprintf(gpt3BalanceTip, GetQuota(userName), userName)
+				"如果使用量很大，可以<a href=\"https://brother.cxyds.top/shop\">点我购买次数</a>。"
+			return false, fmt.Sprintf(gpt3BalanceTip, GetQuota(userName))
 		}
 	}
 	return true, ""
