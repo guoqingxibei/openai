@@ -41,7 +41,6 @@ func ChatCompletionsStream(
 		model = _openai.GPT4
 	}
 	tokenCount := util.CalTokenCount4Messages(messages, CurrentModel)
-	log.Printf(model)
 	req := _openai.ChatCompletionRequest{
 		Model:     model,
 		Messages:  messages,
