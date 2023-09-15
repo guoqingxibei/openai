@@ -6,6 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/config"
+	"openai/internal/constant"
 	"openai/internal/util"
 	"strconv"
 	"time"
@@ -122,35 +123,23 @@ func getWechatApiAccessTokenKey() string {
 	return "wechat-api-access-token"
 }
 
-func SetModeForUser(user string, mode string) error {
-	return rdb.Set(ctx, buildModeKey(user), mode, 0).Err()
-}
-
-func FetchModeForUser(user string) (string, error) {
-	return rdb.Get(ctx, buildModeKey(user)).Result()
-}
-
-func buildModeKey(user string) string {
-	return "user:" + user + ":mode"
-}
-
-func FetchBalance(user string, mode string, day string) (int, error) {
-	balance, err := rdb.Get(ctx, buildBalanceKey(user, mode, day)).Result()
+func FetchBalance(user string, day string) (int, error) {
+	balance, err := rdb.Get(ctx, buildBalanceKey(user, day)).Result()
 	cnt, _ := strconv.Atoi(balance)
 	return cnt, err
 }
 
-func SetBalance(user string, mode string, day string, balance int) error {
-	return rdb.Set(ctx, buildBalanceKey(user, mode, day), strconv.Itoa(balance), time.Hour*24).Err()
+func SetBalance(user string, day string, balance int) error {
+	return rdb.Set(ctx, buildBalanceKey(user, day), strconv.Itoa(balance), time.Hour*24).Err()
 }
 
-func DecrBalance(user string, mode string, day string) (int, error) {
-	balance, err := rdb.Decr(ctx, buildBalanceKey(user, mode, day)).Result()
+func DecrBalance(user string, day string) (int, error) {
+	balance, err := rdb.Decr(ctx, buildBalanceKey(user, day)).Result()
 	return int(balance), err
 }
 
-func buildBalanceKey(user string, mode string, day string) string {
-	return "user:" + user + ":mode:" + mode + ":day:" + day + ":balance"
+func buildBalanceKey(user string, day string) string {
+	return "user:" + user + ":mode:" + constant.Chat + ":day:" + day + ":balance"
 }
 
 func FetchMediaId(imageName string) (string, error) {
@@ -219,8 +208,8 @@ func FetchPaidBalance(user string) (int, error) {
 	return balance, err
 }
 
-func DecrPaidBalance(usr string) (int64, error) {
-	return rdb.Decr(ctx, buildPaidBalance(usr)).Result()
+func DecrPaidBalance(usr string, decrement int64) (int64, error) {
+	return rdb.DecrBy(ctx, buildPaidBalance(usr), decrement).Result()
 }
 
 func buildPaidBalance(user string) string {
@@ -254,4 +243,20 @@ func GetQuota(user string, day string) (int, error) {
 	}
 	quota, err := strconv.Atoi(quotaStr)
 	return quota, err
+}
+
+func buildGPTModeKey(user string) string {
+	return "user:" + user + "gpt-mode"
+}
+
+func GetGPTMode(user string) (string, error) {
+	result, err := rdb.Get(ctx, buildGPTModeKey(user)).Result()
+	if err == redis.Nil {
+		return constant.GPT3, nil
+	}
+	return result, err
+}
+
+func SetGPTMode(user string, gptMode string) error {
+	return rdb.Set(ctx, buildGPTModeKey(user), gptMode, 0).Err()
 }

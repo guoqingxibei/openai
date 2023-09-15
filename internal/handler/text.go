@@ -56,9 +56,10 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	msgId := inMsg.MsgId
 	userName := inMsg.FromUserName
 	question := strings.TrimSpace(inMsg.Content)
-	ok := logic.CheckBalance(inMsg, constant.Chat)
+	gptMode, _ := gptredis.GetGPTMode(userName)
+	ok, reply := logic.CheckBalance(inMsg, gptMode)
 	if !ok {
-		return fmt.Sprintf(constant.ZeroChatBalance, logic.GetQuota(userName), userName)
+		return reply
 	}
 
 	censor := baidu.Censor(question)
@@ -68,12 +69,12 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 
 	answerChan := make(chan string, 1)
 	go func() {
-		err := logic.ChatCompletionStream(userName, msgId, question, inMsg.Recognition != "")
+		err := logic.ChatCompletionStream(userName, msgId, question, inMsg.Recognition != "", gptMode)
 		if err != nil {
 			log.Println("logic.ChatCompletionStream error", err)
 			answerChan <- constant.TryAgain
 		} else {
-			err := logic.DecrBalanceOfToday(userName, constant.Chat)
+			err := logic.DecrBalanceOfToday(userName, gptMode)
 			if err != nil {
 				log.Println("gptredis.DecrBalance failed", err)
 			}

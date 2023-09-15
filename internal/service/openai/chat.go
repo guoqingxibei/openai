@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"openai/internal/config"
+	"openai/internal/constant"
 	"openai/internal/util"
 )
 
@@ -30,13 +31,19 @@ func min(a int, b int) int {
 }
 
 func ChatCompletionsStream(
+	gptMode string,
 	messages []_openai.ChatCompletionMessage,
 	processWord func(word string) bool,
 	done func(),
 	errorHandler func(err error)) {
+	model := _openai.GPT3Dot5Turbo
+	if gptMode == constant.GPT4 {
+		model = _openai.GPT4
+	}
 	tokenCount := util.CalTokenCount4Messages(messages, CurrentModel)
+	log.Printf(model)
 	req := _openai.ChatCompletionRequest{
-		Model:     _openai.GPT3Dot5Turbo,
+		Model:     model,
 		Messages:  messages,
 		Stream:    true,
 		MaxTokens: min(4000-tokenCount, 2000),

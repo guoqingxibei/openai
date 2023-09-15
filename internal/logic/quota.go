@@ -13,17 +13,29 @@ import (
 
 const oneMonth = 30 * 24 * 3600
 
-func CheckBalance(inMsg *wechat.Msg, mode string) bool {
+func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
 	userName := inMsg.FromUserName
-	balance := GetBalance(userName, mode)
-	if balance <= 0 {
+	if gptMode == constant.GPT4 {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
-		if paidBalance <= 0 {
-			return false
+		if paidBalance < constant.TimesPerQuestionGPT4 {
+			gpt4BalanceTip := "【余额不足】抱歉，付费次数剩余%d次，不足以继续使用gpt4模式(每次提问消耗次数10)，" +
+				"可<a href=\"https://brother.cxyds.top/shop?uncle_openid=%s\">点我充值次数</a>。" +
+				"\n\n另外，回复gpt3可切换到gpt3模式。在此模式下，每次提问仅消耗次数1。"
+			return false, fmt.Sprintf(gpt4BalanceTip, paidBalance, userName)
 		}
+		return true, ""
 	}
 
-	return true
+	balance := GetBalance(userName)
+	if balance < 1 {
+		paidBalance, _ := gptredis.FetchPaidBalance(userName)
+		if paidBalance < 1 {
+			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费次数(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
+				"如果使用量很大，可以<a href=\"https://cxyds.top/2023/07/23/faq.html\">点我购买次数</a>。"
+			return false, fmt.Sprintf(gpt3BalanceTip, GetQuota(userName), userName)
+		}
+	}
+	return true, ""
 }
 
 func calculateQuota(user string) int {
@@ -51,12 +63,12 @@ func GetQuota(user string) int {
 	return quota
 }
 
-func GetBalance(user string, mode string) int {
-	balance, err := fetchBalanceOfToday(user, mode)
+func GetBalance(user string) int {
+	balance, err := fetchBalanceOfToday(user)
 	if err != nil {
 		if err == redis.Nil {
 			quota := GetQuota(user)
-			err := setBalanceOfToday(user, mode, quota)
+			err := setBalanceOfToday(user, quota)
 			if err != nil {
 				log.Println("gptredis.SetBalance failed", err)
 				return 0
@@ -70,26 +82,31 @@ func GetBalance(user string, mode string) int {
 }
 
 func BuildChatUsage(user string) string {
-	return fmt.Sprintf(constant.ChatUsage, GetQuota(user), GetBalance(user, constant.Chat))
+	return fmt.Sprintf(constant.ChatUsage, GetQuota(user), GetBalance(user))
 }
 
-func fetchBalanceOfToday(user string, mode string) (int, error) {
-	return gptredis.FetchBalance(user, mode, util.Today())
+func fetchBalanceOfToday(user string) (int, error) {
+	return gptredis.FetchBalance(user, util.Today())
 }
 
-func setBalanceOfToday(user string, mode string, balance int) error {
-	return gptredis.SetBalance(user, mode, util.Today(), balance)
+func setBalanceOfToday(user string, balance int) error {
+	return gptredis.SetBalance(user, util.Today(), balance)
 }
 
-func DecrBalanceOfToday(user string, mode string) error {
-	balance := GetBalance(user, mode) // ensure KEY exists before DESC operation while request crosses day
+func DecrBalanceOfToday(user string, gptMode string) error {
+	if gptMode == constant.GPT4 {
+		_, err := gptredis.DecrPaidBalance(user, constant.TimesPerQuestionGPT4)
+		return err
+	}
+
+	balance := GetBalance(user) // ensure KEY exists before DESC operation while request crosses day
 	var err error
 	if balance > 0 {
-		_, err = gptredis.DecrBalance(user, mode, util.Today())
+		_, err = gptredis.DecrBalance(user, util.Today())
 	} else {
 		paidBalance, _ := gptredis.FetchPaidBalance(user)
 		if paidBalance > 0 {
-			_, err = gptredis.DecrPaidBalance(user)
+			_, err = gptredis.DecrPaidBalance(user, 1)
 		}
 	}
 	return err

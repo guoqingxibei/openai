@@ -41,7 +41,7 @@ const (
 	used    = "used"
 )
 
-var keywords = []string{donate, group, help, contact, report, transfer, clear}
+var keywords = []string{donate, group, help, contact, report, transfer, clear, constant.GPT3, constant.GPT4}
 var keywordPrefixes = []string{generateCode, code}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
@@ -83,6 +83,10 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 			useCodeWithPrefix(question, inMsg, writer)
 		case clear:
 			clearHistory(inMsg, writer)
+		case constant.GPT3:
+			fallthrough
+		case constant.GPT4:
+			switchGPTMode(keyword, inMsg, writer)
 		}
 		return true
 	}
@@ -201,7 +205,16 @@ func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
-	usage := logic.BuildChatUsage(userName)
+	gptMode, _ := gptredis.GetGPTMode(userName)
+	usage := fmt.Sprintf("【模式】当前模式是%s，", gptMode)
+	if gptMode == constant.GPT3 {
+		usage += "每次提问消耗次数1。"
+	} else {
+		usage += "每次提问消耗次数10。"
+	}
+	usage += "\n"
+
+	usage += logic.BuildChatUsage(userName)
 	balance, _ := gptredis.FetchPaidBalance(userName)
 	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"https://brother.cxyds.top/shop?uncle_openid=%s\">点我可购买次数</a>。", balance, userName)
 	usage += "\n\n" + constant.HelpDesc
