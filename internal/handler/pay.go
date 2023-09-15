@@ -91,7 +91,7 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 				openId = transaction.UncleOpenId
 				useUncleDB = true
 			}
-			balance, _ := gptredis.FetchPaidBalance(openId, useUncleDB)
+			balance, _ := gptredis.FetchPaidBalanceWithDB(openId, useUncleDB)
 			_ = gptredis.SetPaidBalance(openId, times+balance, useUncleDB)
 			transaction.Redeemed = true
 		}
@@ -118,7 +118,7 @@ func GetTradeResult(w http.ResponseWriter, r *http.Request) {
 		openId = transaction.UncleOpenId
 		useUncleDB = true
 	}
-	balance, _ := gptredis.FetchPaidBalance(openId, useUncleDB)
+	balance, _ := gptredis.FetchPaidBalanceWithDB(openId, useUncleDB)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
