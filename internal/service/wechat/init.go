@@ -1,7 +1,11 @@
 package wechat
 
+import "openai/internal/util"
+
 func init() {
 	initToken()
 	initMedias()
-	createOrUpdateMenu()
+	if !util.AccountIsUncle() {
+		createOrUpdateMenu()
+	}
 }
