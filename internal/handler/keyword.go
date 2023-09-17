@@ -11,6 +11,7 @@ import (
 	"openai/internal/logic"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
+	"openai/internal/util"
 	"strconv"
 	"strings"
 )
@@ -216,12 +217,17 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 	usage += logic.BuildChatUsage(userName)
 	balance, _ := gptredis.FetchPaidBalance(userName)
-	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"https://brother.cxyds.top/shop?uncle_openid=%s\">点我可购买次数</a>。", balance, userName)
+	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"%s\">点我可购买次数</a>。", balance, util.GetPayLink(userName))
 	usage += "\n\n" + constant.HelpDesc
 	echoWechatTextMsg(writer, inMsg, usage)
 }
 
 func doTransfer(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	if !util.AccountIsUncle() {
+		echoWechatTextMsg(writer, inMsg, "此公众号不支持迁移，请移步公众号「程序员uncle」进行迁移。")
+		return
+	}
+
 	userName := inMsg.FromUserName
 	paidBalance, _ := gptredis.FetchPaidBalance(userName)
 	reply := "你的付费次数剩余0次，无需迁移。"

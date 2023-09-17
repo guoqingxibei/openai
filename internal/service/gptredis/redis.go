@@ -2,30 +2,40 @@ package gptredis
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/config"
 	"openai/internal/constant"
+	"openai/internal/models"
 	"openai/internal/util"
 	"strconv"
 	"time"
 )
 
 var ctx = context.Background()
-var rdb, brotherRdb *redis.Client
+var rdb, uncleRdb, brotherRdb *redis.Client
 
 func init() {
-	rdb = redis.NewClient(&redis.Options{
-		Addr:     config.C.Redis.Addr,
-		Password: "", // no password set
-		DB:       config.C.Redis.DB,
-	})
 	brotherRdb = redis.NewClient(&redis.Options{
 		Addr:     config.C.Redis.Addr,
 		Password: "", // no password set
 		DB:       config.C.Redis.BrotherDB,
 	})
+	uncleRdb = redis.NewClient(&redis.Options{
+		Addr:     config.C.Redis.Addr,
+		Password: "", // no password set
+		DB:       config.C.Redis.UncleDB,
+	})
+	rdb = selectDefaultRdb()
+}
+
+func selectDefaultRdb() *redis.Client {
+	if util.AccountIsUncle() {
+		return uncleRdb
+	}
+	return brotherRdb
 }
 
 func AppendReplyChunk(msgId int64, chunk string) error {
@@ -196,11 +206,27 @@ func FetchCodeDetail(code string) (string, error) {
 }
 
 func SetPaidBalance(user string, balance int) error {
-	return rdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
+	return SetPaidBalanceWithDB(user, balance, false)
+}
+
+func SetPaidBalanceWithDB(user string, balance int, useUncleDB bool) error {
+	myRdb := rdb
+	if useUncleDB {
+		myRdb = uncleRdb
+	}
+	return myRdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
 }
 
 func FetchPaidBalance(user string) (int, error) {
-	balanceStr, err := rdb.Get(ctx, buildPaidBalance(user)).Result()
+	return FetchPaidBalanceWithDB(user, false)
+}
+
+func FetchPaidBalanceWithDB(user string, useUncleDB bool) (int, error) {
+	myRdb := rdb
+	if useUncleDB {
+		myRdb = uncleRdb
+	}
+	balanceStr, err := myRdb.Get(ctx, buildPaidBalance(user)).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -243,6 +269,26 @@ func GetQuota(user string, day string) (int, error) {
 	}
 	quota, err := strconv.Atoi(quotaStr)
 	return quota, err
+}
+
+func buildTransactionKey(outTradeNo string) (key string) {
+	key = "out-trade-no:" + outTradeNo + ":transaction"
+	return
+}
+
+func SetTransaction(outTradeNo string, transaction models.Transaction) (err error) {
+	tranBytes, _ := json.Marshal(transaction)
+	return rdb.Set(ctx, buildTransactionKey(outTradeNo), string(tranBytes), 0).Err()
+}
+
+func FetchTransaction(outTradeNo string) (models.Transaction, error) {
+	var transaction models.Transaction
+	tranStr, err := rdb.Get(ctx, buildTransactionKey(outTradeNo)).Result()
+	if err != nil {
+		return transaction, err
+	}
+	_ = json.Unmarshal([]byte(tranStr), &transaction)
+	return transaction, err
 }
 
 func buildGPTModeKey(user string) string {
