@@ -77,7 +77,7 @@ func GetBalance(user string) int {
 	if err != nil {
 		if err == redis.Nil {
 			quota := GetQuota(user)
-			err := setBalanceOfToday(user, quota)
+			err := SetBalanceOfToday(user, quota)
 			if err != nil {
 				log.Println("gptredis.SetBalance failed", err)
 				return 0
@@ -98,7 +98,7 @@ func fetchBalanceOfToday(user string) (int, error) {
 	return gptredis.FetchBalance(user, util.Today())
 }
 
-func setBalanceOfToday(user string, balance int) error {
+func SetBalanceOfToday(user string, balance int) error {
 	return gptredis.SetBalance(user, util.Today(), balance)
 }
 

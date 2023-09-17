@@ -24,6 +24,7 @@ const (
 	report   = "report"
 	transfer = "transfer"
 	clear    = "clear"
+	reset    = "jgq-reset"
 )
 
 const (
@@ -42,7 +43,7 @@ const (
 	used    = "used"
 )
 
-var keywords = []string{donate, group, help, contact, report, transfer, clear, constant.GPT3, constant.GPT4}
+var keywords = []string{donate, group, help, contact, report, transfer, clear, reset, constant.GPT3, constant.GPT4}
 var keywordPrefixes = []string{generateCode, code}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
@@ -84,6 +85,8 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 			useCodeWithPrefix(question, inMsg, writer)
 		case clear:
 			clearHistory(inMsg, writer)
+		case reset:
+			resetBalance(inMsg, writer)
 		case constant.GPT3:
 			fallthrough
 		case constant.GPT4:
@@ -103,6 +106,13 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 
 	// missed
 	return false
+}
+
+func resetBalance(inMsg *wechat.Msg, writer http.ResponseWriter) {
+	userName := inMsg.FromUserName
+	_ = gptredis.SetPaidBalance(userName, 0)
+	_ = logic.SetBalanceOfToday(userName, 0)
+	echoWechatTextMsg(writer, inMsg, "你的剩余次数已被重置。")
 }
 
 func clearHistory(inMsg *wechat.Msg, writer http.ResponseWriter) {
