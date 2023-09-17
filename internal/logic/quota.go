@@ -82,7 +82,7 @@ func GetBalance(user string) int {
 }
 
 func BuildChatUsage(user string) string {
-	return fmt.Sprintf(constant.ChatUsage, GetQuota(user), GetBalance(user))
+	return fmt.Sprintf("【次数】免费次数剩余%d次，每天免费%d次。", GetBalance(user), GetQuota(user))
 }
 
 func fetchBalanceOfToday(user string) (int, error) {
