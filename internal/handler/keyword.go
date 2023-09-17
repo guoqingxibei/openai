@@ -217,8 +217,10 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 	usage += logic.BuildChatUsage(userName)
 	balance, _ := gptredis.FetchPaidBalance(userName)
-	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"%s\">点我可购买次数</a>。", balance, util.GetPayLink(userName))
-	usage += "\n\n" + constant.HelpDesc
+	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"%s\">点我购买次数</a>。", balance, util.GetPayLink(userName))
+	usage += "\n\n<a href=\"https://cxyds.top/2023/07/03/faq.html\">更多用法</a>" +
+		" | <a href=\"https://cxyds.top/2023/09/17/group-qr.html\">交流群</a>" +
+		" | <a href=\"https://cxyds.top/2023/09/17/writer-qr.html\">联系作者</a>"
 	echoWechatTextMsg(writer, inMsg, usage)
 }
 
