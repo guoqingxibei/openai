@@ -9,7 +9,7 @@ func AccountIsUncle() bool {
 func GetPayLink(user string) string {
 	payLink := "https://brother.cxyds.top/shop"
 	if AccountIsUncle() {
-		payLink += "?uncle_openid=%s" + user
+		payLink += "?uncle_openid=" + user
 	}
 	return payLink
 }

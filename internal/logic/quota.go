@@ -32,7 +32,7 @@ func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
 		if paidBalance < 1 {
 			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费次数(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
-				"如果使用量很大，可以<a href=\"https://brother.cxyds.top/shop?uncle_openid=%s\">点我购买次数</a>。"
+				"如果使用量很大，可以<a href=\"%s\">点我购买次数</a>。"
 			return false, fmt.Sprintf(gpt3BalanceTip, GetQuota(userName), util.GetPayLink(userName))
 		}
 	}
