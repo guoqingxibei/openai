@@ -1,0 +1,22 @@
+[Unit]
+Description=Brother GO Service
+
+[Service]
+Type=simple
+User=brother
+Group=brother
+
+Restart=always
+RestartSec=5s
+
+WorkingDirectory=/root/brother
+ExecStart=/root/brother/brother
+Environment=GO_ENV=prod
+Environment=ACCOUNT=brother
+
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=brother
+
+[Install]
+WantedBy=multi-user.target
