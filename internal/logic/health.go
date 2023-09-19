@@ -75,11 +75,15 @@ func RecordError(err error) {
 
 func sendErrorAlarmEmail() {
 	errors, _ := gptredis.GetErrors(util.Today())
+	count := len(errors)
 	body := ""
-	for _, myError := range errors {
+	for idx, myError := range errors {
 		body += util.TimestampToTimeStr(myError.TimestampInSeconds) + "  " + myError.ErrorStr + "\n"
+		if idx != count-1 {
+			body += "-----------------------------------\n"
+		}
 	}
-	subject := fmt.Sprintf("[%s]Already %d ChatAPI Errors Today", util.GetAccount(), len(errors))
+	subject := fmt.Sprintf("[%s]Already %d ChatAPI Errors Today", util.GetAccount(), count)
 	email.SendEmail(subject, body)
 }
 
@@ -90,20 +94,24 @@ func sendYesterdayReportEmail() {
 	body := ""
 	errorContent := ""
 	errors, _ := gptredis.GetErrors(yesterday)
-	for _, myError := range errors {
+	count := len(errors)
+	for idx, myError := range errors {
 		errorContent += util.TimestampToTimeStr(myError.TimestampInSeconds) + "  " + myError.ErrorStr + "\n"
+		if idx != count-1 {
+			body += "-----------------------------------\n"
+		}
 	}
-	errorTitle := fmt.Sprintf("[%d errors in total]\n", len(errors))
+	errorTitle := fmt.Sprintf("[%d errors]\n", count)
 	body += errorTitle + errorContent
 
 	point, _ := api2d.GetPoint()
 	api2dTitle := "\n[Api2d]\n"
-	api2dContent := fmt.Sprintf("There are %d points left\n", point)
+	api2dContent := fmt.Sprintf("Points: %d\n", point)
 	body += api2dTitle + api2dContent
 
 	balance, _ := sb.GetSbBalance()
 	sbTitle := "\n[SB]\n"
-	sbContent := fmt.Sprintf("There are %.2f RMB left", balance)
+	sbContent := fmt.Sprintf("Blance: ￥%.2f", balance)
 	body += sbTitle + sbContent
 	email.SendEmail(subject, body)
 }
