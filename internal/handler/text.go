@@ -7,7 +7,6 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/baidu"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
 	"strconv"
@@ -60,11 +59,6 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	ok, reply := logic.CheckBalance(inMsg, gptMode)
 	if !ok {
 		return reply
-	}
-
-	censor := baidu.Censor(question)
-	if !censor {
-		return constant.CensorWarning
 	}
 
 	answerChan := make(chan string, 1)
