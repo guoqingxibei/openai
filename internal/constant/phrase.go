@@ -1,7 +1,7 @@
 package constant
 
 const (
-	TryAgain          = "哎呀，出错啦（大概率是请求量过大导致的ChatGPT负载过高），请重试。\n\n本次对话并不消耗次数，回复contact，可向作者报告bug。"
+	TryAgain          = "很抱歉，目前请求量过大，请稍后重试。本次对话并不消耗次数，如果问题持续存在，可<a href=\"https://cxyds.top/2023/09/17/writer-qr.html\">联系作者</a>。"
 	ExpireError       = "哎呀，消息过期了，重新提问吧~"
 	CensorWarning     = "【温馨提醒】很抱歉识别出了可能不宜讨论的内容。如有误判，可回复contact联系作者，作者将继续进行优化调整。\n\n为了公众号能持续向大家提供服务，请大家不要在这里讨论色情、政治、暴恐、VPN等相关内容，谢谢配合❤️"
 	ReportInfo        = "bug报给jia.guoqing@qq.com，尽可能描述详细噢~"
