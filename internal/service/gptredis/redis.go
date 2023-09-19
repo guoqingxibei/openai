@@ -56,6 +56,10 @@ func GetReplyChunks(msgId int64, from int64, to int64) ([]string, error) {
 	return rdb.LRange(ctx, buildReplyChunksKey(msgId), from, to).Result()
 }
 
+func DelReplyChunks(msgId int64) error {
+	return rdb.Del(ctx, buildReplyChunksKey(msgId)).Err()
+}
+
 func buildReplyChunksKey(msgId int64) string {
 	return "msg-id:" + strconv.FormatInt(msgId, 10) + ":reply-chunks"
 }

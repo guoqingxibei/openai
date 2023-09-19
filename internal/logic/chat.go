@@ -16,7 +16,8 @@ const (
 	EndMark   = "[END]"
 )
 
-func ChatCompletionStream(userName string, msgId int64, question string, isVoice bool, gptMode string) error {
+func ChatCompletionStream(aiVendor string, userName string, msgId int64,
+	question string, isVoice bool, gptMode string) error {
 	_ = gptredis.AppendReplyChunk(msgId, StartMark)
 	messages, err := gptredis.FetchMessages(userName)
 	if err != nil {
@@ -38,7 +39,7 @@ func ChatCompletionStream(userName string, msgId int64, question string, isVoice
 	chunkLen := 60
 	isFirstChunk := true
 	passedCensor := true
-	openai.ChatCompletionsStream(gptMode, messages, func(word string) bool {
+	openai.ChatCompletionsStream(aiVendor, gptMode, messages, func(word string) bool {
 		chunk += word
 		answer += word
 		if len(chunk) >= chunkLen && endsWithPunct(word) || len(chunk) >= 0 {
@@ -102,11 +103,4 @@ func FetchAnswer(msgId int64) (string, bool) {
 	}
 	answer := strings.Join(chunks, "")
 	return answer, reachEnd
-}
-
-func SetCompleteChunks(msgId int64, content string) error {
-	_ = gptredis.AppendReplyChunk(msgId, StartMark)
-	_ = gptredis.AppendReplyChunk(msgId, content)
-	_ = gptredis.AppendReplyChunk(msgId, EndMark)
-	return nil
 }

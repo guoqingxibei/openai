@@ -14,15 +14,13 @@ import (
 
 const CurrentModel = _openai.GPT3Dot5Turbo
 
-var client *_openai.Client
+var sbClient *_openai.Client
+var api2dClient *_openai.Client
 var ctx = context.Background()
 
 func init() {
-	client = createClientWithVendor(constant.OpenaiSb)
-}
-
-func UpdateVendor(aiVendor string) {
-	client = createClientWithVendor(aiVendor)
+	sbClient = createClientWithVendor(constant.OpenaiSb)
+	api2dClient = createClientWithVendor(constant.OpenaiApi2d)
 }
 
 func createClientWithVendor(aiVendor string) *_openai.Client {
@@ -45,7 +43,15 @@ func min(a int, b int) int {
 	return b
 }
 
+func getClient(vendor string) *_openai.Client {
+	if vendor == constant.OpenaiSb {
+		return sbClient
+	}
+	return api2dClient
+}
+
 func ChatCompletionsStream(
+	aiVendor string,
 	gptMode string,
 	messages []_openai.ChatCompletionMessage,
 	processWord func(word string) bool,
@@ -62,6 +68,7 @@ func ChatCompletionsStream(
 		Stream:    true,
 		MaxTokens: min(4000-tokenCount, 2000),
 	}
+	client := getClient(aiVendor)
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		errorHandler(err)

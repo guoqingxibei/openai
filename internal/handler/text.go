@@ -63,18 +63,26 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 
 	answerChan := make(chan string, 1)
 	go func() {
-		err := logic.ChatCompletionStream(userName, msgId, question, inMsg.Recognition != "", gptMode)
+		isVoice := inMsg.Recognition != ""
+		err := logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, gptMode)
 		if err != nil {
-			logic.RecordError(err)
-			log.Println("logic.ChatCompletionStream error", err)
-			answerChan <- constant.TryAgain
-		} else {
-			err := logic.DecrBalanceOfToday(userName, gptMode)
+			log.Println("logic.ChatCompletionStream with OpenaiSb failed", err)
+			// retry with api2d vendor
+			_ = gptredis.DelReplyChunks(msgId)
+			err = logic.ChatCompletionStream(constant.OpenaiApi2d, userName, msgId, question, isVoice, gptMode)
 			if err != nil {
-				log.Println("gptredis.DecrBalance failed", err)
+				log.Println("logic.ChatCompletionStream with OpenaiApi2d failed", err)
+				logic.RecordError(err)
+				answerChan <- constant.TryAgain
+				return
 			}
-			answerChan <- buildAnswer(msgId)
 		}
+
+		err = logic.DecrBalanceOfToday(userName, gptMode)
+		if err != nil {
+			log.Println("gptredis.DecrBalance failed", err)
+		}
+		answerChan <- buildAnswer(msgId)
 	}()
 	select {
 	case answer := <-answerChan:
