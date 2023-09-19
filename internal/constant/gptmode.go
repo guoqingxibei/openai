@@ -6,5 +6,6 @@ const (
 )
 
 const (
+	TimesPerQuestionGPT3 = 1
 	TimesPerQuestionGPT4 = 10
 )
