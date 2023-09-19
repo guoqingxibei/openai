@@ -28,7 +28,7 @@ func init() {
 	if util.AccountIsUncle() {
 		c2 := cron.New()
 		// Execute once every half an hour
-		err = c2.AddFunc("0 */30 * * * *", func() {
+		err = c2.AddFunc("0 */10 * * * *", func() {
 			checkVendorBalance()
 		})
 		if err != nil {
@@ -67,7 +67,7 @@ func RecordError(err error) {
 		today := util.Today()
 		_ = gptredis.AppendError(today, myErr)
 		errCount, _ := gptredis.GetErrorsLen(today)
-		if errCount%5 == 0 {
+		if errCount%1 == 0 {
 			sendErrorAlarmEmail()
 		}
 	}()
