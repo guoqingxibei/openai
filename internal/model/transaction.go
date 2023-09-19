@@ -1,4 +1,4 @@
-package models
+package model
 
 type Transaction struct {
 	OutTradeNo  string `json:"out_trade_no"`

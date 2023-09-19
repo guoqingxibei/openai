@@ -19,6 +19,7 @@ type conf struct {
 	OpenaiApi2d struct {
 		Key     string `json:"key"`
 		BaseURL string `json:"base_url"`
+		Token   string `json:"token"`
 	} `json:"openai_api2d"`
 	Wechat struct {
 		Token            string `json:"token"`
@@ -40,6 +41,12 @@ type conf struct {
 		ApiKey    string `json:"api_key"`
 		SecretKey string `json:"secret_key"`
 	}
+	Email struct {
+		SmtpServer string `json:"smtp_server"`
+		From       string `json:"from"`
+		Pass       string `json:"pass"`
+		To         string `json:"to"`
+	} `json:"email"`
 }
 
 var (

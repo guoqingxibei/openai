@@ -3,7 +3,7 @@ package logic
 import (
 	"github.com/go-pay/gopay/pkg/util"
 	"log"
-	"openai/internal/models"
+	"openai/internal/model"
 	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
 	"time"
@@ -23,7 +23,7 @@ func InitiateTransaction(
 	}
 
 	now := time.Now().Unix()
-	transaction := models.Transaction{
+	transaction := model.Transaction{
 		OutTradeNo:  tradeNo,
 		OpenId:      openid,
 		UncleOpenId: uncleOpenid,

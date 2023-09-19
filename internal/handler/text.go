@@ -65,6 +65,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	go func() {
 		err := logic.ChatCompletionStream(userName, msgId, question, inMsg.Recognition != "", gptMode)
 		if err != nil {
+			logic.RecordError(err)
 			log.Println("logic.ChatCompletionStream error", err)
 			answerChan <- constant.TryAgain
 		} else {

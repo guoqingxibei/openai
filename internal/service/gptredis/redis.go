@@ -8,7 +8,7 @@ import (
 	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/config"
 	"openai/internal/constant"
-	"openai/internal/models"
+	"openai/internal/model"
 	"openai/internal/util"
 	"strconv"
 	"time"
@@ -276,13 +276,13 @@ func buildTransactionKey(outTradeNo string) (key string) {
 	return
 }
 
-func SetTransaction(outTradeNo string, transaction models.Transaction) (err error) {
+func SetTransaction(outTradeNo string, transaction model.Transaction) (err error) {
 	tranBytes, _ := json.Marshal(transaction)
 	return rdb.Set(ctx, buildTransactionKey(outTradeNo), string(tranBytes), 0).Err()
 }
 
-func FetchTransaction(outTradeNo string) (models.Transaction, error) {
-	var transaction models.Transaction
+func FetchTransaction(outTradeNo string) (model.Transaction, error) {
+	var transaction model.Transaction
 	tranStr, err := rdb.Get(ctx, buildTransactionKey(outTradeNo)).Result()
 	if err != nil {
 		return transaction, err
@@ -305,4 +305,37 @@ func GetGPTMode(user string) (string, error) {
 
 func SetGPTMode(user string, gptMode string) error {
 	return rdb.Set(ctx, buildGPTModeKey(user), gptMode, 0).Err()
+}
+
+func buildErrorsKey(day string) string {
+	return fmt.Sprintf("day:%s:errors", day)
+}
+
+func AppendError(day string, myErr model.MyError) error {
+	errBytes, _ := json.Marshal(myErr)
+	err := rdb.RPush(ctx, buildErrorsKey(day), string(errBytes)).Err()
+	if err != nil {
+		return err
+	}
+	err = rdb.Expire(ctx, buildErrorsKey(day), time.Hour*24*7).Err()
+	return err
+}
+
+func GetErrors(day string) ([]model.MyError, error) {
+	var chatApiErrors []model.MyError
+	errStrs, err := rdb.LRange(ctx, buildErrorsKey(day), 0, -1).Result()
+	if err != nil {
+		return chatApiErrors, err
+	}
+
+	for _, errStr := range errStrs {
+		var chatApiError model.MyError
+		_ = json.Unmarshal([]byte(errStr), &chatApiError)
+		chatApiErrors = append(chatApiErrors, chatApiError)
+	}
+	return chatApiErrors, err
+}
+
+func GetErrorsLen(day string) (int64, error) {
+	return rdb.LLen(ctx, buildErrorsKey(day)).Result()
 }

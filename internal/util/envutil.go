@@ -1,9 +1,19 @@
 package util
 
-import "os"
+import (
+	"openai/internal/constant"
+	"os"
+)
 
 func AccountIsUncle() bool {
-	return os.Getenv("ACCOUNT") == "uncle"
+	return os.Getenv("ACCOUNT") == constant.Uncle
+}
+
+func GetAccount() string {
+	if AccountIsUncle() {
+		return constant.Uncle
+	}
+	return constant.Brother
 }
 
 func GetPayLink(user string) string {
