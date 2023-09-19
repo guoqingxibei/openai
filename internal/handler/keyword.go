@@ -10,6 +10,7 @@ import (
 	"openai/internal/constant"
 	"openai/internal/logic"
 	"openai/internal/service/gptredis"
+	"openai/internal/service/openai"
 	"openai/internal/service/wechat"
 	"openai/internal/util"
 	"strconv"
@@ -17,14 +18,16 @@ import (
 )
 
 const (
-	donate   = "donate"
-	group    = "group"
-	help     = "help"
-	contact  = "contact"
-	report   = "report"
-	transfer = "transfer"
-	clear    = "clear"
-	reset    = "jgq-reset"
+	donate         = "donate"
+	group          = "group"
+	help           = "help"
+	contact        = "contact"
+	report         = "report"
+	transfer       = "transfer"
+	clear          = "clear"
+	reset          = "jgq-reset"
+	useOpenaiSb    = "jgq-use-sb"
+	useOpenaiApi2d = "jgq-use-api2d"
 )
 
 const (
@@ -43,7 +46,10 @@ const (
 	used    = "used"
 )
 
-var keywords = []string{donate, group, help, contact, report, transfer, clear, reset, constant.GPT3, constant.GPT4}
+var keywords = []string{
+	donate, group, help, contact, report, transfer, clear, reset, constant.GPT3, constant.GPT4,
+	useOpenaiSb, useOpenaiApi2d,
+}
 var keywordPrefixes = []string{generateCode, code}
 
 func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
@@ -67,6 +73,10 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	// hit keyword
 	if keyword != "" {
 		switch keyword {
+		case useOpenaiSb:
+			fallthrough
+		case useOpenaiApi2d:
+			switchAiVendor(keyword, inMsg, writer)
 		case contact:
 			fallthrough
 		case donate:
@@ -106,6 +116,15 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 
 	// missed
 	return false
+}
+
+func switchAiVendor(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+	aiVendor := constant.OpenaiApi2d
+	if keyword == useOpenaiSb {
+		aiVendor = constant.OpenaiSb
+	}
+	openai.UpdateVendor(aiVendor)
+	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("AI vendor已切换为%s。", aiVendor))
 }
 
 func resetBalance(inMsg *wechat.Msg, writer http.ResponseWriter) {

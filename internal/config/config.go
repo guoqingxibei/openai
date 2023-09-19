@@ -12,10 +12,14 @@ type conf struct {
 		Port  string `json:"port"`
 		Proxy string `json:"proxy"`
 	} `json:"http"`
-	OpenAI struct {
+	OpenaiSb struct {
 		Key     string `json:"key"`
 		BaseURL string `json:"base_url"`
-	} `json:"openai"`
+	} `json:"openai_sb"`
+	OpenaiApi2d struct {
+		Key     string `json:"key"`
+		BaseURL string `json:"base_url"`
+	} `json:"openai_api2d"`
 	Wechat struct {
 		Token            string `json:"token"`
 		MessageUrlPrefix string `json:"message_url_prefix"`
@@ -50,7 +54,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	if C.OpenAI.Key == "" {
+	if C.OpenaiSb.Key == "" || C.OpenaiApi2d.Key == "" {
 		fmt.Println("OpenAI的Key不能为空")
 		os.Exit(0)
 	}

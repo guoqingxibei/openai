@@ -18,9 +18,24 @@ var client *_openai.Client
 var ctx = context.Background()
 
 func init() {
-	var defaultConfig = _openai.DefaultConfig(config.C.OpenAI.Key)
-	defaultConfig.BaseURL = config.C.OpenAI.BaseURL
-	client = _openai.NewClientWithConfig(defaultConfig)
+	client = createClientWithVendor(constant.OpenaiSb)
+}
+
+func UpdateVendor(aiVendor string) {
+	client = createClientWithVendor(aiVendor)
+}
+
+func createClientWithVendor(aiVendor string) *_openai.Client {
+	if aiVendor == constant.OpenaiSb {
+		return createClient(config.C.OpenaiSb.Key, config.C.OpenaiSb.BaseURL)
+	}
+	return createClient(config.C.OpenaiApi2d.Key, config.C.OpenaiApi2d.BaseURL)
+}
+
+func createClient(key string, baseURL string) *_openai.Client {
+	var defaultConfig = _openai.DefaultConfig(key)
+	defaultConfig.BaseURL = baseURL
+	return _openai.NewClientWithConfig(defaultConfig)
 }
 
 func min(a int, b int) int {
