@@ -83,13 +83,13 @@ func sendErrorAlarmEmail() {
 			body += "-----------------------------------\n"
 		}
 	}
-	subject := fmt.Sprintf("[%s]Already %d ChatAPI Errors Today", util.GetAccount(), count)
+	subject := fmt.Sprintf("[%s] Already %d Errors Today", util.GetAccount(), count)
 	email.SendEmail(subject, body)
 }
 
 func sendYesterdayReportEmail() {
 	yesterday := util.Yesterday()
-	subject := fmt.Sprintf("[%s]Summary for %s", util.GetAccount(), yesterday)
+	subject := fmt.Sprintf("[%s] Summary for %s", util.GetAccount(), yesterday)
 
 	body := ""
 	errorContent := ""

@@ -66,12 +66,12 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 		isVoice := inMsg.Recognition != ""
 		err := logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, gptMode)
 		if err != nil {
-			log.Println("logic.ChatCompletionStream with OpenaiSb failed", err)
+			log.Printf("[%d] logic.ChatCompletionStream with OpenaiSb failed %s", msgId, err)
 			// retry with api2d vendor
 			_ = gptredis.DelReplyChunks(msgId)
 			err = logic.ChatCompletionStream(constant.OpenaiApi2d, userName, msgId, question, isVoice, gptMode)
 			if err != nil {
-				log.Println("logic.ChatCompletionStream with OpenaiApi2d failed", err)
+				log.Printf("[%d] logic.ChatCompletionStream with OpenaiApi2d failed %s", msgId, err)
 				logic.RecordError(err)
 				answerChan <- constant.TryAgain
 				return
