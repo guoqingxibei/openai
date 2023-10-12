@@ -14,16 +14,21 @@ import (
 
 const CurrentModel = _openai.GPT3Dot5Turbo
 
+var ohmygptClient *_openai.Client
 var sbClient *_openai.Client
 var api2dClient *_openai.Client
 var ctx = context.Background()
 
 func init() {
+	ohmygptClient = createClientWithVendor(constant.Ohmygpt)
 	sbClient = createClientWithVendor(constant.OpenaiSb)
 	api2dClient = createClientWithVendor(constant.OpenaiApi2d)
 }
 
 func createClientWithVendor(aiVendor string) *_openai.Client {
+	if aiVendor == constant.Ohmygpt {
+		return createClient(config.C.Ohmygpt.Key, config.C.Ohmygpt.BaseURL)
+	}
 	if aiVendor == constant.OpenaiSb {
 		return createClient(config.C.OpenaiSb.Key, config.C.OpenaiSb.BaseURL)
 	}
@@ -44,6 +49,9 @@ func min(a int, b int) int {
 }
 
 func getClient(vendor string) *_openai.Client {
+	if vendor == constant.Ohmygpt {
+		return ohmygptClient
+	}
 	if vendor == constant.OpenaiSb {
 		return sbClient
 	}

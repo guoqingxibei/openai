@@ -12,6 +12,10 @@ type conf struct {
 		Port  string `json:"port"`
 		Proxy string `json:"proxy"`
 	} `json:"http"`
+	Ohmygpt struct {
+		Key     string `json:"key"`
+		BaseURL string `json:"base_url"`
+	} `json:"ohmygpt"`
 	OpenaiSb struct {
 		Key     string `json:"key"`
 		BaseURL string `json:"base_url"`
@@ -61,7 +65,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	if C.OpenaiSb.Key == "" || C.OpenaiApi2d.Key == "" {
+	if C.Ohmygpt.Key == "" || C.OpenaiSb.Key == "" || C.OpenaiApi2d.Key == "" {
 		fmt.Println("OpenAI的Key不能为空")
 		os.Exit(0)
 	}

@@ -8,6 +8,7 @@ import (
 	"openai/internal/service/api2d"
 	"openai/internal/service/email"
 	"openai/internal/service/gptredis"
+	"openai/internal/service/ohmygpt"
 	"openai/internal/service/sb"
 	"openai/internal/util"
 	"time"
@@ -42,17 +43,22 @@ func init() {
 func checkVendorBalance() {
 	log.Println("Checking balance of vendors...")
 	alarm := false
+	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
+	if ohmygptBalance < 10 {
+		alarm = true
+	}
+	sbBalance, _ := sb.GetSbBalance()
+	if sbBalance < 5 {
+		alarm = true
+	}
 	point, _ := api2d.GetPoint()
 	if point < 1000 {
 		alarm = true
 	}
-	balance, _ := sb.GetSbBalance()
-	if balance < 5 {
-		alarm = true
-	}
 	if alarm {
 		log.Println("Balance is insufficient, sending email...")
-		body := fmt.Sprintf("Api2d points is %d and SB balance is %.2f", point, balance)
+		body := fmt.Sprintf("Ohmygpt balance: ￥%.2f\nSB balance: ￥%.2f\nApi2d points: %d",
+			ohmygptBalance, sbBalance, point)
 		email.SendEmail("Insufficient Balance", body)
 	}
 	log.Println("Check finished")
@@ -104,14 +110,20 @@ func sendYesterdayReportEmail() {
 	errorTitle := fmt.Sprintf("[%d errors]\n", count)
 	body += errorTitle + errorContent
 
+	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
+	ohmygptTitle := "\n[Ohmygpt]\n"
+	ohmygptContent := fmt.Sprintf("Blance: ￥%.2f\n", ohmygptBalance)
+	body += ohmygptTitle + ohmygptContent
+
+	sbBalance, _ := sb.GetSbBalance()
+	sbTitle := "\n[SB]\n"
+	sbContent := fmt.Sprintf("Blance: ￥%.2f\n", sbBalance)
+	body += sbTitle + sbContent
+
 	point, _ := api2d.GetPoint()
 	api2dTitle := "\n[Api2d]\n"
 	api2dContent := fmt.Sprintf("Points: %d\n", point)
 	body += api2dTitle + api2dContent
 
-	balance, _ := sb.GetSbBalance()
-	sbTitle := "\n[SB]\n"
-	sbContent := fmt.Sprintf("Blance: ￥%.2f", balance)
-	body += sbTitle + sbContent
 	email.SendEmail(subject, body)
 }
