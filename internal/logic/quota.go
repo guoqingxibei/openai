@@ -21,7 +21,7 @@ func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
 		if paidBalance < constant.TimesPerQuestionGPT4 {
 			gpt4BalanceTip := "【余额不足】抱歉，付费次数剩余%d次，不足以继续使用gpt4模式(每次提问消耗次数10)，" +
 				"可<a href=\"%s\">点我充值次数</a>。" +
-				"\n\n另外，回复gpt3可切换到gpt3模式。在此模式下，每次提问仅消耗次数1。"
+				"\n\n另外，回复「gpt3」可切换到gpt3模式。在此模式下，每次提问仅消耗次数1。"
 			return false, fmt.Sprintf(gpt4BalanceTip, paidBalance, util.GetPayLink(userName))
 		}
 		return true, ""
