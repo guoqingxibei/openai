@@ -20,9 +20,14 @@ func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
 		if paidBalance < constant.TimesPerQuestionGPT4 {
 			gpt4BalanceTip := "【余额不足】抱歉，付费次数剩余%d次，不足以继续使用gpt4模式(每次提问消耗次数10)，" +
-				"可<a href=\"%s\">点我充值次数</a>。" +
-				"\n\n另外，回复「gpt3」可切换到gpt3模式。在此模式下，每次提问仅消耗次数1。"
-			return false, fmt.Sprintf(gpt4BalanceTip, paidBalance, util.GetPayLink(userName))
+				"可<a href=\"%s\">点我充值次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。" +
+				"\n\n%s在此模式下，每次提问仅消耗次数1。"
+			return false, fmt.Sprintf(gpt4BalanceTip,
+				paidBalance,
+				util.GetPayLink(userName),
+				util.GetInvitationTutorialLink(),
+				getSwitchToGpt3Tip(),
+			)
 		}
 		return true, ""
 	}
@@ -32,11 +37,22 @@ func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
 		if paidBalance < 1 {
 			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费次数(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
-				"如果使用量很大，可以<a href=\"%s\">点我购买次数</a>。"
-			return false, fmt.Sprintf(gpt3BalanceTip, GetQuota(userName), util.GetPayLink(userName))
+				"如果使用量很大，可以<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。"
+			return false, fmt.Sprintf(gpt3BalanceTip,
+				GetQuota(userName),
+				util.GetPayLink(userName),
+				util.GetInvitationTutorialLink(),
+			)
 		}
 	}
 	return true, ""
+}
+
+func getSwitchToGpt3Tip() string {
+	if util.AccountIsUncle() {
+		return "另外，回复「gpt3」可切换到gpt3模式。"
+	}
+	return "另外，点击菜单「模式-使用gpt3」可切换到gpt3模式。"
 }
 
 func calculateQuota(user string) int {

@@ -23,3 +23,10 @@ func GetPayLink(user string) string {
 	}
 	return payLink
 }
+
+func GetInvitationTutorialLink() string {
+	if AccountIsUncle() {
+		return "https://cxyds.top/2023/10/18/invitation-uncle.html"
+	}
+	return "https://cxyds.top/2023/10/18/invitation-brother.html"
+}

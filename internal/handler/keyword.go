@@ -159,8 +159,15 @@ func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)
-	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。"+
-		"回复help，可随时查看剩余次数。", codeDetail.Times, newBalance))
+	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("【激活成功】此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。"+
+		getShowBalanceTipWhenUseCode(), codeDetail.Times, newBalance))
+}
+
+func getShowBalanceTipWhenUseCode() string {
+	if util.AccountIsUncle() {
+		return "回复help，可查看剩余次数。"
+	}
+	return "点击菜单「次数-剩余次数」，可查看剩余次数。"
 }
 
 func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
@@ -240,7 +247,11 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 	usage += logic.BuildChatUsage(userName)
 	balance, _ := gptredis.FetchPaidBalance(userName)
-	usage += fmt.Sprintf("付费次数剩余%d次，<a href=\"%s\">点我购买次数</a>。", balance, util.GetPayLink(userName))
+	usage += fmt.Sprintf("付费次数剩余%d次，可<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
+		balance,
+		util.GetPayLink(userName),
+		util.GetInvitationTutorialLink(),
+	)
 	usage += "\n\n<a href=\"https://cxyds.top/2023/07/03/faq.html\">更多用法</a>" +
 		" | <a href=\"https://cxyds.top/2023/09/17/group-qr.html\">交流群</a>" +
 		" | <a href=\"https://cxyds.top/2023/09/17/writer-qr.html\">联系作者</a>"
