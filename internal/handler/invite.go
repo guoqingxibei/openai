@@ -11,8 +11,8 @@ import (
 )
 
 const (
-	inviterReward = 20
-	inviteeReward = 10
+	inviterReward = 10
+	inviteeReward = 5
 )
 const sizeOfCode = 6 // the length of invitation code
 const halfAnHour = 30 * 60
