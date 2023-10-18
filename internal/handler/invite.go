@@ -72,9 +72,9 @@ func convertToInvitationCode(n int) string {
 	return code
 }
 
-func doInvite(invitor string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+func doInvite(inviter string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	user := inMsg.FromUserName
-	if user == invitor {
+	if user == inviter {
 		echoWechatTextMsg(writer, inMsg, "抱歉，你无法使用自己的邀请码。")
 		return
 	}
@@ -86,15 +86,15 @@ func doInvite(invitor string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 		return
 	}
 
-	existedInvitor, _ := gptredis.GetInvitor(user)
-	if existedInvitor != "" {
+	existedInviter, _ := gptredis.GetInviter(user)
+	if existedInviter != "" {
 		echoWechatTextMsg(writer, inMsg, "抱歉，邀请码只能使用一次。")
 		return
 	}
 
-	_ = logic.AddPaidBalance(invitor, 20)
+	_ = logic.AddPaidBalance(inviter, 20)
 	userPaidBalance := logic.AddPaidBalance(user, 10)
-	_ = gptredis.SetInvitor(user, invitor)
+	_ = gptredis.SetInviter(user, inviter)
 	echoWechatTextMsg(writer, inMsg, fmt.Sprintf(inviteSuccessMsg,
 		userPaidBalance,
 		util.GetInvitationTutorialLink(),

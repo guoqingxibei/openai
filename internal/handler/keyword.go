@@ -105,9 +105,9 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	if keyword == "" {
 		size := len(question)
 		if size == sizeOfCode {
-			invitor, _ := gptredis.GetUserByInvitationCode(strings.ToUpper(question))
-			if invitor != "" {
-				doInvite(invitor, inMsg, writer)
+			inviter, _ := gptredis.GetUserByInvitationCode(strings.ToUpper(question))
+			if inviter != "" {
+				doInvite(inviter, inMsg, writer)
 				return true
 			}
 		} else if size == 36 {

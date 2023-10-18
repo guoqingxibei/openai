@@ -376,14 +376,14 @@ func SetUserByInvitationCode(code string, user string) error {
 	return rdb.Set(ctx, buildUserKey(code), user, 0).Err()
 }
 
-func buildInvitor(user string) string {
-	return "user:" + user + ":invitor"
+func buildInviter(user string) string {
+	return "user:" + user + ":inviter"
 }
 
-func SetInvitor(user string, invitor string) error {
-	return rdb.Set(ctx, buildInvitor(user), invitor, 0).Err()
+func SetInviter(user string, inviter string) error {
+	return rdb.Set(ctx, buildInviter(user), inviter, 0).Err()
 }
 
-func GetInvitor(user string) (string, error) {
-	return rdb.Get(ctx, buildInvitor(user)).Result()
+func GetInviter(user string) (string, error) {
+	return rdb.Get(ctx, buildInviter(user)).Result()
 }
