@@ -18,6 +18,8 @@ func echoWechatOnClick(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		clearHistory(inMsg, writer)
 	case help:
 		showUsage(inMsg, writer)
+	case invite:
+		getInvitationCode(inMsg, writer)
 	case donate:
 		fallthrough
 	case group:

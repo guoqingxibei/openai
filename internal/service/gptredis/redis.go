@@ -343,3 +343,47 @@ func GetErrors(day string) ([]model.MyError, error) {
 func GetErrorsLen(day string) (int64, error) {
 	return rdb.LLen(ctx, buildErrorsKey(day)).Result()
 }
+
+func getInvitationCodeCursorKey() string {
+	return "invitation-code-cursor"
+}
+
+func IncInvitationCodeCursor() (int64, error) {
+	return rdb.Incr(ctx, getInvitationCodeCursorKey()).Result()
+}
+
+func buildInvitationCodeKey(user string) string {
+	return "user:" + user + ":invitation-code"
+}
+
+func GetInvitationCode(user string) (string, error) {
+	return rdb.Get(ctx, buildInvitationCodeKey(user)).Result()
+}
+
+func SetInvitationCode(user string, code string) error {
+	return rdb.Set(ctx, buildInvitationCodeKey(user), code, 0).Err()
+}
+
+func buildUserKey(code string) string {
+	return "invitation-code:" + code + ":user"
+}
+
+func GetUserByInvitationCode(code string) (string, error) {
+	return rdb.Get(ctx, buildUserKey(code)).Result()
+}
+
+func SetUserByInvitationCode(code string, user string) error {
+	return rdb.Set(ctx, buildUserKey(code), user, 0).Err()
+}
+
+func buildInvitor(user string) string {
+	return "user:" + user + ":invitor"
+}
+
+func SetInvitor(user string, invitor string) error {
+	return rdb.Set(ctx, buildInvitor(user), invitor, 0).Err()
+}
+
+func GetInvitor(user string) (string, error) {
+	return rdb.Get(ctx, buildInvitor(user)).Result()
+}

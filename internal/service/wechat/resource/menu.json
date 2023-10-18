@@ -12,6 +12,11 @@
           "type": "view",
           "name": "购买次数",
           "url": "https://brother.cxyds.top/shop"
+        },
+        {
+          "type": "click",
+          "name": "邀请好友",
+          "key": "invite"
         }
       ]
     },

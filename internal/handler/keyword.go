@@ -24,9 +24,11 @@ const (
 	report   = "report"
 	transfer = "transfer"
 	clear    = "clear"
+	invite   = "invite"
 	reset    = "jgq-reset"
 )
 
+// prefix keyword
 const (
 	generateCode = "generate-code"
 	code         = "code:"
@@ -44,7 +46,7 @@ const (
 )
 
 var keywords = []string{
-	donate, group, help, contact, report, transfer, clear, reset, constant.GPT3, constant.GPT4,
+	donate, group, help, contact, report, transfer, clear, invite, reset, constant.GPT3, constant.GPT4,
 }
 var keywordPrefixes = []string{generateCode, code}
 
@@ -87,6 +89,8 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 			useCodeWithPrefix(question, inMsg, writer)
 		case clear:
 			clearHistory(inMsg, writer)
+		case invite:
+			getInvitationCode(inMsg, writer)
 		case reset:
 			resetBalance(inMsg, writer)
 		case constant.GPT3:
@@ -98,11 +102,20 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	}
 
 	// may hit code
-	if keyword == "" && len(question) == 36 {
-		codeDetailStr, _ := gptredis.FetchCodeDetail(question)
-		if codeDetailStr != "" {
-			useCode(codeDetailStr, inMsg, writer)
-			return true
+	if keyword == "" {
+		size := len(question)
+		if size == sizeOfCode {
+			invitor, _ := gptredis.GetUserByInvitationCode(strings.ToUpper(question))
+			if invitor != "" {
+				doInvite(invitor, inMsg, writer)
+				return true
+			}
+		} else if size == 36 {
+			codeDetailStr, _ := gptredis.FetchCodeDetail(question)
+			if codeDetailStr != "" {
+				useCode(codeDetailStr, inMsg, writer)
+				return true
+			}
 		}
 	}
 
@@ -142,9 +155,7 @@ func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter
 	}
 
 	userName := inMsg.FromUserName
-	balance, _ := gptredis.FetchPaidBalance(userName)
-	newBalance := codeDetail.Times + balance
-	_ = gptredis.SetPaidBalance(userName, newBalance)
+	newBalance := logic.AddPaidBalance(userName, codeDetail.Times)
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)

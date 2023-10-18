@@ -120,3 +120,10 @@ func DecrBalanceOfToday(user string, gptMode string) error {
 	}
 	return err
 }
+
+func AddPaidBalance(user string, added int) int {
+	balance, _ := gptredis.FetchPaidBalance(user)
+	newBalance := added + balance
+	_ = gptredis.SetPaidBalance(user, newBalance)
+	return newBalance
+}
