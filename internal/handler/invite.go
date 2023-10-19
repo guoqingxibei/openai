@@ -88,7 +88,7 @@ func doInvite(inviter string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	currentTimestamp := time.Now().Unix()
 	subScribeTimestamp, _ := gptredis.FetchSubscribeTimestamp(user)
 	if currentTimestamp-subScribeTimestamp > halfAnHour {
-		echoWechatTextMsg(writer, inMsg, "抱歉，邀请码仅在关注公众号半小时内输入有效。")
+		echoWechatTextMsg(writer, inMsg, "抱歉，邀请码仅在首次关注公众号半小时内输入有效。")
 		return
 	}
 
