@@ -44,21 +44,21 @@ func checkVendorBalance() {
 	log.Println("Checking balance of vendors...")
 	alarm := false
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
-	if ohmygptBalance < 10 {
+	if ohmygptBalance < 30 {
 		alarm = true
 	}
 	sbBalance, _ := sb.GetSbBalance()
-	if sbBalance < 5 {
+	if sbBalance < 10 {
 		alarm = true
 	}
-	point, _ := api2d.GetPoint()
-	if point < 1000 {
+	api2dBalance, _ := api2d.GetApi2dBalance()
+	if api2dBalance < 10 {
 		alarm = true
 	}
 	if alarm {
 		log.Println("Balance is insufficient, sending email...")
-		body := fmt.Sprintf("Ohmygpt balance: ￥%.2f\nSB balance: ￥%.2f\nApi2d points: %d",
-			ohmygptBalance, sbBalance, point)
+		body := fmt.Sprintf("Ohmygpt: ￥%.2f\nSB: ￥%.2f\nApi2d: ￥%.2f",
+			ohmygptBalance, sbBalance, api2dBalance)
 		email.SendEmail("Insufficient Balance", body)
 	}
 	log.Println("Check finished")
@@ -111,19 +111,12 @@ func sendYesterdayReportEmail() {
 	body += errorTitle + errorContent
 
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
-	ohmygptTitle := "\n[Ohmygpt]\n"
-	ohmygptContent := fmt.Sprintf("Blance: ￥%.2f\n", ohmygptBalance)
-	body += ohmygptTitle + ohmygptContent
-
 	sbBalance, _ := sb.GetSbBalance()
-	sbTitle := "\n[SB]\n"
-	sbContent := fmt.Sprintf("Blance: ￥%.2f\n", sbBalance)
-	body += sbTitle + sbContent
-
-	point, _ := api2d.GetPoint()
-	api2dTitle := "\n[Api2d]\n"
-	api2dContent := fmt.Sprintf("Points: %d\n", point)
-	body += api2dTitle + api2dContent
+	api2dBalance, _ := api2d.GetApi2dBalance()
+	balanceTitle := "\n[balance]\n"
+	balanceContent := fmt.Sprintf("Ohmygpt: ￥%.2f\nSB: ￥%.2f\nApi2d: ￥%.2f",
+		ohmygptBalance, sbBalance, api2dBalance)
+	body += balanceTitle + balanceContent
 
 	email.SendEmail(subject, body)
 }

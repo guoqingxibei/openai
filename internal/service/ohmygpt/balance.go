@@ -20,7 +20,7 @@ type balanceResponse struct {
 
 func GetOhmygptBalance() (float64, error) {
 	start := time.Now()
-	url := "https://api.ohmygpt.com/api/v1/user/admin/balance"
+	url := "https://cfcus02.opapi.win/api/v1/user/admin/balance"
 	payload := strings.NewReader("")
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {

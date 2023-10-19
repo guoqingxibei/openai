@@ -19,7 +19,7 @@ type profileResponse struct {
 	} `json:"data"`
 }
 
-func GetPoint() (int, error) {
+func GetApi2dBalance() (float64, error) {
 	start := time.Now()
 	url := "https://api.api2win.com/user/profile"
 	payload := strings.NewReader("")
@@ -45,5 +45,6 @@ func GetPoint() (int, error) {
 		int(time.Since(start).Milliseconds()),
 		util.EscapeNewline(string(body)),
 	)
-	return resp.Data.Profile.Point, nil
+	point := resp.Data.Profile.Point
+	return float64(point) * 0.0021, nil
 }
