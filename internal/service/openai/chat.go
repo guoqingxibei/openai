@@ -37,7 +37,7 @@ func createClientWithVendor(aiVendor string) *_openai.Client {
 
 func createClient(key string, baseURL string) *_openai.Client {
 	var defaultConfig = _openai.DefaultConfig(key)
-	defaultConfig.BaseURL = baseURL
+	defaultConfig.BaseURL = baseURL + "/v1"
 	return _openai.NewClientWithConfig(defaultConfig)
 }
 
