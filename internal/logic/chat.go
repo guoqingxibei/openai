@@ -17,7 +17,7 @@ const (
 )
 
 func ChatCompletionStream(aiVendor string, userName string, msgId int64,
-	question string, isVoice bool, gptMode string) error {
+	question string, isVoice bool, mode string) error {
 	_ = gptredis.AppendReplyChunk(msgId, StartMark)
 	messages, err := gptredis.FetchMessages(userName)
 	if err != nil {
@@ -39,7 +39,7 @@ func ChatCompletionStream(aiVendor string, userName string, msgId int64,
 	chunkLen := 60
 	isFirstChunk := true
 	passedCensor := true
-	openai.ChatCompletionsStream(aiVendor, gptMode, messages, func(word string) bool {
+	openai.ChatCompletionsStream(aiVendor, mode, messages, func(word string) bool {
 		chunk += word
 		answer += word
 		if len(chunk) >= chunkLen && endsWithPunct(word) || len(chunk) >= 0 {

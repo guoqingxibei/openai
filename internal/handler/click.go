@@ -13,7 +13,7 @@ func echoWechatOnClick(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	case constant.GPT3:
 		fallthrough
 	case constant.GPT4:
-		switchGPTMode(inMsg.EventKey, inMsg, writer)
+		switchMode(inMsg.EventKey, inMsg, writer)
 	case clear:
 		clearHistory(inMsg, writer)
 	case help:

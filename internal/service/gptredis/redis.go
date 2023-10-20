@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	_openai "github.com/sashabaranov/go-openai"
+	"log"
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/model"
@@ -29,6 +30,28 @@ func init() {
 		DB:       config.C.Redis.UncleDB,
 	})
 	rdb = selectDefaultRdb()
+	correctModeKey()
+}
+
+func correctModeKey() {
+	log.Println("Start...")
+	keys, _ := rdb.Keys(ctx, "user:*gpt-mode").Result()
+	for _, key := range keys {
+		log.Println(key)
+		user := key[5:33]
+		mode, err1 := rdb.Get(ctx, key).Result()
+		err2 := SetMode(user, mode)
+		if err1 != nil || err2 != nil {
+			log.Println(err1, err2)
+			return
+		}
+		err3 := rdb.Del(ctx, key).Err()
+		if err3 != nil {
+			log.Println(err3)
+			return
+		}
+		log.Printf("Deleted the key: %s, %s", key, mode)
+	}
 }
 
 func selectDefaultRdb() *redis.Client {
@@ -153,7 +176,7 @@ func DecrBalance(user string, day string) (int, error) {
 }
 
 func buildBalanceKey(user string, day string) string {
-	return "user:" + user + ":mode:" + constant.Chat + ":day:" + day + ":balance"
+	return "user:" + user + ":day:" + day + ":balance"
 }
 
 func FetchMediaId(imageName string) (string, error) {
@@ -295,20 +318,20 @@ func FetchTransaction(outTradeNo string) (model.Transaction, error) {
 	return transaction, err
 }
 
-func buildGPTModeKey(user string) string {
-	return "user:" + user + "gpt-mode"
+func buildModeKey(user string) string {
+	return "user:" + user + ":mode"
 }
 
-func GetGPTMode(user string) (string, error) {
-	result, err := rdb.Get(ctx, buildGPTModeKey(user)).Result()
+func GetMode(user string) (string, error) {
+	result, err := rdb.Get(ctx, buildModeKey(user)).Result()
 	if err == redis.Nil {
 		return constant.GPT3, nil
 	}
 	return result, err
 }
 
-func SetGPTMode(user string, gptMode string) error {
-	return rdb.Set(ctx, buildGPTModeKey(user), gptMode, 0).Err()
+func SetMode(user string, mode string) error {
+	return rdb.Set(ctx, buildModeKey(user), mode, 0).Err()
 }
 
 func buildErrorsKey(day string) string {

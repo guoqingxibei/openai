@@ -96,7 +96,7 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		case constant.GPT3:
 			fallthrough
 		case constant.GPT4:
-			switchGPTMode(keyword, inMsg, writer)
+			switchMode(keyword, inMsg, writer)
 		}
 		return true
 	}
@@ -236,9 +236,9 @@ func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
-	gptMode, _ := gptredis.GetGPTMode(userName)
-	usage := fmt.Sprintf("【模式】当前模式是%s，", gptMode)
-	if gptMode == constant.GPT3 {
+	mode, _ := gptredis.GetMode(userName)
+	usage := fmt.Sprintf("【模式】当前模式是%s，", mode)
+	if mode == constant.GPT3 {
 		usage += "每次提问消耗次数1。"
 	} else {
 		usage += "每次提问消耗次数10。"

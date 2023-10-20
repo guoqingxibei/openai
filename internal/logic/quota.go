@@ -14,9 +14,9 @@ import (
 const oneMonth = 30 * 24 * 3600
 const oneWeek = 7 * 24 * 3600
 
-func CheckBalance(inMsg *wechat.Msg, gptMode string) (bool, string) {
+func CheckBalance(inMsg *wechat.Msg, mode string) (bool, string) {
 	userName := inMsg.FromUserName
-	if gptMode == constant.GPT4 {
+	if mode == constant.GPT4 {
 		paidBalance, _ := gptredis.FetchPaidBalance(userName)
 		if paidBalance < constant.TimesPerQuestionGPT4 {
 			gpt4BalanceTip := "【余额不足】抱歉，付费次数剩余%d次，不足以继续使用gpt4模式(每次提问消耗次数10)，" +
@@ -118,8 +118,8 @@ func SetBalanceOfToday(user string, balance int) error {
 	return gptredis.SetBalance(user, util.Today(), balance)
 }
 
-func DecrBalanceOfToday(user string, gptMode string) error {
-	if gptMode == constant.GPT4 {
+func DecrBalanceOfToday(user string, mode string) error {
+	if mode == constant.GPT4 {
 		_, err := gptredis.DecrPaidBalance(user, constant.TimesPerQuestionGPT4)
 		return err
 	}

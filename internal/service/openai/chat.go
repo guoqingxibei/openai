@@ -64,13 +64,13 @@ func getClient(vendor string) *_openai.Client {
 
 func ChatCompletionsStream(
 	aiVendor string,
-	gptMode string,
+	mode string,
 	messages []_openai.ChatCompletionMessage,
 	processWord func(word string) bool,
 	done func(),
 	errorHandler func(err error)) {
 	model := _openai.GPT3Dot5Turbo
-	if gptMode == constant.GPT4 {
+	if mode == constant.GPT4 {
 		model = _openai.GPT4
 	}
 	tokenCount := util.CalTokenCount4Messages(messages, CurrentModel)

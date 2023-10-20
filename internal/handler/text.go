@@ -55,8 +55,8 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	msgId := inMsg.MsgId
 	userName := inMsg.FromUserName
 	question := strings.TrimSpace(inMsg.Content)
-	gptMode, _ := gptredis.GetGPTMode(userName)
-	ok, reply := logic.CheckBalance(inMsg, gptMode)
+	mode, _ := gptredis.GetMode(userName)
+	ok, reply := logic.CheckBalance(inMsg, mode)
 	if !ok {
 		return reply
 	}
@@ -64,12 +64,12 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	answerChan := make(chan string, 1)
 	go func() {
 		isVoice := inMsg.Recognition != ""
-		err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, gptMode)
+		err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
 		if err != nil {
 			log.Printf("[%d] logic.ChatCompletionStream with OpenaiSb failed %s", msgId, err)
 			// retry with api2d vendor
 			_ = gptredis.DelReplyChunks(msgId)
-			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, gptMode)
+			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
 			if err != nil {
 				log.Printf("[%d] logic.ChatCompletionStream with OpenaiApi2d failed %s", msgId, err)
 				logic.RecordError(err)
@@ -78,7 +78,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 			}
 		}
 
-		err = logic.DecrBalanceOfToday(userName, gptMode)
+		err = logic.DecrBalanceOfToday(userName, mode)
 		if err != nil {
 			log.Println("gptredis.DecrBalance failed", err)
 		}
