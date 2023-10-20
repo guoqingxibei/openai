@@ -27,7 +27,11 @@ func init() {
 
 func createClientWithVendor(aiVendor string) *_openai.Client {
 	if aiVendor == constant.Ohmygpt {
-		return createClient(config.C.Ohmygpt.Key, config.C.Ohmygpt.BaseURL)
+		baseUrl := config.C.Ohmygpt.BaseURL
+		if config.C.Ohmygpt.UseAzure {
+			baseUrl += "/azure"
+		}
+		return createClient(config.C.Ohmygpt.Key, baseUrl)
 	}
 	if aiVendor == constant.OpenaiSb {
 		return createClient(config.C.OpenaiSb.Key, config.C.OpenaiSb.BaseURL)

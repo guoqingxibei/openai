@@ -13,8 +13,9 @@ type conf struct {
 		Proxy string `json:"proxy"`
 	} `json:"http"`
 	Ohmygpt struct {
-		Key     string `json:"key"`
-		BaseURL string `json:"base_url"`
+		Key      string `json:"key"`
+		BaseURL  string `json:"base_url"`
+		UseAzure bool   `json:"use_azure"`
 	} `json:"ohmygpt"`
 	OpenaiSb struct {
 		Key     string `json:"key"`
