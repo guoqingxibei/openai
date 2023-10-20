@@ -5,7 +5,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"log"
 	"openai/internal/constant"
-	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
 	"time"
@@ -14,8 +13,7 @@ import (
 const oneMonth = 30 * 24 * 3600
 const oneWeek = 7 * 24 * 3600
 
-func CheckBalance(inMsg *wechat.Msg, mode string) (bool, string) {
-	userName := inMsg.FromUserName
+func CheckBalance(userName string, mode string) (bool, string) {
 	if mode == constant.GPT4 {
 		paidBalance, _ := store.GetPaidBalance(userName)
 		if paidBalance < constant.TimesPerQuestionGPT4 {

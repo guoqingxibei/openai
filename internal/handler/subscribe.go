@@ -2,16 +2,16 @@ package handler
 
 import (
 	"github.com/redis/go-redis/v9"
+	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
-	"net/http"
 	"openai/internal/constant"
-	"openai/internal/service/wechat"
 	"openai/internal/store"
+	"openai/internal/util"
 	"time"
 )
 
-func onSubscribe(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	userName := inMsg.FromUserName
+func onSubscribe(msg *message.MixMessage) *message.Reply {
+	userName := string(msg.FromUserName)
 	log.Println("新增关注:", userName)
 	_, err := store.GetSubscribeTimestamp(userName)
 	if err == redis.Nil {
@@ -20,6 +20,5 @@ func onSubscribe(inMsg *wechat.Msg, writer http.ResponseWriter) {
 			log.Println("store.SetSubscribeTimestamp failed", err)
 		}
 	}
-
-	echoWechatTextMsg(writer, inMsg, constant.SubscribeReply)
+	return util.BuildTextReply(constant.SubscribeReply)
 }

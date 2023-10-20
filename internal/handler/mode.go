@@ -2,18 +2,17 @@ package handler
 
 import (
 	"fmt"
-	"net/http"
+	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
 )
 
-func switchMode(mode string, inMsg *wechat.Msg, writer http.ResponseWriter) {
-	userName := inMsg.FromUserName
+func switchMode(mode string, msg *message.MixMessage) *message.Reply {
+	userName := string(msg.FromUserName)
 	_ = store.SetMode(userName, mode)
-	echoWechatTextMsg(writer, inMsg, buildModeDesc(userName, mode))
+	return util.BuildTextReply(buildModeDesc(userName, mode))
 }
 
 func buildModeDesc(userName string, mode string) string {

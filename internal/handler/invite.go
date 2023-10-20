@@ -2,9 +2,8 @@ package handler
 
 import (
 	"fmt"
-	"net/http"
+	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"openai/internal/logic"
-	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
 	"time"
@@ -39,8 +38,8 @@ var codeChars = []rune{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
 				'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
 var base = len(codeChars) // char count
 
-func getInvitationCode(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	user := inMsg.FromUserName
+func getInvitationCode(msg *message.MixMessage) (reply *message.Reply) {
+	user := string(msg.FromUserName)
 	code, _ := store.GetInvitationCode(user)
 	if code == "" {
 		cursor, _ := store.IncInvitationCodeCursor()
@@ -48,7 +47,7 @@ func getInvitationCode(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		_ = store.SetInvitationCode(user, code)
 		_ = store.SetUserByInvitationCode(code, user)
 	}
-	echoWechatTextMsg(writer, inMsg, fmt.Sprintf(inviteTutorial,
+	return util.BuildTextReply(fmt.Sprintf(inviteTutorial,
 		code,
 		inviterReward,
 		inviteeReward,
@@ -78,30 +77,27 @@ func convertToInvitationCode(n int) string {
 	return code
 }
 
-func doInvite(inviter string, inMsg *wechat.Msg, writer http.ResponseWriter) {
-	user := inMsg.FromUserName
+func doInvite(inviter string, msg *message.MixMessage) (reply *message.Reply) {
+	user := string(msg.FromUserName)
 	if user == inviter {
-		echoWechatTextMsg(writer, inMsg, "抱歉，你无法使用自己的邀请码。")
-		return
+		return util.BuildTextReply("抱歉，你无法使用自己的邀请码。")
 	}
 
 	currentTimestamp := time.Now().Unix()
 	subScribeTimestamp, _ := store.GetSubscribeTimestamp(user)
 	if currentTimestamp-subScribeTimestamp > halfAnHour {
-		echoWechatTextMsg(writer, inMsg, "抱歉，邀请码仅在首次关注公众号半小时内输入有效。")
-		return
+		return util.BuildTextReply("抱歉，邀请码仅在首次关注公众号半小时内输入有效。")
 	}
 
 	existedInviter, _ := store.GetInviter(user)
 	if existedInviter != "" {
-		echoWechatTextMsg(writer, inMsg, "抱歉，邀请码只能使用一次。")
-		return
+		return util.BuildTextReply("抱歉，邀请码只能使用一次。")
 	}
 
 	_ = logic.AddPaidBalance(inviter, inviterReward)
 	userPaidBalance := logic.AddPaidBalance(user, inviteeReward)
 	_ = store.SetInviter(user, inviter)
-	echoWechatTextMsg(writer, inMsg, fmt.Sprintf(inviteSuccessMsg,
+	return util.BuildTextReply(fmt.Sprintf(inviteSuccessMsg,
 		inviterReward,
 		inviteeReward,
 		userPaidBalance,

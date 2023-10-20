@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,7 +27,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 	msgId, err := strconv.ParseInt(msgIdStr, 10, 64)
 	if err != nil {
 		log.Println("Invalid msgId", err)
-		echoJson(w, nil, 1)
+		fmt.Fprint(w, "Invalid msgId")
 		return
 	}
 
@@ -69,14 +68,4 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-}
-
-func echoJson(w http.ResponseWriter, reply *replylogic.Reply, code int) {
-	w.Header().Set("Content-Type", "application/json; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	data, _ := json.Marshal(map[string]interface{}{
-		"code":  code,
-		"reply": reply,
-	})
-	w.Write(data)
 }

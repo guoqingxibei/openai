@@ -2,13 +2,13 @@ package handler
 
 import (
 	"fmt"
+	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
-	"net/http"
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/wechat"
 	"openai/internal/store"
+	"openai/internal/util"
 	"strconv"
 	"strings"
 	"time"
@@ -21,59 +21,58 @@ const (
 	maxLengthOfQuestion  = 2000
 )
 
-func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
+func onReceiveText(msg *message.MixMessage) (reply *message.Reply) {
 	// be compatible with voice message
-	if inMsg.Recognition != "" {
-		inMsg.Content = inMsg.Recognition
+	if msg.Recognition != "" {
+		msg.Content = msg.Recognition
 	}
 
-	if len(inMsg.Content) > maxLengthOfQuestion {
-		echoWechatTextMsg(writer, inMsg, constant.TooLongQuestion)
-		return
+	if len(msg.Content) > maxLengthOfQuestion {
+		return util.BuildTextReply(constant.TooLongQuestion)
 	}
 
-	if hitKeyword(inMsg, writer) {
-		return
-	}
-
-	msgId := inMsg.MsgId
-	times, _ := store.IncAccessTimes(msgId)
-	// when WeChat server retries
-	if times > 1 {
-		replyWhenRetry(inMsg, writer)
-		return
-	}
-
-	echoWechatTextMsg(writer, inMsg, genAnswer4Text(inMsg))
-}
-
-func replyWhenRetry(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	echoWechatTextMsg(writer, inMsg, buildAnswer(inMsg.MsgId))
-}
-
-func genAnswer4Text(inMsg *wechat.Msg) string {
-	msgId := inMsg.MsgId
-	userName := inMsg.FromUserName
-	question := strings.TrimSpace(inMsg.Content)
-	mode, _ := store.GetMode(userName)
-	ok, reply := logic.CheckBalance(inMsg, mode)
-	if !ok {
+	hit, reply := hitKeyword(msg)
+	if hit {
 		return reply
 	}
 
-	answerChan := make(chan string, 1)
+	msgID := msg.MsgID
+	times, _ := store.IncAccessTimes(msgID)
+	// when WeChat server retries
+	if times > 1 {
+		return replyWhenRetry(msg)
+	}
+
+	return util.BuildTextReply(genReply4Text(msg))
+}
+
+func replyWhenRetry(msg *message.MixMessage) (reply *message.Reply) {
+	return util.BuildTextReply(buildReply(msg.MsgID))
+}
+
+func genReply4Text(msg *message.MixMessage) string {
+	msgId := msg.MsgID
+	userName := string(msg.FromUserName)
+	question := strings.TrimSpace(msg.Content)
+	mode, _ := store.GetMode(userName)
+	ok, balanceTip := logic.CheckBalance(userName, mode)
+	if !ok {
+		return balanceTip
+	}
+
+	replyChan := make(chan string, 1)
 	go func() {
-		isVoice := inMsg.Recognition != ""
+		isVoice := msg.Recognition != ""
 		err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
 		if err != nil {
-			log.Printf("[%d] logic.ChatCompletionStream with OpenaiSb failed %s", msgId, err)
+			log.Printf("[%d] logic.ChatCompletionStream with Ohmygpt failed %s", msgId, err)
 			// retry with api2d vendor
 			_ = store.DelReplyChunks(msgId)
 			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
 			if err != nil {
-				log.Printf("[%d] logic.ChatCompletionStream with OpenaiApi2d failed %s", msgId, err)
+				log.Printf("[%d] logic.ChatCompletionStream with OpenaiSb failed %s", msgId, err)
 				logic.RecordError(err)
-				answerChan <- constant.TryAgain
+				replyChan <- constant.TryAgain
 				return
 			}
 		}
@@ -82,46 +81,46 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 		if err != nil {
 			log.Println("store.DecrBalance failed", err)
 		}
-		answerChan <- buildAnswer(msgId)
+		replyChan <- buildReply(msgId)
 	}()
 	select {
-	case answer := <-answerChan:
-		return answer
+	case reply := <-replyChan:
+		return reply
 	case <-time.After(time.Millisecond * 2000):
-		return buildAnswer(msgId)
+		return buildReply(msgId)
 	}
 }
 
-func buildAnswer(msgId int64) string {
-	answer, reachEnd := logic.FetchAnswer(msgId)
-	if len(answer) > maxLengthOfReply {
-		answer = buildAnswerWithShowMore(string([]rune(answer)[:maxRuneLengthOfReply]), msgId)
+func buildReply(msgId int64) string {
+	reply, reachEnd := logic.FetchReply(msgId)
+	if len(reply) > maxLengthOfReply {
+		reply = buildReplyWithShowMore(string([]rune(reply)[:maxRuneLengthOfReply]), msgId)
 	} else {
 		if reachEnd {
 			// Intent to display internal images via web
-			if strings.Contains(answer, "![](./images/") {
-				runes := []rune(answer)
+			if strings.Contains(reply, "![](./images/") {
+				runes := []rune(reply)
 				length := len(runes)
 				if length > 30 {
 					length = 30
 				}
-				answer = buildAnswerWithShowMore(string(runes[:length]), msgId)
+				reply = buildReplyWithShowMore(string(runes[:length]), msgId)
 			} else {
-				answer = answer + "\n" + buildAnswerURL(msgId, "查看网页版")
+				reply = reply + "\n" + buildReplyURL(msgId, "查看网页版")
 			}
 		} else {
-			if answer == "" {
-				answer = buildAnswerURL(msgId, "点击查看回复")
+			if reply == "" {
+				reply = buildReplyURL(msgId, "点击查看回复")
 			} else {
-				answer = buildAnswerWithShowMore(answer, msgId)
+				reply = buildReplyWithShowMore(reply, msgId)
 			}
 		}
 	}
-	return answer
+	return reply
 }
 
-func buildAnswerWithShowMore(answer string, msgId int64) string {
-	return trimTailingPuncts(answer) + "...\n" + buildAnswerURL(msgId, "查看更多")
+func buildReplyWithShowMore(answer string, msgId int64) string {
+	return trimTailingPuncts(answer) + "...\n" + buildReplyURL(msgId, "查看更多")
 }
 
 func trimTailingPuncts(answer string) string {
@@ -139,12 +138,7 @@ func trimTailingPuncts(answer string) string {
 	return string(runeAnswer[:tailIdx+1])
 }
 
-func buildAnswerURL(msgId int64, desc string) string {
+func buildReplyURL(msgId int64, desc string) string {
 	url := config.C.Wechat.MessageUrlPrefix + "/answer/#/?msgId=" + strconv.FormatInt(msgId, 10)
 	return fmt.Sprintf("<a href=\"%s\">%s</a>", url, desc)
-}
-
-func echoWechatImageMsg(writer http.ResponseWriter, inMsg *wechat.Msg, mediaId string) {
-	outMsg := inMsg.BuildImageMsg(mediaId)
-	echoWeChat(writer, outMsg)
 }

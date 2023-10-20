@@ -2,12 +2,12 @@ package bootstrap
 
 import (
 	"bytes"
+	"encoding/xml"
 	"github.com/felixge/httpsnoop"
 	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"openai/internal/service/wechat"
 	"openai/internal/util"
 	"strings"
 	"time"
@@ -32,14 +32,32 @@ type HTTPReqInfo struct {
 	content   string
 }
 
+type Msg struct {
+	FromUserName string `xml:"FromUserName"`
+	Content      string `xml:"Content"`
+	MsgId        int64  `xml:"MsgId,omitempty"`
+}
+
+type Image struct {
+	MediaId string `xml:"MediaId"`
+}
+
+func parseMsg(data []byte) (*Msg, error) {
+	var msg Msg
+	if err := xml.Unmarshal(data, &msg); err != nil {
+		return nil, err
+	}
+	return &msg, nil
+}
+
 func LogRequestHandler(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		bodyBytes, _ := io.ReadAll(r.Body)
 		r.Body.Close()
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-		inMsg, _ := wechat.NewInMsg(bodyBytes)
+		inMsg, _ := parseMsg(bodyBytes)
 		if inMsg == nil {
-			inMsg = &wechat.Msg{}
+			inMsg = &Msg{}
 		}
 		ri := &HTTPReqInfo{
 			method:    r.Method,

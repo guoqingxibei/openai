@@ -6,11 +6,13 @@ import (
 	"github.com/go-pay/gopay"
 	"github.com/go-pay/gopay/wechat/v3"
 	"log"
+	"openai/internal/config"
 	"time"
 )
 
 var client *wechat.ClientV3
 var ctx = context.Background()
+var wcCfg = config.C.Wechat
 
 func init() {
 	// NewClientV3 初始化微信客户端 v3
@@ -19,7 +21,7 @@ func init() {
 	// apiV3Key：apiV3Key，商户平台获取
 	// privateKey：私钥 apiclient_key.pem 读取后的内容
 	var err error
-	client, err = wechat.NewClientV3(wechatConfig.MchId, wechatConfig.SerialNo, wechatConfig.APIv3Key, wechatConfig.PrivateKey)
+	client, err = wechat.NewClientV3(wcCfg.MchId, wcCfg.SerialNo, wcCfg.APIv3Key, wcCfg.PrivateKey)
 	if err != nil {
 		log.Println(err)
 		return
@@ -45,11 +47,11 @@ func init() {
 func InitiateTransaction(openid string, tradeNo string, total int, description string) (string, error) {
 	expire := time.Now().Add(10 * time.Minute).Format(time.RFC3339)
 	bm := make(gopay.BodyMap)
-	bm.Set("appid", wechatConfig.AppId).
+	bm.Set("appid", wcCfg.AppId).
 		Set("description", description).
 		Set("out_trade_no", tradeNo).
 		Set("time_expire", expire).
-		Set("notify_url", wechatConfig.NotifyUrl).
+		Set("notify_url", wcCfg.NotifyUrl).
 		SetBodyMap("amount", func(bm gopay.BodyMap) {
 			bm.Set("total", total).
 				Set("currency", "CNY")
@@ -80,9 +82,9 @@ func VerifySignAndDecrypt(notifyReq *wechat.V3NotifyReq) (*wechat.V3DecryptResul
 		return nil, err
 	}
 
-	return notifyReq.DecryptCipherText(wechatConfig.APIv3Key)
+	return notifyReq.DecryptCipherText(wcCfg.APIv3Key)
 }
 
 func GeneratePaySignParams(prepayid string) (*wechat.JSAPIPayParams, error) {
-	return client.PaySignOfJSAPI(wechatConfig.AppId, prepayid)
+	return client.PaySignOfJSAPI(wcCfg.AppId, prepayid)
 }

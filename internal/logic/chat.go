@@ -91,7 +91,7 @@ func endsWithPunct(word string) bool {
 	return unicode.IsPunct(runeWord[len(runeWord)-1])
 }
 
-func FetchAnswer(msgId int64) (string, bool) {
+func FetchReply(msgId int64) (string, bool) {
 	chunks, _ := store.GetReplyChunks(msgId, 1, -1)
 	if len(chunks) <= 0 {
 		return "", false
@@ -101,6 +101,6 @@ func FetchAnswer(msgId int64) (string, bool) {
 	if reachEnd {
 		chunks = chunks[:len(chunks)-1]
 	}
-	answer := strings.Join(chunks, "")
-	return answer, reachEnd
+	reply := strings.Join(chunks, "")
+	return reply, reachEnd
 }

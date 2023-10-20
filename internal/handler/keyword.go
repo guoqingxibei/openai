@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
-	"net/http"
 	"openai/internal/constant"
 	"openai/internal/logic"
 	"openai/internal/service/wechat"
@@ -50,8 +50,8 @@ var keywords = []string{
 }
 var keywordPrefixes = []string{generateCode, code}
 
-func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
-	question := inMsg.Content
+func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
+	question := msg.Content
 	question = strings.TrimSpace(question)
 	question = strings.ToLower(question)
 	var keyword string
@@ -76,29 +76,29 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		case donate:
 			fallthrough
 		case group:
-			showImage(keyword, inMsg, writer)
+			reply = showImage(keyword)
 		case help:
-			showUsage(inMsg, writer)
+			reply = showUsage(msg)
 		case transfer:
-			doTransfer(inMsg, writer)
+			reply = doTransfer(msg)
 		case report:
-			showReport(inMsg, writer)
+			reply = showReport()
 		case generateCode:
-			doGenerateCode(question, inMsg, writer)
+			reply = doGenerateCode(question, msg)
 		case code:
-			useCodeWithPrefix(question, inMsg, writer)
+			reply = useCodeWithPrefix(question, msg)
 		case clear:
-			clearHistory(inMsg, writer)
+			reply = clearHistory(msg)
 		case invite:
-			getInvitationCode(inMsg, writer)
+			reply = getInvitationCode(msg)
 		case reset:
-			resetBalance(inMsg, writer)
+			reply = resetBalance(msg)
 		case constant.GPT3:
 			fallthrough
 		case constant.GPT4:
-			switchMode(keyword, inMsg, writer)
+			reply = switchMode(keyword, msg)
 		}
-		return true
+		return true, reply
 	}
 
 	// may hit code
@@ -107,59 +107,57 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 		if size == sizeOfCode {
 			inviter, _ := store.GetUserByInvitationCode(strings.ToUpper(question))
 			if inviter != "" {
-				doInvite(inviter, inMsg, writer)
-				return true
+				reply = doInvite(inviter, msg)
+				return true, reply
 			}
 		} else if size == 36 {
 			codeDetailStr, _ := store.GetCodeDetail(question)
 			if codeDetailStr != "" {
-				useCode(codeDetailStr, inMsg, writer)
-				return true
+				reply = useCode(codeDetailStr, msg)
+				return true, reply
 			}
 		}
 	}
 
 	// missed
-	return false
+	return false, nil
 }
 
-func resetBalance(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	userName := inMsg.FromUserName
+func resetBalance(msg *message.MixMessage) (reply *message.Reply) {
+	userName := string(msg.FromUserName)
 	_ = store.SetPaidBalance(userName, 0)
 	_ = logic.SetBalanceOfToday(userName, 0)
-	echoWechatTextMsg(writer, inMsg, "你的剩余次数已被重置。")
+	return util.BuildTextReply("你的剩余次数已被重置。")
 }
 
-func clearHistory(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	_ = store.DelMessages(inMsg.FromUserName)
-	echoWechatTextMsg(writer, inMsg, "上下文已被清除。现在，你可以开始全新的对话啦。")
+func clearHistory(msg *message.MixMessage) (reply *message.Reply) {
+	_ = store.DelMessages(string(msg.FromUserName))
+	return util.BuildTextReply("上下文已被清除。现在，你可以开始全新的对话啦。")
 }
 
-func useCodeWithPrefix(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+func useCodeWithPrefix(question string, msg *message.MixMessage) (reply *message.Reply) {
 	code := strings.Replace(question, code, "", 1)
 	codeDetailStr, err := store.GetCodeDetail(code)
 	if err == redis.Nil {
-		echoWechatTextMsg(writer, inMsg, "无效的code。")
-		return
+		return util.BuildTextReply("无效的code。")
 	}
 
-	useCode(codeDetailStr, inMsg, writer)
+	return useCode(codeDetailStr, msg)
 }
 
-func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+func useCode(codeDetailStr string, msg *message.MixMessage) (reply *message.Reply) {
 	var codeDetail CodeDetail
 	_ = json.Unmarshal([]byte(codeDetailStr), &codeDetail)
 	if codeDetail.Status == used {
-		echoWechatTextMsg(writer, inMsg, "此code之前已被激活，无需重复激活。")
-		return
+		return util.BuildTextReply("此code之前已被激活，无需重复激活。")
 	}
 
-	userName := inMsg.FromUserName
+	userName := string(msg.FromUserName)
 	newBalance := logic.AddPaidBalance(userName, codeDetail.Times)
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = store.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)
-	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("【激活成功】此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。"+
+	return util.BuildTextReply(fmt.Sprintf("【激活成功】此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。"+
 		getShowBalanceTipWhenUseCode(), codeDetail.Times, newBalance))
 }
 
@@ -170,19 +168,17 @@ func getShowBalanceTipWhenUseCode() string {
 	return "点击菜单「次数-剩余次数」，可查看剩余次数。"
 }
 
-func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+func doGenerateCode(question string, msg *message.MixMessage) (reply *message.Reply) {
 	fields := strings.Fields(question)
 	if len(fields) <= 1 {
-		echoWechatTextMsg(writer, inMsg, "Invalid generate-code usage")
-		return
+		return util.BuildTextReply("Invalid generate-code usage")
 	}
 
 	timesStr := fields[1]
 	times, err := strconv.Atoi(timesStr)
 	if err != nil {
 		log.Printf("timesStr is %s, strconv.Atoi error is %v", timesStr, err)
-		echoWechatTextMsg(writer, inMsg, "Invalid generate-code usage")
-		return
+		return util.BuildTextReply("Invalid generate-code usage")
 	}
 
 	quantity := 1
@@ -191,8 +187,7 @@ func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWrit
 		quantity, err = strconv.Atoi(quantityStr)
 		if err != nil {
 			log.Printf("quantityStr is %s, strconv.Atoi error is %v", quantityStr, err)
-			echoWechatTextMsg(writer, inMsg, "Invalid generate-code usage")
-			return
+			return util.BuildTextReply("Invalid generate-code usage")
 		}
 	}
 
@@ -208,14 +203,14 @@ func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWrit
 		_ = store.SetCodeDetail(code, string(codeDetailBytes), false)
 		codes = append(codes, code)
 	}
-	echoWechatTextMsg(writer, inMsg, strings.Join(codes, "\n"))
+	return util.BuildTextReply(strings.Join(codes, "\n"))
 }
 
-func showReport(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	echoWechatTextMsg(writer, inMsg, constant.ReportInfo)
+func showReport() (reply *message.Reply) {
+	return util.BuildTextReply(constant.ReportInfo)
 }
 
-func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
+func showImage(keyword string) (reply *message.Reply) {
 	mediaName := constant.WriterQrImage
 	switch keyword {
 	case contact:
@@ -228,14 +223,13 @@ func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	QrMediaId, err := wechat.GetMediaId(mediaName)
 	if err != nil {
 		log.Println("wechat.GetMediaId failed", err)
-		echoWechatTextMsg(writer, inMsg, constant.TryAgain)
-		return
+		return util.BuildTextReply(constant.TryAgain)
 	}
-	echoWechatImageMsg(writer, inMsg, QrMediaId)
+	return util.BuildImageReply(QrMediaId)
 }
 
-func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	userName := inMsg.FromUserName
+func showUsage(msg *message.MixMessage) (reply *message.Reply) {
+	userName := string(msg.FromUserName)
 	mode, _ := store.GetMode(userName)
 	usage := fmt.Sprintf("【模式】当前模式是%s，", mode)
 	if mode == constant.GPT3 {
@@ -255,18 +249,17 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	usage += "\n\n<a href=\"https://cxyds.top/2023/07/03/faq.html\">更多用法</a>" +
 		" | <a href=\"https://cxyds.top/2023/09/17/group-qr.html\">交流群</a>" +
 		" | <a href=\"https://cxyds.top/2023/09/17/writer-qr.html\">联系作者</a>"
-	echoWechatTextMsg(writer, inMsg, usage)
+	return util.BuildTextReply(usage)
 }
 
-func doTransfer(inMsg *wechat.Msg, writer http.ResponseWriter) {
+func doTransfer(msg *message.MixMessage) (reply *message.Reply) {
 	if !util.AccountIsUncle() {
-		echoWechatTextMsg(writer, inMsg, "此公众号不支持迁移，请移步公众号「程序员uncle」进行迁移。")
-		return
+		return util.BuildTextReply("此公众号不支持迁移，请移步公众号「程序员uncle」进行迁移。")
 	}
 
-	userName := inMsg.FromUserName
+	userName := string(msg.FromUserName)
 	paidBalance, _ := store.GetPaidBalance(userName)
-	reply := "你的付费次数剩余0次，无需迁移。"
+	replyText := "你的付费次数剩余0次，无需迁移。"
 	if paidBalance > 0 {
 		_ = store.SetPaidBalance(userName, 0)
 		code := uuid.New().String()
@@ -277,8 +270,8 @@ func doTransfer(inMsg *wechat.Msg, writer http.ResponseWriter) {
 		}
 		codeDetailBytes, _ := json.Marshal(codeDetail)
 		_ = store.SetCodeDetail(code, string(codeDetailBytes), true)
-		reply = fmt.Sprintf("你的付费次数剩余%d次，已在此公众号下清零。请复制下面的code发送给新公众号「程序员brother」，"+
+		replyText = fmt.Sprintf("你的付费次数剩余%d次，已在此公众号下清零。请复制下面的code发送给新公众号「程序员brother」，"+
 			"即可完成迁移。感谢你的一路陪伴❤️\n\n%s", paidBalance, code)
 	}
-	echoWechatTextMsg(writer, inMsg, reply)
+	return util.BuildTextReply(replyText)
 }

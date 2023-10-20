@@ -1,30 +1,30 @@
 package handler
 
 import (
+	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
-	"net/http"
 	"openai/internal/constant"
-	"openai/internal/service/wechat"
 )
 
-func echoWechatOnClick(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	log.Printf("%s clicked the button 「%s」", inMsg.FromUserName, inMsg.EventKey)
-	switch inMsg.EventKey {
+func onClick(msg *message.MixMessage) (reply *message.Reply) {
+	log.Printf("%s clicked the button 「%s」", msg.FromUserName, msg.EventKey)
+	switch msg.EventKey {
 	case constant.GPT3:
 		fallthrough
 	case constant.GPT4:
-		switchMode(inMsg.EventKey, inMsg, writer)
+		reply = switchMode(msg.EventKey, msg)
 	case clear:
-		clearHistory(inMsg, writer)
+		reply = clearHistory(msg)
 	case help:
-		showUsage(inMsg, writer)
+		reply = showUsage(msg)
 	case invite:
-		getInvitationCode(inMsg, writer)
+		reply = getInvitationCode(msg)
 	case donate:
 		fallthrough
 	case group:
 		fallthrough
 	case contact:
-		showImage(inMsg.EventKey, inMsg, writer)
+		reply = showImage(msg.EventKey)
 	}
+	return reply
 }

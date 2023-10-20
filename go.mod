@@ -9,6 +9,10 @@ require (
 	github.com/redis/go-redis/v9 v9.0.2
 	github.com/robfig/cron v1.2.0
 	github.com/sashabaranov/go-openai v1.9.0
+	github.com/silenceper/wechat/v2 v2.1.5
+	github.com/sirupsen/logrus v1.9.3
 	github.com/stretchr/testify v1.8.2 // indirect
 	github.com/tiktoken-go/tokenizer v0.1.0
 )
+
+replace github.com/silenceper/wechat/v2 => github.com/guoqingxibei/wechat/v2 v2.2.7

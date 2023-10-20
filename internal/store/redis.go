@@ -125,18 +125,6 @@ func getBaiduApiAccessTokenKey() string {
 	return "baidu-api-access-token"
 }
 
-func GetWechatApiAccessToken() (string, error) {
-	return rdb.Get(ctx, getWechatApiAccessTokenKey()).Result()
-}
-
-func SetWechatApiAccessToken(accessToken string, expiration time.Duration) error {
-	return rdb.Set(ctx, getWechatApiAccessTokenKey(), accessToken, expiration).Err()
-}
-
-func getWechatApiAccessTokenKey() string {
-	return "wechat-api-access-token"
-}
-
 func GetBalance(user string, day string) (int, error) {
 	balance, err := rdb.Get(ctx, buildBalanceKey(user, day)).Result()
 	cnt, _ := strconv.Atoi(balance)

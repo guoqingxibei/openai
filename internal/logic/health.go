@@ -104,7 +104,7 @@ func sendYesterdayReportEmail() {
 	for idx, myError := range errors {
 		errorContent += util.TimestampToTimeStr(myError.TimestampInSeconds) + "  " + myError.ErrorStr + "\n"
 		if idx != count-1 {
-			body += "-----------------------------------\n"
+			errorContent += "-----------------------------------\n"
 		}
 	}
 	errorTitle := fmt.Sprintf("[%d errors]\n", count)
