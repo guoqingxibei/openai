@@ -1,4 +1,4 @@
-package gptredis
+package store
 
 import (
 	"context"
@@ -72,7 +72,7 @@ func SetMessages(toUserName string, messages []_openai.ChatCompletionMessage) er
 	return rdb.Set(ctx, buildMessagesKey(toUserName), newRoundsStr, time.Minute*5).Err()
 }
 
-func FetchMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
+func GetMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
 	var messages []_openai.ChatCompletionMessage
 	messagesStr, err := rdb.Get(ctx, buildMessagesKey(toUserName)).Result()
 	if err != nil {
@@ -113,7 +113,7 @@ func buildAccessTimes(msgIdStr string) string {
 	return "msg-id:" + msgIdStr + ":access-times"
 }
 
-func FetchBaiduApiAccessToken() (string, error) {
+func GetBaiduApiAccessToken() (string, error) {
 	return rdb.Get(ctx, getBaiduApiAccessTokenKey()).Result()
 }
 
@@ -125,7 +125,7 @@ func getBaiduApiAccessTokenKey() string {
 	return "baidu-api-access-token"
 }
 
-func FetchWechatApiAccessToken() (string, error) {
+func GetWechatApiAccessToken() (string, error) {
 	return rdb.Get(ctx, getWechatApiAccessTokenKey()).Result()
 }
 
@@ -137,7 +137,7 @@ func getWechatApiAccessTokenKey() string {
 	return "wechat-api-access-token"
 }
 
-func FetchBalance(user string, day string) (int, error) {
+func GetBalance(user string, day string) (int, error) {
 	balance, err := rdb.Get(ctx, buildBalanceKey(user, day)).Result()
 	cnt, _ := strconv.Atoi(balance)
 	return cnt, err
@@ -156,7 +156,7 @@ func buildBalanceKey(user string, day string) string {
 	return "user:" + user + ":day:" + day + ":balance"
 }
 
-func FetchMediaId(imageName string) (string, error) {
+func GetMediaId(imageName string) (string, error) {
 	return rdb.Get(ctx, getMediaIdKey(imageName)).Result()
 }
 
@@ -185,7 +185,7 @@ func SetSubscribeTimestamp(user string, timestamp int64) error {
 	return rdb.Set(ctx, buildSubscribeTimestampKey(user), strconv.FormatInt(timestamp, 10), 0).Err()
 }
 
-func FetchSubscribeTimestamp(user string) (int64, error) {
+func GetSubscribeTimestamp(user string) (int64, error) {
 	timestampStr, err := rdb.Get(ctx, buildSubscribeTimestampKey(user)).Result()
 	if err != nil {
 		return 0, err
@@ -205,7 +205,7 @@ func SetCodeDetail(code string, codeDetail string, useBrotherDB bool) error {
 	return myRdb.Set(ctx, buildCodeKey(code), codeDetail, 0).Err()
 }
 
-func FetchCodeDetail(code string) (string, error) {
+func GetCodeDetail(code string) (string, error) {
 	return rdb.Get(ctx, buildCodeKey(code)).Result()
 }
 
@@ -221,11 +221,11 @@ func SetPaidBalanceWithDB(user string, balance int, useUncleDB bool) error {
 	return myRdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
 }
 
-func FetchPaidBalance(user string) (int, error) {
-	return FetchPaidBalanceWithDB(user, false)
+func GetPaidBalance(user string) (int, error) {
+	return GetPaidBalanceWithDB(user, false)
 }
 
-func FetchPaidBalanceWithDB(user string, useUncleDB bool) (int, error) {
+func GetPaidBalanceWithDB(user string, useUncleDB bool) (int, error) {
 	myRdb := rdb
 	if useUncleDB {
 		myRdb = uncleRdb
@@ -250,7 +250,7 @@ func buildOpenIdKey(authCode string) string {
 	return "auth-code:" + authCode + ":open-id"
 }
 
-func FetchOpenId(authCode string) (string, error) {
+func GetOpenId(authCode string) (string, error) {
 	return rdb.Get(ctx, buildOpenIdKey(authCode)).Result()
 }
 
@@ -285,7 +285,7 @@ func SetTransaction(outTradeNo string, transaction model.Transaction) (err error
 	return rdb.Set(ctx, buildTransactionKey(outTradeNo), string(tranBytes), 0).Err()
 }
 
-func FetchTransaction(outTradeNo string) (model.Transaction, error) {
+func GetTransaction(outTradeNo string) (model.Transaction, error) {
 	var transaction model.Transaction
 	tranStr, err := rdb.Get(ctx, buildTransactionKey(outTradeNo)).Result()
 	if err != nil {

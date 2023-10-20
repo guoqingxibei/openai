@@ -7,8 +7,8 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/logic"
-	"openai/internal/service/gptredis"
 	wechatService "openai/internal/service/wechat"
+	"openai/internal/store"
 	"time"
 )
 
@@ -76,7 +76,7 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 	}
 
 	outTradeNo := result.OutTradeNo
-	transaction, _ := gptredis.FetchTransaction(outTradeNo)
+	transaction, _ := store.GetTransaction(outTradeNo)
 	transaction.TradeState = result.TradeState
 	payload, _ := json.Marshal(result)
 	transaction.Payload = string(payload)
@@ -91,12 +91,12 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 				openId = transaction.UncleOpenId
 				useUncleDB = true
 			}
-			balance, _ := gptredis.FetchPaidBalanceWithDB(openId, useUncleDB)
-			_ = gptredis.SetPaidBalanceWithDB(openId, times+balance, useUncleDB)
+			balance, _ := store.GetPaidBalanceWithDB(openId, useUncleDB)
+			_ = store.SetPaidBalanceWithDB(openId, times+balance, useUncleDB)
 			transaction.Redeemed = true
 		}
 	}
-	_ = gptredis.SetTransaction(outTradeNo, transaction)
+	_ = store.SetTransaction(outTradeNo, transaction)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
@@ -106,7 +106,7 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 
 func GetTradeResult(w http.ResponseWriter, r *http.Request) {
 	outTradeId := r.URL.Query().Get("out_trade_no")
-	transaction, err := gptredis.FetchTransaction(outTradeId)
+	transaction, err := store.GetTransaction(outTradeId)
 	if err != nil {
 		log.Println(err)
 		return
@@ -118,7 +118,7 @@ func GetTradeResult(w http.ResponseWriter, r *http.Request) {
 		openId = transaction.UncleOpenId
 		useUncleDB = true
 	}
-	balance, _ := gptredis.FetchPaidBalanceWithDB(openId, useUncleDB)
+	balance, _ := store.GetPaidBalanceWithDB(openId, useUncleDB)
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)

@@ -12,7 +12,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
-	"openai/internal/service/gptredis"
+	"openai/internal/store"
 	"os"
 	"path/filepath"
 	"time"
@@ -44,12 +44,12 @@ func initMedias() {
 }
 
 func initMediaId(imageName string) {
-	_, err := gptredis.FetchMediaId(imageName)
+	_, err := store.GetMediaId(imageName)
 	if err != nil {
 		if err == redis.Nil {
 			_, _ = refreshImage(imageName)
 		} else {
-			log.Println("gptredis.FetchMediaId failed", err)
+			log.Println("store.GetMediaId failed", err)
 		}
 	}
 
@@ -66,7 +66,7 @@ func initMediaId(imageName string) {
 }
 
 func GetMediaId(imageName string) (string, error) {
-	mediaId, err := gptredis.FetchMediaId(imageName)
+	mediaId, err := store.GetMediaId(imageName)
 	if err != nil {
 		if err == redis.Nil {
 			mediaId, err = refreshImage(imageName)
@@ -87,9 +87,9 @@ func refreshImage(imageName string) (string, error) {
 		log.Println("uploadImage failed", err)
 		return "", err
 	}
-	err = gptredis.SetMediaId(mediaId, imageName, time.Hour*24*2)
+	err = store.SetMediaId(mediaId, imageName, time.Hour*24*2)
 	if err != nil {
-		log.Println("gptredis.SetMediaId failed", err)
+		log.Println("store.SetMediaId failed", err)
 		return "", err
 	}
 	log.Printf("Refreshed the media id of %s", imageName)

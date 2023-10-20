@@ -4,8 +4,8 @@ import (
 	"github.com/go-pay/gopay/pkg/util"
 	"log"
 	"openai/internal/model"
-	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
+	"openai/internal/store"
 	"time"
 )
 
@@ -36,6 +36,6 @@ func InitiateTransaction(
 		CreatedTime: now,
 		UpdatedTime: now,
 	}
-	_ = gptredis.SetTransaction(tradeNo, transaction)
+	_ = store.SetTransaction(tradeNo, transaction)
 	return prepayId, tradeNo, err
 }

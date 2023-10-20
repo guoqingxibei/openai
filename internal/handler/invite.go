@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"openai/internal/logic"
-	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
+	"openai/internal/store"
 	"openai/internal/util"
 	"time"
 )
@@ -41,12 +41,12 @@ var base = len(codeChars) // char count
 
 func getInvitationCode(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	user := inMsg.FromUserName
-	code, _ := gptredis.GetInvitationCode(user)
+	code, _ := store.GetInvitationCode(user)
 	if code == "" {
-		cursor, _ := gptredis.IncInvitationCodeCursor()
+		cursor, _ := store.IncInvitationCodeCursor()
 		code = convertToInvitationCode(int(cursor - 1))
-		_ = gptredis.SetInvitationCode(user, code)
-		_ = gptredis.SetUserByInvitationCode(code, user)
+		_ = store.SetInvitationCode(user, code)
+		_ = store.SetUserByInvitationCode(code, user)
 	}
 	echoWechatTextMsg(writer, inMsg, fmt.Sprintf(inviteTutorial,
 		code,
@@ -86,13 +86,13 @@ func doInvite(inviter string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	}
 
 	currentTimestamp := time.Now().Unix()
-	subScribeTimestamp, _ := gptredis.FetchSubscribeTimestamp(user)
+	subScribeTimestamp, _ := store.GetSubscribeTimestamp(user)
 	if currentTimestamp-subScribeTimestamp > halfAnHour {
 		echoWechatTextMsg(writer, inMsg, "抱歉，邀请码仅在首次关注公众号半小时内输入有效。")
 		return
 	}
 
-	existedInviter, _ := gptredis.GetInviter(user)
+	existedInviter, _ := store.GetInviter(user)
 	if existedInviter != "" {
 		echoWechatTextMsg(writer, inMsg, "抱歉，邀请码只能使用一次。")
 		return
@@ -100,7 +100,7 @@ func doInvite(inviter string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 	_ = logic.AddPaidBalance(inviter, inviterReward)
 	userPaidBalance := logic.AddPaidBalance(user, inviteeReward)
-	_ = gptredis.SetInviter(user, inviter)
+	_ = store.SetInviter(user, inviter)
 	echoWechatTextMsg(writer, inMsg, fmt.Sprintf(inviteSuccessMsg,
 		inviterReward,
 		inviteeReward,

@@ -7,9 +7,9 @@ import (
 	"openai/internal/model"
 	"openai/internal/service/api2d"
 	"openai/internal/service/email"
-	"openai/internal/service/gptredis"
 	"openai/internal/service/ohmygpt"
 	"openai/internal/service/sb"
+	"openai/internal/store"
 	"openai/internal/util"
 	"time"
 )
@@ -71,8 +71,8 @@ func RecordError(err error) {
 			TimestampInSeconds: time.Now().Unix(),
 		}
 		today := util.Today()
-		_ = gptredis.AppendError(today, myErr)
-		errCount, _ := gptredis.GetErrorsLen(today)
+		_ = store.AppendError(today, myErr)
+		errCount, _ := store.GetErrorsLen(today)
 		if errCount%1 == 0 {
 			sendErrorAlarmEmail()
 		}
@@ -80,7 +80,7 @@ func RecordError(err error) {
 }
 
 func sendErrorAlarmEmail() {
-	errors, _ := gptredis.GetErrors(util.Today())
+	errors, _ := store.GetErrors(util.Today())
 	count := len(errors)
 	body := ""
 	for idx, myError := range errors {
@@ -99,7 +99,7 @@ func sendYesterdayReportEmail() {
 
 	body := ""
 	errorContent := ""
-	errors, _ := gptredis.GetErrors(yesterday)
+	errors, _ := store.GetErrors(yesterday)
 	count := len(errors)
 	for idx, myError := range errors {
 		errorContent += util.TimestampToTimeStr(myError.TimestampInSeconds) + "  " + myError.ErrorStr + "\n"

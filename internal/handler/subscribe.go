@@ -5,19 +5,19 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/constant"
-	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
+	"openai/internal/store"
 	"time"
 )
 
 func onSubscribe(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
 	log.Println("新增关注:", userName)
-	_, err := gptredis.FetchSubscribeTimestamp(userName)
+	_, err := store.GetSubscribeTimestamp(userName)
 	if err == redis.Nil {
-		err := gptredis.SetSubscribeTimestamp(userName, time.Now().Unix())
+		err := store.SetSubscribeTimestamp(userName, time.Now().Unix())
 		if err != nil {
-			log.Println("gptredis.SetSubscribeTimestamp failed", err)
+			log.Println("store.SetSubscribeTimestamp failed", err)
 		}
 	}
 

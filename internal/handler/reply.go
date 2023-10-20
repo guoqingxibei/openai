@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"openai/internal/constant"
 	replylogic "openai/internal/logic"
-	"openai/internal/service/gptredis"
+	"openai/internal/store"
 	"strconv"
 	"strings"
 	"time"
@@ -36,7 +36,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-cache")
 	w.Header().Set("Connection", "keep-alive")
 
-	exists, _ := gptredis.ReplyChunksExists(msgId)
+	exists, _ := store.ReplyChunksExists(msgId)
 	if !exists {
 		fmt.Fprint(w, constant.ExpireError)
 		return
@@ -50,7 +50,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 
-		chunks, _ := gptredis.GetReplyChunks(msgId, startIndex, -1)
+		chunks, _ := store.GetReplyChunks(msgId, startIndex, -1)
 		length := len(chunks)
 		if length >= 1 {
 			reachEnd := chunks[length-1] == replylogic.EndMark

@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"openai/internal/config"
-	"openai/internal/service/gptredis"
+	"openai/internal/store"
 	"time"
 )
 
@@ -18,7 +18,7 @@ type tokenResponse struct {
 func GetOpenId(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	code := r.URL.Query().Get("code")
-	openId, _ := gptredis.FetchOpenId(code)
+	openId, _ := store.GetOpenId(code)
 	if openId == "" {
 		params := url.Values{}
 		params.Add("appid", config.C.Wechat.AppId)
@@ -47,7 +47,7 @@ func GetOpenId(w http.ResponseWriter, r *http.Request) {
 			string(body),
 		)
 		openId = tokenResp.OpenId
-		_ = gptredis.SetOpenId(code, openId)
+		_ = store.SetOpenId(code, openId)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")

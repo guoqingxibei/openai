@@ -10,7 +10,7 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/config"
-	"openai/internal/service/gptredis"
+	"openai/internal/store"
 	"time"
 )
 
@@ -22,7 +22,7 @@ type tokenResponse struct {
 }
 
 func initToken() {
-	_, err := gptredis.FetchWechatApiAccessToken()
+	_, err := store.GetWechatApiAccessToken()
 	if err != nil {
 		if err == redis.Nil {
 			_, err := refreshAccessToken()
@@ -30,7 +30,7 @@ func initToken() {
 				log.Println("refreshAccessToken failed", err)
 			}
 		} else {
-			log.Println("gptredis.FetchWechatApiAccessToken failed", err)
+			log.Println("store.GetWechatApiAccessToken failed", err)
 		}
 	}
 
@@ -56,9 +56,9 @@ func refreshAccessToken() (string, error) {
 		return "", err
 	}
 	log.Println("New Wechat API access token is " + token)
-	err = gptredis.SetWechatApiAccessToken(token, time.Second*time.Duration(expiresIn))
+	err = store.SetWechatApiAccessToken(token, time.Second*time.Duration(expiresIn))
 	if err != nil {
-		log.Println("gptredis.SetWechatApiAccessToken failed", err)
+		log.Println("store.SetWechatApiAccessToken failed", err)
 		return "", err
 	}
 	log.Println("Refreshed Wechat API access token")
@@ -89,7 +89,7 @@ func generateAccessToken() (string, int, error) {
 }
 
 func getAccessToken() (string, error) {
-	token, err := gptredis.FetchWechatApiAccessToken()
+	token, err := store.GetWechatApiAccessToken()
 	if err != nil {
 		if err == redis.Nil {
 			return refreshAccessToken()

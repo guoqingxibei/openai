@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
+	"openai/internal/store"
 	"openai/internal/util"
 	"strconv"
 	"strings"
@@ -105,13 +105,13 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 	if keyword == "" {
 		size := len(question)
 		if size == sizeOfCode {
-			inviter, _ := gptredis.GetUserByInvitationCode(strings.ToUpper(question))
+			inviter, _ := store.GetUserByInvitationCode(strings.ToUpper(question))
 			if inviter != "" {
 				doInvite(inviter, inMsg, writer)
 				return true
 			}
 		} else if size == 36 {
-			codeDetailStr, _ := gptredis.FetchCodeDetail(question)
+			codeDetailStr, _ := store.GetCodeDetail(question)
 			if codeDetailStr != "" {
 				useCode(codeDetailStr, inMsg, writer)
 				return true
@@ -125,19 +125,19 @@ func hitKeyword(inMsg *wechat.Msg, writer http.ResponseWriter) bool {
 
 func resetBalance(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
-	_ = gptredis.SetPaidBalance(userName, 0)
+	_ = store.SetPaidBalance(userName, 0)
 	_ = logic.SetBalanceOfToday(userName, 0)
 	echoWechatTextMsg(writer, inMsg, "你的剩余次数已被重置。")
 }
 
 func clearHistory(inMsg *wechat.Msg, writer http.ResponseWriter) {
-	_ = gptredis.DelMessages(inMsg.FromUserName)
+	_ = store.DelMessages(inMsg.FromUserName)
 	echoWechatTextMsg(writer, inMsg, "上下文已被清除。现在，你可以开始全新的对话啦。")
 }
 
 func useCodeWithPrefix(question string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 	code := strings.Replace(question, code, "", 1)
-	codeDetailStr, err := gptredis.FetchCodeDetail(code)
+	codeDetailStr, err := store.GetCodeDetail(code)
 	if err == redis.Nil {
 		echoWechatTextMsg(writer, inMsg, "无效的code。")
 		return
@@ -158,7 +158,7 @@ func useCode(codeDetailStr string, inMsg *wechat.Msg, writer http.ResponseWriter
 	newBalance := logic.AddPaidBalance(userName, codeDetail.Times)
 	codeDetail.Status = used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
-	_ = gptredis.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)
+	_ = store.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)
 	echoWechatTextMsg(writer, inMsg, fmt.Sprintf("【激活成功】此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。"+
 		getShowBalanceTipWhenUseCode(), codeDetail.Times, newBalance))
 }
@@ -205,7 +205,7 @@ func doGenerateCode(question string, inMsg *wechat.Msg, writer http.ResponseWrit
 			Status: created,
 		}
 		codeDetailBytes, _ := json.Marshal(codeDetail)
-		_ = gptredis.SetCodeDetail(code, string(codeDetailBytes), false)
+		_ = store.SetCodeDetail(code, string(codeDetailBytes), false)
 		codes = append(codes, code)
 	}
 	echoWechatTextMsg(writer, inMsg, strings.Join(codes, "\n"))
@@ -236,7 +236,7 @@ func showImage(keyword string, inMsg *wechat.Msg, writer http.ResponseWriter) {
 
 func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	userName := inMsg.FromUserName
-	mode, _ := gptredis.GetMode(userName)
+	mode, _ := store.GetMode(userName)
 	usage := fmt.Sprintf("【模式】当前模式是%s，", mode)
 	if mode == constant.GPT3 {
 		usage += "每次提问消耗次数1。"
@@ -246,7 +246,7 @@ func showUsage(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	usage += "\n"
 
 	usage += logic.BuildChatUsage(userName)
-	balance, _ := gptredis.FetchPaidBalance(userName)
+	balance, _ := store.GetPaidBalance(userName)
 	usage += fmt.Sprintf("付费次数剩余%d次，可<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
 		balance,
 		util.GetPayLink(userName),
@@ -265,10 +265,10 @@ func doTransfer(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	}
 
 	userName := inMsg.FromUserName
-	paidBalance, _ := gptredis.FetchPaidBalance(userName)
+	paidBalance, _ := store.GetPaidBalance(userName)
 	reply := "你的付费次数剩余0次，无需迁移。"
 	if paidBalance > 0 {
-		_ = gptredis.SetPaidBalance(userName, 0)
+		_ = store.SetPaidBalance(userName, 0)
 		code := uuid.New().String()
 		codeDetail := CodeDetail{
 			Code:   code,
@@ -276,7 +276,7 @@ func doTransfer(inMsg *wechat.Msg, writer http.ResponseWriter) {
 			Status: created,
 		}
 		codeDetailBytes, _ := json.Marshal(codeDetail)
-		_ = gptredis.SetCodeDetail(code, string(codeDetailBytes), true)
+		_ = store.SetCodeDetail(code, string(codeDetailBytes), true)
 		reply = fmt.Sprintf("你的付费次数剩余%d次，已在此公众号下清零。请复制下面的code发送给新公众号「程序员brother」，"+
 			"即可完成迁移。感谢你的一路陪伴❤️\n\n%s", paidBalance, code)
 	}

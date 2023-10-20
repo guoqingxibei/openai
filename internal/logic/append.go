@@ -3,7 +3,7 @@ package logic
 import (
 	"log"
 	"openai/internal/constant"
-	"openai/internal/service/gptredis"
+	"openai/internal/store"
 )
 
 const (
@@ -11,9 +11,9 @@ const (
 )
 
 func incUsedTimes(user string) int {
-	times, err := gptredis.IncUsedTimes(user)
+	times, err := store.IncUsedTimes(user)
 	if err != nil {
-		log.Println("gptredis.IncUsedTimes failed", err)
+		log.Println("store.IncUsedTimes failed", err)
 		return 0
 	}
 	return times

@@ -7,8 +7,8 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/gptredis"
 	"openai/internal/service/wechat"
+	"openai/internal/store"
 	"strconv"
 	"strings"
 	"time"
@@ -37,7 +37,7 @@ func echoText(inMsg *wechat.Msg, writer http.ResponseWriter) {
 	}
 
 	msgId := inMsg.MsgId
-	times, _ := gptredis.IncAccessTimes(msgId)
+	times, _ := store.IncAccessTimes(msgId)
 	// when WeChat server retries
 	if times > 1 {
 		replyWhenRetry(inMsg, writer)
@@ -55,7 +55,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 	msgId := inMsg.MsgId
 	userName := inMsg.FromUserName
 	question := strings.TrimSpace(inMsg.Content)
-	mode, _ := gptredis.GetMode(userName)
+	mode, _ := store.GetMode(userName)
 	ok, reply := logic.CheckBalance(inMsg, mode)
 	if !ok {
 		return reply
@@ -68,7 +68,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 		if err != nil {
 			log.Printf("[%d] logic.ChatCompletionStream with OpenaiSb failed %s", msgId, err)
 			// retry with api2d vendor
-			_ = gptredis.DelReplyChunks(msgId)
+			_ = store.DelReplyChunks(msgId)
 			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
 			if err != nil {
 				log.Printf("[%d] logic.ChatCompletionStream with OpenaiApi2d failed %s", msgId, err)
@@ -80,7 +80,7 @@ func genAnswer4Text(inMsg *wechat.Msg) string {
 
 		err = logic.DecrBalanceOfToday(userName, mode)
 		if err != nil {
-			log.Println("gptredis.DecrBalance failed", err)
+			log.Println("store.DecrBalance failed", err)
 		}
 		answerChan <- buildAnswer(msgId)
 	}()

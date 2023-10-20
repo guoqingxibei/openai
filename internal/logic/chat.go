@@ -4,8 +4,8 @@ import (
 	_openai "github.com/sashabaranov/go-openai"
 	"openai/internal/constant"
 	"openai/internal/service/baidu"
-	"openai/internal/service/gptredis"
 	"openai/internal/service/openai"
+	"openai/internal/store"
 	"openai/internal/util"
 	"strings"
 	"unicode"
@@ -18,8 +18,8 @@ const (
 
 func ChatCompletionStream(aiVendor string, userName string, msgId int64,
 	question string, isVoice bool, mode string) error {
-	_ = gptredis.AppendReplyChunk(msgId, StartMark)
-	messages, err := gptredis.FetchMessages(userName)
+	_ = store.AppendReplyChunk(msgId, StartMark)
+	messages, err := store.GetMessages(userName)
 	if err != nil {
 		return err
 	}
@@ -33,7 +33,7 @@ func ChatCompletionStream(aiVendor string, userName string, msgId int64,
 	}
 
 	if isVoice {
-		_ = gptredis.AppendReplyChunk(msgId, "「"+question+"」\n\n")
+		_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 	}
 	var chunk, answer string
 	chunkLen := 60
@@ -46,26 +46,26 @@ func ChatCompletionStream(aiVendor string, userName string, msgId int64,
 			chunkLen = 300
 			passedCensor, chunk = censorChunk(chunk, isFirstChunk)
 			isFirstChunk = false
-			_ = gptredis.AppendReplyChunk(msgId, chunk)
+			_ = store.AppendReplyChunk(msgId, chunk)
 			chunk = ""
 			if !passedCensor {
-				_ = gptredis.AppendReplyChunk(msgId, EndMark)
+				_ = store.AppendReplyChunk(msgId, EndMark)
 				return false
 			}
 		}
 		return true
 	}, func() {
 		_, chunk = censorChunk(chunk, isFirstChunk)
-		_ = gptredis.AppendReplyChunk(msgId, chunk)
+		_ = store.AppendReplyChunk(msgId, chunk)
 		if ShouldAppend(userName) {
-			_ = gptredis.AppendReplyChunk(msgId, "\n\n"+selectAppending())
+			_ = store.AppendReplyChunk(msgId, "\n\n"+selectAppending())
 		}
-		_ = gptredis.AppendReplyChunk(msgId, EndMark)
+		_ = store.AppendReplyChunk(msgId, EndMark)
 		messages = util.AppendAssistantMessage(messages, answer)
-		_ = gptredis.SetMessages(userName, messages)
+		_ = store.SetMessages(userName, messages)
 	}, func(_err error) {
-		_ = gptredis.AppendReplyChunk(msgId, constant.TryAgain)
-		_ = gptredis.AppendReplyChunk(msgId, EndMark)
+		_ = store.AppendReplyChunk(msgId, constant.TryAgain)
+		_ = store.AppendReplyChunk(msgId, EndMark)
 		err = _err
 	})
 	return err
@@ -92,7 +92,7 @@ func endsWithPunct(word string) bool {
 }
 
 func FetchAnswer(msgId int64) (string, bool) {
-	chunks, _ := gptredis.GetReplyChunks(msgId, 1, -1)
+	chunks, _ := store.GetReplyChunks(msgId, 1, -1)
 	if len(chunks) <= 0 {
 		return "", false
 	}

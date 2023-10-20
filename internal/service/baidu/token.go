@@ -9,7 +9,7 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/config"
-	"openai/internal/service/gptredis"
+	"openai/internal/store"
 	"strings"
 	"time"
 )
@@ -22,7 +22,7 @@ type tokenResponse struct {
 var baiduConfig = config.C.Baidu
 
 func init() {
-	_, err := gptredis.FetchBaiduApiAccessToken()
+	_, err := store.GetBaiduApiAccessToken()
 	if err != nil {
 		if err == redis.Nil {
 			_, err := refreshAccessToken()
@@ -30,7 +30,7 @@ func init() {
 				log.Println("refreshAccessToken failed", err)
 			}
 		} else {
-			log.Println("gptredis.FetchBaiduApiAccessToken failed", err)
+			log.Println("store.GetBaiduApiAccessToken failed", err)
 		}
 	}
 
@@ -56,9 +56,9 @@ func refreshAccessToken() (string, error) {
 		return "", err
 	}
 	log.Println("New Baidu API access token is " + token)
-	err = gptredis.SetBaiduApiAccessToken(token, time.Second*time.Duration(expiresIn))
+	err = store.SetBaiduApiAccessToken(token, time.Second*time.Duration(expiresIn))
 	if err != nil {
-		log.Println("gptredis.SetBaiduApiAccessToken failed", err)
+		log.Println("store.SetBaiduApiAccessToken failed", err)
 		return "", err
 	}
 	log.Println("Refreshed Baidu API access token")
@@ -84,7 +84,7 @@ func generateAccessToken() (string, int, error) {
 }
 
 func getAccessToken() (string, error) {
-	token, err := gptredis.FetchBaiduApiAccessToken()
+	token, err := store.GetBaiduApiAccessToken()
 	if err != nil {
 		if err == redis.Nil {
 			return refreshAccessToken()
