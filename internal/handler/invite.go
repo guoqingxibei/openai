@@ -11,28 +11,24 @@ import (
 
 const (
 	inviterReward = 10
-	inviteeReward = 5
+	inviteeReward = 0
 )
 const sizeOfCode = 6 // the length of invitation code
 const halfAnHour = 30 * 60
 const inviteTutorial = `【邀请码】
 %s
 
-【邀请流程】
-1. 分享公众号给你的朋友关注
-2. 让ta向公众号发送此邀请码
+【流程】
+1 分享公众号给你的朋友关注
+2 让ta向公众号发送此邀请码
 
-注意，邀请码长期有效，且可以被多人使用，但好友只能在关注公众号后30分钟内使用。
+【奖励】
+%d次的额度/邀请
 
-【邀请奖励】
-每次邀请成功，系统将为你充值%d次的额度，为ta充值%d次的额度。
+<a href="%s">「查看详情」</a>`
+const inviteSuccessMsg = `【成功接受邀请】系统已为你的邀请者充值%d次的额度，快去告诉ta吧！
 
-额度永久有效，视作付费额度，%s。
-
-获取更多信息，<a href="%s">点我</a>。`
-const inviteSuccessMsg = `【成功接受邀请】系统已为你的邀请者充值%d次的额度，为你充值%d次的额度，你当前的付费额度总共剩余%d次。
-
-另外，<a href=\"%s\">点我查看如何邀请好友</a>。`
+<a href="%s">「如何邀请好友」</a>`
 
 var codeChars = []rune{'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K',
 				'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z'}
@@ -50,17 +46,8 @@ func getInvitationCode(msg *message.MixMessage) (reply *message.Reply) {
 	return util.BuildTextReply(fmt.Sprintf(inviteTutorial,
 		code,
 		inviterReward,
-		inviteeReward,
-		getShowBalanceTip(),
 		util.GetInvitationTutorialLink(),
 	))
-}
-
-func getShowBalanceTip() string {
-	if util.AccountIsUncle() {
-		return "可回复「help」进行查看"
-	}
-	return "可点击菜单「次数-剩余次数」进行查看"
 }
 
 func convertToInvitationCode(n int) string {
@@ -95,12 +82,10 @@ func doInvite(inviter string, msg *message.MixMessage) (reply *message.Reply) {
 	}
 
 	_ = logic.AddPaidBalance(inviter, inviterReward)
-	userPaidBalance := logic.AddPaidBalance(user, inviteeReward)
+	_ = logic.AddPaidBalance(user, inviteeReward)
 	_ = store.SetInviter(user, inviter)
 	return util.BuildTextReply(fmt.Sprintf(inviteSuccessMsg,
 		inviterReward,
-		inviteeReward,
-		userPaidBalance,
 		util.GetInvitationTutorialLink(),
 	))
 }
