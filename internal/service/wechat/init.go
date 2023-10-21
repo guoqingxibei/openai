@@ -4,7 +4,7 @@ import "openai/internal/util"
 
 func init() {
 	initMedias()
-	if !util.AccountIsUncle() {
+	if !util.AccountIsUncle() || !util.EnvIsProd() {
 		createOrUpdateMenu()
 	}
 }

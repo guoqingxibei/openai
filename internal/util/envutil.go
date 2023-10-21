@@ -16,6 +16,10 @@ func GetAccount() string {
 	return constant.Brother
 }
 
+func EnvIsProd() bool {
+	return os.Getenv("GO_ENV") == "prod"
+}
+
 func GetPayLink(user string) string {
 	payLink := "https://brother.cxyds.top/shop"
 	if AccountIsUncle() {
