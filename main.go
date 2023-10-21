@@ -16,9 +16,11 @@ var (
 	env = os.Getenv("GO_ENV")
 )
 
-func main() {
+func init() {
 	ConfigLog()
+}
 
+func main() {
 	engine := bootstrap.New()
 	// 公众号消息处理
 	engine.POST("/talk", serveWechat)
