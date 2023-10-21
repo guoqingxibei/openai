@@ -27,9 +27,11 @@ func main() {
 	// Provide reply content for the webpage
 	engine.GET("/reply-stream", handler.GetReplyStream)
 	engine.GET("/openid", handler.GetOpenId)
-	engine.POST("/transactions", handler.Transaction)
-	engine.POST("/notify-transaction-result", handler.NotifyTransactionResult)
-	engine.GET("/trade-result", handler.GetTradeResult)
+	if !util.AccountIsUncle() && util.EnvIsProd() {
+		engine.POST("/transactions", handler.Transaction)
+		engine.POST("/notify-transaction-result", handler.NotifyTransactionResult)
+		engine.GET("/trade-result", handler.GetTradeResult)
+	}
 	handlerWithRequestLog := bootstrap.LogRequestHandler(engine)
 
 	http.Handle("/answer/", http.StripPrefix("/answer", http.FileServer(http.Dir("./public"))))

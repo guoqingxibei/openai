@@ -7,6 +7,7 @@ import (
 	"github.com/go-pay/gopay/wechat/v3"
 	"log"
 	"openai/internal/config"
+	"openai/internal/util"
 	"time"
 )
 
@@ -15,6 +16,12 @@ var ctx = context.Background()
 var wcCfg = config.C.Wechat
 
 func init() {
+	if !util.AccountIsUncle() && util.EnvIsProd() {
+		initPayClient()
+	}
+}
+
+func initPayClient() {
 	// NewClientV3 初始化微信客户端 v3
 	// mchid：商户ID 或者服务商模式的 sp_mchid
 	// serialNo：商户证书的证书序列号
