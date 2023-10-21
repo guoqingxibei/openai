@@ -17,7 +17,11 @@ func GetAccount() string {
 }
 
 func EnvIsProd() bool {
-	return os.Getenv("GO_ENV") == "prod"
+	return GetEnv() == constant.PROD
+}
+
+func GetEnv() string {
+	return os.Getenv("GO_ENV")
 }
 
 func GetPayLink(user string) string {

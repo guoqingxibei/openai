@@ -31,5 +31,5 @@ func createOrUpdateMenu() {
 		log.Println("Failed to refresh menu: ", err)
 		return
 	}
-	log.Println("Refreshed Wechat menu")
+	log.Println("Refreshed wechat menu")
 }

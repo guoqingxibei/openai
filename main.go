@@ -12,12 +12,9 @@ import (
 	"os"
 )
 
-var (
-	env = os.Getenv("GO_ENV")
-)
-
 func init() {
-	ConfigLog()
+	configLog()
+	logUsefulInfo()
 }
 
 func main() {
@@ -75,8 +72,8 @@ func serveWechat(rw http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func ConfigLog() {
-	if env == "dev" {
+func configLog() {
+	if util.GetEnv() == constant.DEV {
 		log.SetOutput(os.Stdout)
 	} else {
 		dir := "./log"
@@ -93,4 +90,9 @@ func ConfigLog() {
 		}
 		log.SetOutput(file)
 	}
+}
+
+func logUsefulInfo() {
+	log.Printf("[Env] env: %s, account: %s", util.GetEnv(), util.GetAccount())
+	log.Printf("[Redis] uncle db: %d, brother db: %d", config.C.Redis.UncleDB, config.C.Redis.BrotherDB)
 }
