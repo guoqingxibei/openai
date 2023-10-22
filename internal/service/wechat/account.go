@@ -10,11 +10,10 @@ import (
 	"openai/internal/util"
 )
 
+var account *officialaccount.OfficialAccount
+
 func init() {
 	logrus.SetLevel(logrus.InfoLevel)
-}
-
-func GetAccount() *officialaccount.OfficialAccount {
 	wc := wechat.NewWechat()
 	db := config.C.Redis.BrotherDB
 	if util.AccountIsUncle() {
@@ -35,5 +34,9 @@ func GetAccount() *officialaccount.OfficialAccount {
 		//EncodingAESKey: "xxxx",
 		Cache: redisCache,
 	}
-	return wc.GetOfficialAccount(cfg)
+	account = wc.GetOfficialAccount(cfg)
+}
+
+func GetAccount() *officialaccount.OfficialAccount {
+	return account
 }
