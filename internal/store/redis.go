@@ -15,49 +15,49 @@ import (
 )
 
 var ctx = context.Background()
-var rdb, uncleRdb, brotherRdb *redis.Client
+var client, uncleClient, brotherClient *redis.Client
 
 func init() {
-	brotherRdb = redis.NewClient(&redis.Options{
+	brotherClient = redis.NewClient(&redis.Options{
 		Addr:     config.C.Redis.Addr,
 		Password: "", // no password set
 		DB:       config.C.Redis.BrotherDB,
 	})
-	uncleRdb = redis.NewClient(&redis.Options{
+	uncleClient = redis.NewClient(&redis.Options{
 		Addr:     config.C.Redis.Addr,
 		Password: "", // no password set
 		DB:       config.C.Redis.UncleDB,
 	})
-	rdb = selectDefaultRdb()
+	client = selectDefaultClient()
 }
 
-func selectDefaultRdb() *redis.Client {
+func selectDefaultClient() *redis.Client {
 	if util.AccountIsUncle() {
-		return uncleRdb
+		return uncleClient
 	}
-	return brotherRdb
+	return brotherClient
 }
 
 func AppendReplyChunk(msgId int64, chunk string) error {
-	err := rdb.RPush(ctx, buildReplyChunksKey(msgId), chunk).Err()
+	err := client.RPush(ctx, buildReplyChunksKey(msgId), chunk).Err()
 	if err != nil {
 		return err
 	}
-	err = rdb.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24*7).Err()
+	err = client.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24*7).Err()
 	return err
 }
 
 func ReplyChunksExists(msgId int64) (bool, error) {
-	code, err := rdb.Exists(ctx, buildReplyChunksKey(msgId)).Result()
+	code, err := client.Exists(ctx, buildReplyChunksKey(msgId)).Result()
 	return code == 1, err
 }
 
 func GetReplyChunks(msgId int64, from int64, to int64) ([]string, error) {
-	return rdb.LRange(ctx, buildReplyChunksKey(msgId), from, to).Result()
+	return client.LRange(ctx, buildReplyChunksKey(msgId), from, to).Result()
 }
 
 func DelReplyChunks(msgId int64) error {
-	return rdb.Del(ctx, buildReplyChunksKey(msgId)).Err()
+	return client.Del(ctx, buildReplyChunksKey(msgId)).Err()
 }
 
 func buildReplyChunksKey(msgId int64) string {
@@ -69,12 +69,12 @@ func SetMessages(toUserName string, messages []_openai.ChatCompletionMessage) er
 	if err != nil {
 		return err
 	}
-	return rdb.Set(ctx, buildMessagesKey(toUserName), newRoundsStr, time.Minute*5).Err()
+	return client.Set(ctx, buildMessagesKey(toUserName), newRoundsStr, time.Minute*5).Err()
 }
 
 func GetMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
 	var messages []_openai.ChatCompletionMessage
-	messagesStr, err := rdb.Get(ctx, buildMessagesKey(toUserName)).Result()
+	messagesStr, err := client.Get(ctx, buildMessagesKey(toUserName)).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return messages, nil
@@ -89,7 +89,7 @@ func GetMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
 }
 
 func DelMessages(toUserName string) error {
-	return rdb.Del(ctx, buildMessagesKey(toUserName)).Err()
+	return client.Del(ctx, buildMessagesKey(toUserName)).Err()
 }
 
 func buildMessagesKey(toUserName string) string {
@@ -99,9 +99,9 @@ func buildMessagesKey(toUserName string) string {
 func IncAccessTimes(msgId int64) (int64, error) {
 	msgIdStr := strconv.FormatInt(msgId, 10)
 	key := buildAccessTimes(msgIdStr)
-	times, err := rdb.Incr(ctx, key).Result()
+	times, err := client.Incr(ctx, key).Result()
 	if times == 1 {
-		rdb.Expire(ctx, key, time.Second*30)
+		client.Expire(ctx, key, time.Second*30)
 	}
 	if err != nil {
 		return 0, nil
@@ -114,11 +114,11 @@ func buildAccessTimes(msgIdStr string) string {
 }
 
 func GetBaiduApiAccessToken() (string, error) {
-	return rdb.Get(ctx, getBaiduApiAccessTokenKey()).Result()
+	return client.Get(ctx, getBaiduApiAccessTokenKey()).Result()
 }
 
 func SetBaiduApiAccessToken(accessToken string, expiration time.Duration) error {
-	return rdb.Set(ctx, getBaiduApiAccessTokenKey(), accessToken, expiration).Err()
+	return client.Set(ctx, getBaiduApiAccessTokenKey(), accessToken, expiration).Err()
 }
 
 func getBaiduApiAccessTokenKey() string {
@@ -126,17 +126,17 @@ func getBaiduApiAccessTokenKey() string {
 }
 
 func GetBalance(user string, day string) (int, error) {
-	balance, err := rdb.Get(ctx, buildBalanceKey(user, day)).Result()
+	balance, err := client.Get(ctx, buildBalanceKey(user, day)).Result()
 	cnt, _ := strconv.Atoi(balance)
 	return cnt, err
 }
 
 func SetBalance(user string, day string, balance int) error {
-	return rdb.Set(ctx, buildBalanceKey(user, day), strconv.Itoa(balance), time.Hour*24).Err()
+	return client.Set(ctx, buildBalanceKey(user, day), strconv.Itoa(balance), time.Hour*24).Err()
 }
 
 func DecrBalance(user string, day string) (int, error) {
-	balance, err := rdb.Decr(ctx, buildBalanceKey(user, day)).Result()
+	balance, err := client.Decr(ctx, buildBalanceKey(user, day)).Result()
 	return int(balance), err
 }
 
@@ -145,11 +145,11 @@ func buildBalanceKey(user string, day string) string {
 }
 
 func GetMediaId(imageName string) (string, error) {
-	return rdb.Get(ctx, getMediaIdKey(imageName)).Result()
+	return client.Get(ctx, getMediaIdKey(imageName)).Result()
 }
 
 func SetMediaId(mediaId string, mediaName string, expiration time.Duration) error {
-	return rdb.Set(ctx, getMediaIdKey(mediaName), mediaId, expiration).Err()
+	return client.Set(ctx, getMediaIdKey(mediaName), mediaId, expiration).Err()
 }
 
 func getMediaIdKey(mediaName string) string {
@@ -161,7 +161,7 @@ func buildUsageKey(user string) string {
 }
 
 func IncUsedTimes(user string) (int, error) {
-	times, err := rdb.Incr(ctx, buildUsageKey(user)).Result()
+	times, err := client.Incr(ctx, buildUsageKey(user)).Result()
 	return int(times), err
 }
 
@@ -170,11 +170,11 @@ func buildSubscribeTimestampKey(user string) string {
 }
 
 func SetSubscribeTimestamp(user string, timestamp int64) error {
-	return rdb.Set(ctx, buildSubscribeTimestampKey(user), strconv.FormatInt(timestamp, 10), 0).Err()
+	return client.Set(ctx, buildSubscribeTimestampKey(user), strconv.FormatInt(timestamp, 10), 0).Err()
 }
 
 func GetSubscribeTimestamp(user string) (int64, error) {
-	timestampStr, err := rdb.Get(ctx, buildSubscribeTimestampKey(user)).Result()
+	timestampStr, err := client.Get(ctx, buildSubscribeTimestampKey(user)).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -186,15 +186,15 @@ func buildCodeKey(code string) string {
 }
 
 func SetCodeDetail(code string, codeDetail string, useBrotherDB bool) error {
-	myRdb := rdb
+	myClient := client
 	if useBrotherDB {
-		myRdb = brotherRdb
+		myClient = brotherClient
 	}
-	return myRdb.Set(ctx, buildCodeKey(code), codeDetail, 0).Err()
+	return myClient.Set(ctx, buildCodeKey(code), codeDetail, 0).Err()
 }
 
 func GetCodeDetail(code string) (string, error) {
-	return rdb.Get(ctx, buildCodeKey(code)).Result()
+	return client.Get(ctx, buildCodeKey(code)).Result()
 }
 
 func SetPaidBalance(user string, balance int) error {
@@ -202,11 +202,11 @@ func SetPaidBalance(user string, balance int) error {
 }
 
 func SetPaidBalanceWithDB(user string, balance int, useUncleDB bool) error {
-	myRdb := rdb
+	myClient := client
 	if useUncleDB {
-		myRdb = uncleRdb
+		myClient = uncleClient
 	}
-	return myRdb.Set(ctx, buildPaidBalance(user), balance, 0).Err()
+	return myClient.Set(ctx, buildPaidBalance(user), balance, 0).Err()
 }
 
 func GetPaidBalance(user string) (int, error) {
@@ -214,11 +214,11 @@ func GetPaidBalance(user string) (int, error) {
 }
 
 func GetPaidBalanceWithDB(user string, useUncleDB bool) (int, error) {
-	myRdb := rdb
+	myClient := client
 	if useUncleDB {
-		myRdb = uncleRdb
+		myClient = uncleClient
 	}
-	balanceStr, err := myRdb.Get(ctx, buildPaidBalance(user)).Result()
+	balanceStr, err := myClient.Get(ctx, buildPaidBalance(user)).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -226,8 +226,8 @@ func GetPaidBalanceWithDB(user string, useUncleDB bool) (int, error) {
 	return balance, err
 }
 
-func DecrPaidBalance(usr string, decrement int64) (int64, error) {
-	return rdb.DecrBy(ctx, buildPaidBalance(usr), decrement).Result()
+func DecrPaidBalance(user string, decrement int64) (int64, error) {
+	return client.DecrBy(ctx, buildPaidBalance(user), decrement).Result()
 }
 
 func buildPaidBalance(user string) string {
@@ -239,11 +239,11 @@ func buildOpenIdKey(authCode string) string {
 }
 
 func GetOpenId(authCode string) (string, error) {
-	return rdb.Get(ctx, buildOpenIdKey(authCode)).Result()
+	return client.Get(ctx, buildOpenIdKey(authCode)).Result()
 }
 
 func SetOpenId(authCode string, openId string) error {
-	return rdb.Set(ctx, buildOpenIdKey(authCode), openId, time.Hour*12).Err()
+	return client.Set(ctx, buildOpenIdKey(authCode), openId, time.Hour*12).Err()
 }
 
 func buildQuotaKey(user string, day string) string {
@@ -251,11 +251,11 @@ func buildQuotaKey(user string, day string) string {
 }
 
 func SetQuota(user string, day string, quota int) error {
-	return rdb.Set(ctx, buildQuotaKey(user, day), quota, time.Hour*24).Err()
+	return client.Set(ctx, buildQuotaKey(user, day), quota, time.Hour*24).Err()
 }
 
 func GetQuota(user string, day string) (int, error) {
-	quotaStr, err := rdb.Get(ctx, buildQuotaKey(user, day)).Result()
+	quotaStr, err := client.Get(ctx, buildQuotaKey(user, day)).Result()
 	if err != nil {
 		return 0, err
 	}
@@ -270,12 +270,12 @@ func buildTransactionKey(outTradeNo string) (key string) {
 
 func SetTransaction(outTradeNo string, transaction model.Transaction) (err error) {
 	tranBytes, _ := json.Marshal(transaction)
-	return rdb.Set(ctx, buildTransactionKey(outTradeNo), string(tranBytes), 0).Err()
+	return client.Set(ctx, buildTransactionKey(outTradeNo), string(tranBytes), 0).Err()
 }
 
 func GetTransaction(outTradeNo string) (model.Transaction, error) {
 	var transaction model.Transaction
-	tranStr, err := rdb.Get(ctx, buildTransactionKey(outTradeNo)).Result()
+	tranStr, err := client.Get(ctx, buildTransactionKey(outTradeNo)).Result()
 	if err != nil {
 		return transaction, err
 	}
@@ -288,7 +288,7 @@ func buildModeKey(user string) string {
 }
 
 func GetMode(user string) (string, error) {
-	result, err := rdb.Get(ctx, buildModeKey(user)).Result()
+	result, err := client.Get(ctx, buildModeKey(user)).Result()
 	if err == redis.Nil {
 		return constant.GPT3, nil
 	}
@@ -296,7 +296,7 @@ func GetMode(user string) (string, error) {
 }
 
 func SetMode(user string, mode string) error {
-	return rdb.Set(ctx, buildModeKey(user), mode, 0).Err()
+	return client.Set(ctx, buildModeKey(user), mode, 0).Err()
 }
 
 func buildErrorsKey(day string) string {
@@ -305,17 +305,17 @@ func buildErrorsKey(day string) string {
 
 func AppendError(day string, myErr model.MyError) error {
 	errBytes, _ := json.Marshal(myErr)
-	err := rdb.RPush(ctx, buildErrorsKey(day), string(errBytes)).Err()
+	err := client.RPush(ctx, buildErrorsKey(day), string(errBytes)).Err()
 	if err != nil {
 		return err
 	}
-	err = rdb.Expire(ctx, buildErrorsKey(day), time.Hour*24*7).Err()
+	err = client.Expire(ctx, buildErrorsKey(day), time.Hour*24*7).Err()
 	return err
 }
 
 func GetErrors(day string) ([]model.MyError, error) {
 	var chatApiErrors []model.MyError
-	errStrs, err := rdb.LRange(ctx, buildErrorsKey(day), 0, -1).Result()
+	errStrs, err := client.LRange(ctx, buildErrorsKey(day), 0, -1).Result()
 	if err != nil {
 		return chatApiErrors, err
 	}
@@ -329,7 +329,7 @@ func GetErrors(day string) ([]model.MyError, error) {
 }
 
 func GetErrorsLen(day string) (int64, error) {
-	return rdb.LLen(ctx, buildErrorsKey(day)).Result()
+	return client.LLen(ctx, buildErrorsKey(day)).Result()
 }
 
 func getInvitationCodeCursorKey() string {
@@ -337,7 +337,7 @@ func getInvitationCodeCursorKey() string {
 }
 
 func IncInvitationCodeCursor() (int64, error) {
-	return rdb.Incr(ctx, getInvitationCodeCursorKey()).Result()
+	return client.Incr(ctx, getInvitationCodeCursorKey()).Result()
 }
 
 func buildInvitationCodeKey(user string) string {
@@ -345,11 +345,11 @@ func buildInvitationCodeKey(user string) string {
 }
 
 func GetInvitationCode(user string) (string, error) {
-	return rdb.Get(ctx, buildInvitationCodeKey(user)).Result()
+	return client.Get(ctx, buildInvitationCodeKey(user)).Result()
 }
 
 func SetInvitationCode(user string, code string) error {
-	return rdb.Set(ctx, buildInvitationCodeKey(user), code, 0).Err()
+	return client.Set(ctx, buildInvitationCodeKey(user), code, 0).Err()
 }
 
 func buildUserKey(code string) string {
@@ -357,11 +357,11 @@ func buildUserKey(code string) string {
 }
 
 func GetUserByInvitationCode(code string) (string, error) {
-	return rdb.Get(ctx, buildUserKey(code)).Result()
+	return client.Get(ctx, buildUserKey(code)).Result()
 }
 
 func SetUserByInvitationCode(code string, user string) error {
-	return rdb.Set(ctx, buildUserKey(code), user, 0).Err()
+	return client.Set(ctx, buildUserKey(code), user, 0).Err()
 }
 
 func buildInviter(user string) string {
@@ -369,9 +369,9 @@ func buildInviter(user string) string {
 }
 
 func SetInviter(user string, inviter string) error {
-	return rdb.Set(ctx, buildInviter(user), inviter, 0).Err()
+	return client.Set(ctx, buildInviter(user), inviter, 0).Err()
 }
 
 func GetInviter(user string) (string, error) {
-	return rdb.Get(ctx, buildInviter(user)).Result()
+	return client.Get(ctx, buildInviter(user)).Result()
 }

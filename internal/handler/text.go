@@ -8,6 +8,7 @@ import (
 	"openai/internal/constant"
 	"openai/internal/logic"
 	"openai/internal/service/recorder"
+	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
 	"strconv"
@@ -38,11 +39,12 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 		return
 	}
 
+	// when WeChat server retries
 	msgID := msg.MsgID
 	times, _ := store.IncAccessTimes(msgID)
-	// when WeChat server retries
 	if times > 1 {
-		reply = replyWhenRetry(msg)
+		mode, _ := store.GetMode(string(msg.FromUserName))
+		reply = util.BuildTextReply(buildLateReply(msgID, mode))
 		return
 	}
 
@@ -53,46 +55,63 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 	return
 }
 
-func replyWhenRetry(msg *message.MixMessage) (reply *message.Reply) {
-	return util.BuildTextReply(buildReply(msg.MsgID))
-}
-
 func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 	msgId := msg.MsgID
 	userName := string(msg.FromUserName)
 	question := strings.TrimSpace(msg.Content)
 	mode, _ := store.GetMode(userName)
-	ok, balanceTip := logic.CheckBalance(userName, mode)
+	ok, balanceTip := logic.DecreaseBalance(userName, mode)
 	if !ok {
 		reply = balanceTip
 		return
 	}
 
+	drawReplyIsLate := false
 	replyChan := make(chan string, 1)
 	go func() {
 		isVoice := msg.Recognition != ""
-		err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
-		if err != nil {
-			log.Printf("First logic.ChatCompletionStream() failed, msgId is %d, error is %s", msgId, err)
-			// retry with api2d vendor
-			_ = store.DelReplyChunks(msgId)
-			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
-			if err != nil {
-				recorder.RecordError("Second ChatCompletionStream() failed", err)
-				replyChan <- constant.TryAgain
-				return
+		if mode == constant.Draw {
+			drawReply := logic.SubmitDrawTask(question, userName, mode)
+			replyChan <- drawReply
+			if drawReplyIsLate {
+				err := wechat.GetAccount().
+					GetCustomerMessageManager().Send(message.NewCustomerTextMessage(userName, drawReply))
+				if err != nil {
+					recorder.RecordError("GetCustomerMessageManager().Send() failed", err)
+				}
 			}
-		}
-
-		err = logic.DecrBalanceOfToday(userName, mode)
-		if err != nil {
-			recorder.RecordError("store.DecrBalance() failed", err)
+		} else {
+			err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
+			if err != nil {
+				log.Printf("First ChatCompletionStream() failed, msgId is %d, error is %s", msgId, err)
+				// retry
+				_ = store.DelReplyChunks(msgId)
+				err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
+				if err != nil {
+					recorder.RecordError("Second ChatCompletionStream() failed", err)
+					replyChan <- constant.TryAgain
+					logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
+					return
+				}
+			}
 		}
 		replyChan <- buildReply(msgId)
 	}()
 	select {
 	case reply = <-replyChan:
 	case <-time.After(time.Millisecond * 2000):
+		if mode == constant.Draw {
+			drawReplyIsLate = true
+		}
+		reply = buildLateReply(msgId, mode)
+	}
+	return
+}
+
+func buildLateReply(msgId int64, mode string) (reply string) {
+	if mode == constant.Draw {
+		reply = "正在提交画图任务，静候佳音..."
+	} else {
 		reply = buildReply(msgId)
 	}
 	return

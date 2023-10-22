@@ -3,10 +3,12 @@ module openai
 go 1.16
 
 require (
+	github.com/bsm/redislock v0.9.4 // indirect
 	github.com/felixge/httpsnoop v1.0.3
+	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a // indirect
 	github.com/go-pay/gopay v1.5.95
 	github.com/google/uuid v1.3.0
-	github.com/redis/go-redis/v9 v9.0.2
+	github.com/redis/go-redis/v9 v9.0.3
 	github.com/robfig/cron v1.2.0
 	github.com/sashabaranov/go-openai v1.9.0
 	github.com/silenceper/wechat/v2 v2.1.5

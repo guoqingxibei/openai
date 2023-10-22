@@ -232,17 +232,11 @@ func showImage(keyword string) (reply *message.Reply) {
 func showUsage(msg *message.MixMessage) (reply *message.Reply) {
 	userName := string(msg.FromUserName)
 	mode, _ := store.GetMode(userName)
-	usage := fmt.Sprintf("【模式】当前模式是%s，", mode)
-	if mode == constant.GPT3 {
-		usage += "每次提问消耗次数1。"
-	} else {
-		usage += "每次提问消耗次数10。"
-	}
-	usage += "\n"
+	usage := fmt.Sprintf("【模式】当前模式是%s，每次提问消耗次数%d。\n", mode, logic.GetTimesPerQuestion(mode))
 
 	usage += logic.BuildChatUsage(userName)
 	balance, _ := store.GetPaidBalance(userName)
-	usage += fmt.Sprintf("付费次数剩余%d次，可<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
+	usage += fmt.Sprintf("付费次数剩余%d次，可以<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
 		balance,
 		util.GetPayLink(userName),
 		util.GetInvitationTutorialLink(),

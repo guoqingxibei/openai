@@ -107,7 +107,7 @@ func ChatCompletionsStream(
 				break
 			}
 		} else {
-			recorder.RecordError("Choices is empty", errors.New(fmt.Sprintf("response is [%s]", response)))
+			recorder.RecordError("Choices is empty", errors.New(fmt.Sprintf("response is [%+v]", response)))
 		}
 	}
 }

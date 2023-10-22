@@ -65,7 +65,7 @@ func checkVendorBalance() {
 
 func sendYesterdayReportEmail() {
 	yesterday := util.Yesterday()
-	subject := fmt.Sprintf("[%s] Summary for %s", util.GetAccount(), yesterday)
+	subject := fmt.Sprintf("[%s/%s] Summary for %s", util.GetAccount(), util.GetEnv(), yesterday)
 
 	body := ""
 	errorContent := ""

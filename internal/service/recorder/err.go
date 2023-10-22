@@ -36,6 +36,6 @@ func sendErrorAlarmEmail() {
 			body += "-----------------------------------\n"
 		}
 	}
-	subject := fmt.Sprintf("[%s] Already %d Errors Today", util.GetAccount(), count)
+	subject := fmt.Sprintf("[%s/%s] Already %d Errors Today", util.GetAccount(), util.GetEnv(), count)
 	email.SendEmail(subject, body)
 }
