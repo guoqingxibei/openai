@@ -15,10 +15,7 @@ func onSubscribe(msg *message.MixMessage) *message.Reply {
 	log.Println("新增关注:", userName)
 	_, err := store.GetSubscribeTimestamp(userName)
 	if err == redis.Nil {
-		err := store.SetSubscribeTimestamp(userName, time.Now().Unix())
-		if err != nil {
-			log.Println("store.SetSubscribeTimestamp failed", err)
-		}
+		_ = store.SetSubscribeTimestamp(userName, time.Now().Unix())
 	}
 	return util.BuildTextReply(constant.SubscribeReply)
 }

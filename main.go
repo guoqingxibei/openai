@@ -7,6 +7,7 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/handler"
+	"openai/internal/service/recorder"
 	wechat2 "openai/internal/service/wechat"
 	"openai/internal/util"
 	"os"
@@ -57,10 +58,10 @@ func serveWechat(rw http.ResponseWriter, req *http.Request) {
 	//处理消息接收以及回复
 	err := server.Serve()
 	if err != nil {
-		log.Println("server.Serve() failed", err)
+		recorder.RecordError("server.Serve() failed", err)
 		err = server.BuildResponse(util.BuildTextReply(constant.TryAgain))
 		if err != nil {
-			log.Println("server.BuildResponse() failed", err)
+			recorder.RecordError("server.BuildResponse() failed", err)
 			return
 		}
 	}
@@ -68,7 +69,7 @@ func serveWechat(rw http.ResponseWriter, req *http.Request) {
 	//发送回复的消息
 	err = server.Send()
 	if err != nil {
-		log.Println("server.Send() failed", err)
+		recorder.RecordError("server.Send() failed", err)
 	}
 }
 

@@ -5,6 +5,7 @@ import (
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
 	"openai/internal/constant"
+	"openai/internal/service/recorder"
 	"openai/internal/util"
 	"runtime/debug"
 )
@@ -25,7 +26,7 @@ func Talk(msg *message.MixMessage) (reply *message.Reply) {
 		}
 	}()
 
-	// 非文本不回复(返回success表示不回复)
+	var err error
 	switch msg.MsgType {
 	case message.MsgTypeEvent:
 		switch msg.Event {
@@ -43,10 +44,14 @@ func Talk(msg *message.MixMessage) (reply *message.Reply) {
 	case message.MsgTypeVoice:
 		fallthrough
 	case message.MsgTypeText:
-		reply = onReceiveText(msg)
+		reply, err = onReceiveText(msg)
 	default:
 		log.Printf("未实现的消息类型: %s\n", msg.MsgType)
-		reply = util.BuildTextReply("目前还只支持文本和语音消息哦~")
+		reply = util.BuildTextReply("抱歉，目前还只支持文本和语音消息哦~")
+	}
+	if err != nil {
+		recorder.RecordError("Talk() failed", err)
+		return util.BuildTextReply(constant.TryAgain)
 	}
 	return reply
 }

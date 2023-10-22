@@ -22,7 +22,7 @@ func SendEmail(subject string, body string) {
 		[]byte(msg),
 	)
 	if err != nil {
-		log.Printf("smtp error: %s", err)
+		log.Println("smtp.SendMail() failed", err)
 		return
 	}
 }

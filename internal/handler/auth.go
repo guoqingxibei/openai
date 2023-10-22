@@ -2,8 +2,8 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+	"openai/internal/service/recorder"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 )
@@ -14,7 +14,7 @@ func GetOpenId(w http.ResponseWriter, r *http.Request) {
 	if openId == "" {
 		token, err := wechat.GetAccount().GetOauth().GetUserAccessToken(code)
 		if err != nil {
-			log.Println("GetUserAccessToken() failed", err)
+			recorder.RecordError("GetUserAccessToken() failed", err)
 			return
 		}
 		openId = token.OpenID

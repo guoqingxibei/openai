@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"openai/internal/config"
+	"openai/internal/service/recorder"
 	"openai/internal/store"
 	"strings"
 	"time"
@@ -27,10 +28,10 @@ func init() {
 		if err == redis.Nil {
 			_, err := refreshAccessToken()
 			if err != nil {
-				log.Println("refreshAccessToken failed", err)
+				recorder.RecordError("refreshAccessToken() failed", err)
 			}
 		} else {
-			log.Println("store.GetBaiduApiAccessToken failed", err)
+			recorder.RecordError("store.GetBaiduApiAccessToken() failed", err)
 		}
 	}
 
@@ -39,11 +40,11 @@ func init() {
 	err = c.AddFunc("0 0 0 * * ?", func() {
 		_, err := refreshAccessToken()
 		if err != nil {
-			log.Println("refreshAccessToken failed", err)
+			recorder.RecordError("refreshAccessToken() failed", err)
 		}
 	})
 	if err != nil {
-		log.Println("AddFunc failed:", err)
+		recorder.RecordError("AddFunc() failed", err)
 		return
 	}
 	c.Start()
@@ -52,7 +53,7 @@ func init() {
 func refreshAccessToken() (string, error) {
 	token, expiresIn, err := generateAccessToken()
 	if err != nil {
-		log.Println("generateAccessToken failed", err)
+		recorder.RecordError("generateAccessToken() failed", err)
 		return "", err
 	}
 	log.Println("New Baidu API access token is " + token)

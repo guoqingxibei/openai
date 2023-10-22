@@ -7,6 +7,7 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
+	"openai/internal/service/recorder"
 	"openai/internal/store"
 	"openai/internal/util"
 	"strconv"
@@ -21,43 +22,50 @@ const (
 	maxLengthOfQuestion  = 2000
 )
 
-func onReceiveText(msg *message.MixMessage) (reply *message.Reply) {
+func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 	// be compatible with voice message
 	if msg.Recognition != "" {
 		msg.Content = msg.Recognition
 	}
 
 	if len(msg.Content) > maxLengthOfQuestion {
-		return util.BuildTextReply(constant.TooLongQuestion)
+		reply = util.BuildTextReply(constant.TooLongQuestion)
+		return
 	}
 
 	hit, reply := hitKeyword(msg)
 	if hit {
-		return reply
+		return
 	}
 
 	msgID := msg.MsgID
 	times, _ := store.IncAccessTimes(msgID)
 	// when WeChat server retries
 	if times > 1 {
-		return replyWhenRetry(msg)
+		reply = replyWhenRetry(msg)
+		return
 	}
 
-	return util.BuildTextReply(genReply4Text(msg))
+	replyStr, err := genReply4Text(msg)
+	if err == nil {
+		reply = util.BuildTextReply(replyStr)
+	}
+	return
 }
 
 func replyWhenRetry(msg *message.MixMessage) (reply *message.Reply) {
 	return util.BuildTextReply(buildReply(msg.MsgID))
 }
 
-func genReply4Text(msg *message.MixMessage) string {
+func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 	msgId := msg.MsgID
 	userName := string(msg.FromUserName)
 	question := strings.TrimSpace(msg.Content)
 	mode, _ := store.GetMode(userName)
 	ok, balanceTip := logic.CheckBalance(userName, mode)
 	if !ok {
-		return balanceTip
+		reply = balanceTip
+		return
 	}
 
 	replyChan := make(chan string, 1)
@@ -65,13 +73,12 @@ func genReply4Text(msg *message.MixMessage) string {
 		isVoice := msg.Recognition != ""
 		err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
 		if err != nil {
-			log.Printf("[%d] logic.ChatCompletionStream with Ohmygpt failed %s", msgId, err)
+			log.Printf("First logic.ChatCompletionStream() failed, msgId is %d, error is %s", msgId, err)
 			// retry with api2d vendor
 			_ = store.DelReplyChunks(msgId)
 			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
 			if err != nil {
-				log.Printf("[%d] logic.ChatCompletionStream with OpenaiSb failed %s", msgId, err)
-				logic.RecordError(err)
+				recorder.RecordError("Second ChatCompletionStream() failed", err)
 				replyChan <- constant.TryAgain
 				return
 			}
@@ -79,16 +86,16 @@ func genReply4Text(msg *message.MixMessage) string {
 
 		err = logic.DecrBalanceOfToday(userName, mode)
 		if err != nil {
-			log.Println("store.DecrBalance failed", err)
+			recorder.RecordError("store.DecrBalance() failed", err)
 		}
 		replyChan <- buildReply(msgId)
 	}()
 	select {
-	case reply := <-replyChan:
-		return reply
+	case reply = <-replyChan:
 	case <-time.After(time.Millisecond * 2000):
-		return buildReply(msgId)
+		reply = buildReply(msgId)
 	}
+	return
 }
 
 func buildReply(msgId int64) string {

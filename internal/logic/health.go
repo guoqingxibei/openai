@@ -4,14 +4,13 @@ import (
 	"fmt"
 	"github.com/robfig/cron"
 	"log"
-	"openai/internal/model"
 	"openai/internal/service/api2d"
 	"openai/internal/service/email"
 	"openai/internal/service/ohmygpt"
+	"openai/internal/service/recorder"
 	"openai/internal/service/sb"
 	"openai/internal/store"
 	"openai/internal/util"
-	"time"
 )
 
 func init() {
@@ -21,7 +20,7 @@ func init() {
 		sendYesterdayReportEmail()
 	})
 	if err != nil {
-		log.Println("AddFunc failed:", err)
+		recorder.RecordError("AddFunc() failed", err)
 		return
 	}
 	c1.Start()
@@ -33,7 +32,7 @@ func init() {
 			checkVendorBalance()
 		})
 		if err != nil {
-			log.Println("AddFunc failed:", err)
+			recorder.RecordError("AddFunc() failed", err)
 			return
 		}
 		c2.Start()
@@ -62,35 +61,6 @@ func checkVendorBalance() {
 		email.SendEmail("Insufficient Balance", body)
 	}
 	log.Println("Check finished")
-}
-
-func RecordError(err error) {
-	go func() {
-		myErr := model.MyError{
-			ErrorStr:           err.Error(),
-			TimestampInSeconds: time.Now().Unix(),
-		}
-		today := util.Today()
-		_ = store.AppendError(today, myErr)
-		errCount, _ := store.GetErrorsLen(today)
-		if errCount%1 == 0 {
-			sendErrorAlarmEmail()
-		}
-	}()
-}
-
-func sendErrorAlarmEmail() {
-	errors, _ := store.GetErrors(util.Today())
-	count := len(errors)
-	body := ""
-	for idx, myError := range errors {
-		body += util.TimestampToTimeStr(myError.TimestampInSeconds) + "  " + myError.ErrorStr + "\n"
-		if idx != count-1 {
-			body += "-----------------------------------\n"
-		}
-	}
-	subject := fmt.Sprintf("[%s] Already %d Errors Today", util.GetAccount(), count)
-	email.SendEmail(subject, body)
 }
 
 func sendYesterdayReportEmail() {

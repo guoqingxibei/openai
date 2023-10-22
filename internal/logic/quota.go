@@ -93,12 +93,12 @@ func GetBalance(user string) int {
 			quota := GetQuota(user)
 			err := SetBalanceOfToday(user, quota)
 			if err != nil {
-				log.Println("store.SetBalance failed", err)
+				log.Println("SetBalanceOfToday() failed", err)
 				return 0
 			}
 			return quota
 		}
-		log.Println("store.GetBalance failed", err)
+		log.Println("fetchBalanceOfToday() failed", err)
 		return 0
 	}
 	return balance

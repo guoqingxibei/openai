@@ -13,7 +13,7 @@ const (
 func incUsedTimes(user string) int {
 	times, err := store.IncUsedTimes(user)
 	if err != nil {
-		log.Println("store.IncUsedTimes failed", err)
+		log.Println("store.IncUsedTimes() failed", err)
 		return 0
 	}
 	return times

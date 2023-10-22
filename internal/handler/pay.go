@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"github.com/go-pay/gopay"
 	"github.com/go-pay/gopay/wechat/v3"
-	"log"
 	"net/http"
 	"openai/internal/logic"
+	"openai/internal/service/recorder"
 	wechatService "openai/internal/service/wechat"
 	"openai/internal/store"
 	"time"
@@ -35,7 +35,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	var transactionReq transactionReq
 	err := decoder.Decode(&transactionReq)
 	if err != nil {
-		log.Println(err)
+		recorder.RecordError("decoder.Decode() failed", err)
 		return
 	}
 
@@ -47,7 +47,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 		transactionReq.Description,
 	)
 	if err != nil {
-		log.Println(err)
+		recorder.RecordError("logic.InitiateTransaction() failed", err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	params, err := wechatService.GeneratePaySignParams(prepayId)
 	if err != nil {
-		log.Println(err)
+		recorder.RecordError("wechatService.GeneratePaySignParams() failed", err)
 		return
 	}
 	data, _ := json.Marshal(transactionRes{params, outTradeNo})
@@ -65,13 +65,13 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 	notifyReq, err := wechat.V3ParseNotify(r)
 	if err != nil {
-		log.Println(err)
+		recorder.RecordError("wechat.V3ParseNotify()", err)
 		return
 	}
 
 	result, err := wechatService.VerifySignAndDecrypt(notifyReq)
 	if err != nil {
-		log.Println(err)
+		recorder.RecordError("wechatService.VerifySignAndDecrypt()", err)
 		return
 	}
 
@@ -108,7 +108,7 @@ func GetTradeResult(w http.ResponseWriter, r *http.Request) {
 	outTradeId := r.URL.Query().Get("out_trade_no")
 	transaction, err := store.GetTransaction(outTradeId)
 	if err != nil {
-		log.Println(err)
+		recorder.RecordError("store.GetTransaction() failed", err)
 		return
 	}
 
