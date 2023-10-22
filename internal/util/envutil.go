@@ -17,7 +17,7 @@ func GetAccount() string {
 }
 
 func EnvIsProd() bool {
-	return GetEnv() == constant.PROD
+	return GetEnv() == constant.Prod
 }
 
 func GetEnv() string {

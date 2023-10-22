@@ -12,6 +12,8 @@ func onClick(msg *message.MixMessage) (reply *message.Reply) {
 	case constant.GPT3:
 		fallthrough
 	case constant.GPT4:
+		fallthrough
+	case constant.Draw:
 		reply = switchMode(msg.EventKey, msg)
 	case clear:
 		reply = clearHistory(msg)

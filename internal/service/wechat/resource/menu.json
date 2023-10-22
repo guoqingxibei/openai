@@ -36,6 +36,11 @@
         "type": "click",
         "name": "使用gpt4",
         "key": "gpt4"
+      },
+      {
+        "type": "click",
+        "name": "画图",
+        "key": "draw"
       }
     ]
   },

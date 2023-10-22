@@ -74,7 +74,7 @@ func serveWechat(rw http.ResponseWriter, req *http.Request) {
 }
 
 func configLog() {
-	if util.GetEnv() == constant.DEV {
+	if util.GetEnv() == constant.Dev {
 		log.SetOutput(os.Stdout)
 	} else {
 		dir := "./log"
