@@ -105,12 +105,10 @@ func buildReply(msgId int64) string {
 					length = 30
 				}
 				reply = buildReplyWithShowMore(string(runes[:length]), msgId)
-			} else {
-				reply = reply + "\n" + buildReplyURL(msgId, "查看网页版")
 			}
 		} else {
 			if reply == "" {
-				reply = buildReplyURL(msgId, "点击查看回复")
+				reply = buildReplyURL(msgId, "查看回复")
 			} else {
 				reply = buildReplyWithShowMore(reply, msgId)
 			}
@@ -120,7 +118,7 @@ func buildReply(msgId int64) string {
 }
 
 func buildReplyWithShowMore(answer string, msgId int64) string {
-	return trimTailingPuncts(answer) + "...\n" + buildReplyURL(msgId, "查看更多")
+	return trimTailingPuncts(answer) + "..." + buildReplyURL(msgId, "更多")
 }
 
 func trimTailingPuncts(answer string) string {
