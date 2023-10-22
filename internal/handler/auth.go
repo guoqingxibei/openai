@@ -17,7 +17,8 @@ func GetOpenId(w http.ResponseWriter, r *http.Request) {
 			log.Println("GetUserAccessToken() failed", err)
 			return
 		}
-		_ = store.SetOpenId(code, token.OpenID)
+		openId = token.OpenID
+		_ = store.SetOpenId(code, openId)
 	}
 
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
