@@ -14,6 +14,11 @@ import (
 	"time"
 )
 
+const (
+	DAY  = time.Hour * 24
+	WEEK = DAY * 7
+)
+
 var ctx = context.Background()
 var client, uncleClient, brotherClient *redis.Client
 
@@ -43,7 +48,7 @@ func AppendReplyChunk(msgId int64, chunk string) error {
 	if err != nil {
 		return err
 	}
-	err = client.Expire(ctx, buildReplyChunksKey(msgId), time.Hour*24*7).Err()
+	err = client.Expire(ctx, buildReplyChunksKey(msgId), WEEK).Err()
 	return err
 }
 
@@ -132,7 +137,7 @@ func GetBalance(user string, day string) (int, error) {
 }
 
 func SetBalance(user string, day string, balance int) error {
-	return client.Set(ctx, buildBalanceKey(user, day), strconv.Itoa(balance), time.Hour*24).Err()
+	return client.Set(ctx, buildBalanceKey(user, day), strconv.Itoa(balance), DAY).Err()
 }
 
 func DecrBalance(user string, day string) (int, error) {
@@ -251,7 +256,7 @@ func buildQuotaKey(user string, day string) string {
 }
 
 func SetQuota(user string, day string, quota int) error {
-	return client.Set(ctx, buildQuotaKey(user, day), quota, time.Hour*24).Err()
+	return client.Set(ctx, buildQuotaKey(user, day), quota, DAY).Err()
 }
 
 func GetQuota(user string, day string) (int, error) {
@@ -309,7 +314,7 @@ func AppendError(day string, myErr model.MyError) error {
 	if err != nil {
 		return err
 	}
-	err = client.Expire(ctx, buildErrorsKey(day), time.Hour*24*7).Err()
+	err = client.Expire(ctx, buildErrorsKey(day), WEEK).Err()
 	return err
 }
 

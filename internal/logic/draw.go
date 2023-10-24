@@ -77,6 +77,12 @@ func init() {
 }
 
 func SubmitDrawTask(prompt string, user string, mode string) string {
+	taskIds, _ := store.GetPendingTaskIdsForUser(user)
+	if len(taskIds) > 0 {
+		AddPaidBalance(user, GetTimesPerQuestion(mode))
+		return "抱歉，你之前的画图任务仍在进行中，请稍后再提交新的任务。"
+	}
+
 	start := time.Now()
 	imagineUrl := config.C.Ohmygpt.BaseURL + "/api/v1/ai/draw/mj/imagine"
 
@@ -131,8 +137,9 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 
 	taskId := taskResp.Data
 	_ = store.AppendPendingTaskId(taskId)
+	_ = store.AppendPendingTaskIdsForUser(user, taskId)
 	_ = store.SetUserForTaskId(taskId, user)
-	return "画图任务已成功提交，作品稍后奉上！敬请期待..."
+	return "画图任务已成功提交，作品将在约1分钟后奉上！敬请期待..."
 }
 
 func getTaskStatus(taskId int) (statusResp *statusResponse, err error) {
@@ -273,11 +280,13 @@ func checkTask(taskId int) error {
 
 					_ = store.SetSubtaskId(taskId, customId, subtaskId)
 					_ = store.AppendPendingTaskId(subtaskId)
-					user, _ := store.GetUserOfTaskId(taskId)
+					user, _ := store.GetUserByTaskId(taskId)
 					_ = store.SetUserForTaskId(subtaskId, user)
 				}
 			}
+			user, _ := store.GetUserByTaskId(taskId)
 			_ = store.RemovePendingTaskId(taskId)
+			_ = store.RemovePendingTaskIdForUser(user, taskId)
 			log.Printf("[task %d] All eligible subtasks are submitted, removed this task", taskId)
 			return nil
 		}
@@ -303,7 +312,7 @@ func checkTask(taskId int) error {
 			}
 
 			log.Printf("[task %d] Sending image to user...", taskId)
-			user, _ := store.GetUserOfTaskId(taskId)
+			user, _ := store.GetUserByTaskId(taskId)
 			err = wechat.GetAccount().
 				GetCustomerMessageManager().Send(message.NewCustomerImgMessage(user, media.MediaID))
 			if err != nil {
@@ -312,6 +321,7 @@ func checkTask(taskId int) error {
 
 			log.Printf("[task %d] Sent upscaled image to user, removed this task", taskId)
 			_ = store.RemovePendingTaskId(taskId)
+			_ = store.RemovePendingTaskIdForUser(user, taskId)
 			return nil
 		}
 	}
