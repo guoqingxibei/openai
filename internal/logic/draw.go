@@ -124,7 +124,7 @@ func checkTask(taskId int) error {
 			log.Printf("[task %d] Executing UPSCALE actions...", taskId)
 			for _, action := range data.Actions {
 				customId := action.CustomId
-				if strings.Contains(customId, "upsample") {
+				if strings.Contains(customId, "upsample::1") || strings.Contains(customId, "upsample::2") {
 					subtaskId, _ := store.GetSubtaskId(taskId, customId)
 					if subtaskId != 0 {
 						log.Printf("[task %d] Skipped submitted subtask with customId: %s", taskId, customId)
