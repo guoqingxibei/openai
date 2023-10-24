@@ -7,8 +7,6 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/handler"
-	"openai/internal/service/errorx"
-	wechat2 "openai/internal/service/wechat"
 	"openai/internal/util"
 	"os"
 )
@@ -21,9 +19,9 @@ func init() {
 func main() {
 	engine := bootstrap.New()
 	// 公众号消息处理
-	engine.POST("/talk", serveWechat)
+	engine.POST("/talk", handler.ServeWechat)
 	// 用于公众号自动验证
-	engine.GET("/talk", serveWechat)
+	engine.GET("/talk", handler.ServeWechat)
 	// Provide reply content for the webpage
 	engine.GET("/reply-stream", handler.GetReplyStream)
 	engine.GET("/openid", handler.GetOpenId)
@@ -42,34 +40,6 @@ func main() {
 	err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, nil)
 	if err != nil {
 		panic(err)
-	}
-}
-
-func serveWechat(rw http.ResponseWriter, req *http.Request) {
-	officialAccount := wechat2.GetAccount()
-
-	// 传入request和responseWriter
-	server := officialAccount.GetServer(req, rw)
-	server.SetParseXmlToMsgFn(util.ParseXmlToMsg)
-
-	//设置接收消息的处理方法
-	server.SetMessageHandler(handler.Talk)
-
-	//处理消息接收以及回复
-	err := server.Serve()
-	if err != nil {
-		errorx.RecordError("server.Serve() failed", err)
-		err = server.BuildResponse(util.BuildTextReply(constant.TryAgain))
-		if err != nil {
-			errorx.RecordError("server.BuildResponse() failed", err)
-			return
-		}
-	}
-
-	//发送回复的消息
-	err = server.Send()
-	if err != nil {
-		errorx.RecordError("server.Send() failed", err)
 	}
 }
 

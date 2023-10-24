@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
+	"net/http"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
+	"openai/internal/service/wechat"
 	"openai/internal/util"
 	"runtime/debug"
 )
@@ -15,9 +17,37 @@ type ChatRound struct {
 	answer   string
 }
 
+func ServeWechat(rw http.ResponseWriter, req *http.Request) {
+	officialAccount := wechat.GetAccount()
+
+	// 传入request和responseWriter
+	server := officialAccount.GetServer(req, rw)
+	server.SetParseXmlToMsgFn(util.ParseXmlToMsg)
+
+	//设置接收消息的处理方法
+	server.SetMessageHandler(talk)
+
+	//处理消息接收以及回复
+	err := server.Serve()
+	if err != nil {
+		errorx.RecordError("server.Serve() failed", err)
+		err = server.BuildResponse(util.BuildTextReply(constant.TryAgain))
+		if err != nil {
+			errorx.RecordError("server.BuildResponse() failed", err)
+			return
+		}
+	}
+
+	//发送回复的消息
+	err = server.Send()
+	if err != nil {
+		errorx.RecordError("server.Send() failed", err)
+	}
+}
+
 // Talk https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
 // 微信服务器在五秒内收不到响应会断掉连接，并且重新发起请求，总共重试三次
-func Talk(msg *message.MixMessage) (reply *message.Reply) {
+func talk(msg *message.MixMessage) (reply *message.Reply) {
 	// unhandled exception
 	defer func() {
 		if r := recover(); r != nil {
