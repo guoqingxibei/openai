@@ -64,16 +64,18 @@ const (
 var ctx = context.Background()
 
 func init() {
-	c1 := cron.New()
-	// Execute once every ten seconds
-	err := c1.AddFunc("*/10 * * * * *", func() {
-		checkPendingTasks()
-	})
-	if err != nil {
-		errorx.RecordError("AddFunc() failed", err)
-		return
+	if !util.AccountIsUncle() || !util.EnvIsProd() {
+		c1 := cron.New()
+		// Execute once every ten seconds
+		err := c1.AddFunc("*/10 * * * * *", func() {
+			checkPendingTasks()
+		})
+		if err != nil {
+			errorx.RecordError("AddFunc() failed", err)
+			return
+		}
+		c1.Start()
 	}
-	c1.Start()
 }
 
 func SubmitDrawTask(prompt string, user string, mode string) string {
