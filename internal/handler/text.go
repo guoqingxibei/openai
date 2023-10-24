@@ -44,7 +44,7 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 	times, _ := store.IncAccessTimes(msgID)
 	if times > 1 {
 		mode, _ := store.GetMode(string(msg.FromUserName))
-		reply = util.BuildTextReply(buildLateReply(msgID, mode))
+		reply = util.BuildTextReply(buildLateDrawReply(msgID, mode))
 		return
 	}
 
@@ -71,6 +71,12 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 	go func() {
 		isVoice := msg.Recognition != ""
 		if mode == constant.Draw {
+			if isVoice {
+				logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
+				replyChan <- "draw模式下，不支持可能造成误解的语音输入，请准确输入文字描述。"
+				return
+			}
+
 			drawReply := logic.SubmitDrawTask(question, userName, mode)
 			replyChan <- drawReply
 			if drawReplyIsLate {
@@ -80,19 +86,20 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 					errorx.RecordError("GetCustomerMessageManager().Send() failed", err)
 				}
 			}
-		} else {
-			err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
+			return
+		}
+
+		err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
+		if err != nil {
+			log.Printf("First ChatCompletionStream() failed, msgId is %d, error is %s", msgId, err)
+			// retry
+			_ = store.DelReplyChunks(msgId)
+			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
 			if err != nil {
-				log.Printf("First ChatCompletionStream() failed, msgId is %d, error is %s", msgId, err)
-				// retry
-				_ = store.DelReplyChunks(msgId)
-				err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
-				if err != nil {
-					errorx.RecordError("Second ChatCompletionStream() failed", err)
-					replyChan <- constant.TryAgain
-					logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
-					return
-				}
+				errorx.RecordError("Second ChatCompletionStream() failed", err)
+				logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
+				replyChan <- constant.TryAgain
+				return
 			}
 		}
 		replyChan <- buildReply(msgId)
@@ -103,12 +110,12 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 		if mode == constant.Draw {
 			drawReplyIsLate = true
 		}
-		reply = buildLateReply(msgId, mode)
+		reply = buildLateDrawReply(msgId, mode)
 	}
 	return
 }
 
-func buildLateReply(msgId int64, mode string) (reply string) {
+func buildLateDrawReply(msgId int64, mode string) (reply string) {
 	if mode == constant.Draw {
 		reply = "正在提交画图任务，静候佳音..."
 	} else {
