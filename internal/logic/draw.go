@@ -17,7 +17,7 @@ import (
 	"net/url"
 	"openai/internal/config"
 	"openai/internal/constant"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
@@ -70,7 +70,7 @@ func init() {
 		checkPendingTasks()
 	})
 	if err != nil {
-		recorder.RecordError("AddFunc() failed", err)
+		errorx.RecordError("AddFunc() failed", err)
 		return
 	}
 	c1.Start()
@@ -91,7 +91,7 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 	failureReply := "画图任务提交失败，请稍后重试，本次任务不会消耗次数。"
 	if err != nil {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		recorder.RecordError("http.NewRequest() failed", err)
+		errorx.RecordError("http.NewRequest() failed", err)
 		return failureReply
 	}
 
@@ -102,7 +102,7 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 	res, err := client.Do(req)
 	if err != nil {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		recorder.RecordError("client.Do() failed", err)
+		errorx.RecordError("client.Do() failed", err)
 		return failureReply
 	}
 
@@ -110,7 +110,7 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		recorder.RecordError("ioutil.ReadAll() failed", err)
+		errorx.RecordError("ioutil.ReadAll() failed", err)
 		return failureReply
 	}
 
@@ -221,7 +221,7 @@ func checkPendingTasks() {
 		go func() {
 			err := checkTask(taskId)
 			if err != nil {
-				recorder.RecordError(fmt.Sprintf("checkTask(%d)", taskId), err)
+				errorx.RecordError(fmt.Sprintf("checkTask(%d)", taskId), err)
 			}
 		}()
 	}
@@ -344,7 +344,7 @@ func executeAction(taskId int, customId string) (subTaskId int, err error) {
 
 	req, err := http.NewRequest(http.MethodPost, actionUrl, payload)
 	if err != nil {
-		recorder.RecordError("http.NewRequest() failed", err)
+		errorx.RecordError("http.NewRequest() failed", err)
 		return
 	}
 
@@ -354,14 +354,14 @@ func executeAction(taskId int, customId string) (subTaskId int, err error) {
 	client := &http.Client{}
 	res, err := client.Do(req)
 	if err != nil {
-		recorder.RecordError("client.Do() failed", err)
+		errorx.RecordError("client.Do() failed", err)
 		return
 	}
 
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		recorder.RecordError("ioutil.ReadAll() failed", err)
+		errorx.RecordError("ioutil.ReadAll() failed", err)
 		return
 	}
 

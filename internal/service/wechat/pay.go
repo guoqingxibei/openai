@@ -7,7 +7,7 @@ import (
 	"github.com/go-pay/gopay/wechat/v3"
 	"log"
 	"openai/internal/config"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/util"
 	"time"
 )
@@ -31,7 +31,7 @@ func initPayClient() {
 	var err error
 	client, err = wechat.NewClientV3(wcCfg.MchId, wcCfg.SerialNo, wcCfg.APIv3Key, wcCfg.PrivateKey)
 	if err != nil {
-		recorder.RecordError("wechat.NewClientV3() failed", err)
+		errorx.RecordError("wechat.NewClientV3() failed", err)
 		return
 	}
 
@@ -41,7 +41,7 @@ func initPayClient() {
 	// 启用自动同步返回验签，并定时更新微信平台API证书（开启自动验签时，无需单独设置微信平台API证书和序列号）
 	err = client.AutoVerifySign()
 	if err != nil {
-		recorder.RecordError("client.AutoVerifySign() failed", err)
+		errorx.RecordError("client.AutoVerifySign() failed", err)
 		return
 	}
 
@@ -70,11 +70,11 @@ func InitiateTransaction(openid string, tradeNo string, total int, description s
 
 	wxRsp, err := client.V3TransactionJsapi(ctx, bm)
 	if err != nil {
-		recorder.RecordError("client.V3TransactionJsapi() failed", err)
+		errorx.RecordError("client.V3TransactionJsapi() failed", err)
 		return "", err
 	}
 	if wxRsp.Code != wechat.Success {
-		recorder.RecordError("client.V3TransactionJsapi() failed", errors.New(wxRsp.Error))
+		errorx.RecordError("client.V3TransactionJsapi() failed", errors.New(wxRsp.Error))
 		return "", errors.New("wxRsp error")
 	}
 	log.Printf("wxRsp: %+v", wxRsp.Response)

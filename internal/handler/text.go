@@ -7,7 +7,7 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
@@ -77,7 +77,7 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 				err := wechat.GetAccount().
 					GetCustomerMessageManager().Send(message.NewCustomerTextMessage(userName, drawReply))
 				if err != nil {
-					recorder.RecordError("GetCustomerMessageManager().Send() failed", err)
+					errorx.RecordError("GetCustomerMessageManager().Send() failed", err)
 				}
 			}
 		} else {
@@ -88,7 +88,7 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 				_ = store.DelReplyChunks(msgId)
 				err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
 				if err != nil {
-					recorder.RecordError("Second ChatCompletionStream() failed", err)
+					errorx.RecordError("Second ChatCompletionStream() failed", err)
 					replyChan <- constant.TryAgain
 					logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
 					return

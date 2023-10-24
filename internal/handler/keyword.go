@@ -9,7 +9,7 @@ import (
 	"log"
 	"openai/internal/constant"
 	"openai/internal/logic"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
@@ -178,7 +178,7 @@ func doGenerateCode(question string, msg *message.MixMessage) (reply *message.Re
 	timesStr := fields[1]
 	times, err := strconv.Atoi(timesStr)
 	if err != nil {
-		recorder.RecordError("strconv.Atoi() failed", err)
+		errorx.RecordError("strconv.Atoi() failed", err)
 		return util.BuildTextReply("Invalid generate-code usage")
 	}
 
@@ -223,7 +223,7 @@ func showImage(keyword string) (reply *message.Reply) {
 	}
 	QrMediaId, err := wechat.GetMediaId(mediaName)
 	if err != nil {
-		recorder.RecordError("wechat.GetMediaId() failed", err)
+		errorx.RecordError("wechat.GetMediaId() failed", err)
 		return util.BuildTextReply(constant.TryAgain)
 	}
 	return util.BuildImageReply(QrMediaId)

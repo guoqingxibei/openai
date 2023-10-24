@@ -5,7 +5,7 @@ import (
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
 	"openai/internal/constant"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/util"
 	"runtime/debug"
 )
@@ -50,7 +50,7 @@ func Talk(msg *message.MixMessage) (reply *message.Reply) {
 		reply = util.BuildTextReply("抱歉，目前还只支持文本和语音消息哦~")
 	}
 	if err != nil {
-		recorder.RecordError("Talk() failed", err)
+		errorx.RecordError("Talk() failed", err)
 		return util.BuildTextReply(constant.TryAgain)
 	}
 	return reply

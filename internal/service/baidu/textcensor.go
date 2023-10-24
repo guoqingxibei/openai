@@ -5,7 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/util"
 	"strings"
 	"time"
@@ -29,7 +29,7 @@ func Censor(text string) bool {
 	payload := strings.NewReader("text=" + text)
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
-		recorder.RecordError("http.NewRequest() api failed", err)
+		errorx.RecordError("http.NewRequest() api failed", err)
 		return true
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
@@ -37,13 +37,13 @@ func Censor(text string) bool {
 	client := &http.Client{Timeout: time.Second * 300}
 	res, err := client.Do(req)
 	if err != nil {
-		recorder.RecordError("text_censor API failed", err)
+		errorx.RecordError("text_censor API failed", err)
 		return true
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		recorder.RecordError("ioutil.ReadAll() failed", err)
+		errorx.RecordError("ioutil.ReadAll() failed", err)
 		return true
 	}
 	var censorResp censorResponse

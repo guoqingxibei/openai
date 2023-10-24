@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"openai/internal/constant"
 	replylogic "openai/internal/logic"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/store"
 	"strconv"
 	"strings"
@@ -26,7 +26,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 	msgIdStr := r.URL.Query().Get("msgId")
 	msgId, err := strconv.ParseInt(msgIdStr, 10, 64)
 	if err != nil {
-		recorder.RecordError("Invalid msgId", err)
+		errorx.RecordError("Invalid msgId", err)
 		fmt.Fprint(w, "Invalid msgId")
 		return
 	}

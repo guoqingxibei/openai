@@ -9,7 +9,7 @@ import (
 	"io"
 	"openai/internal/config"
 	"openai/internal/constant"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/util"
 )
 
@@ -107,7 +107,7 @@ func ChatCompletionsStream(
 				break
 			}
 		} else {
-			recorder.RecordError("Choices is empty", errors.New(fmt.Sprintf("response is [%+v]", response)))
+			errorx.RecordError("Choices is empty", errors.New(fmt.Sprintf("response is [%+v]", response)))
 		}
 	}
 }

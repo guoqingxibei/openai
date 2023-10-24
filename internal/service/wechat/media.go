@@ -6,7 +6,7 @@ import (
 	"github.com/robfig/cron"
 	"github.com/silenceper/wechat/v2/officialaccount/material"
 	"log"
-	"openai/internal/service/recorder"
+	"openai/internal/service/errorx"
 	"openai/internal/store"
 	"os"
 	"path/filepath"
@@ -30,7 +30,7 @@ func initMedias() {
 		return nil
 	})
 	if err != nil {
-		recorder.RecordError("filepath.Walk() failed", err)
+		errorx.RecordError("filepath.Walk() failed", err)
 	}
 }
 
@@ -50,7 +50,7 @@ func initMediaId(imageName string) {
 		_, _ = refreshImage(imageName)
 	})
 	if err != nil {
-		recorder.RecordError("AddFunc() failed", err)
+		errorx.RecordError("AddFunc() failed", err)
 		return
 	}
 	c.Start()
@@ -62,7 +62,7 @@ func GetMediaId(imageName string) (string, error) {
 		if err == redis.Nil {
 			mediaId, err = refreshImage(imageName)
 			if err != nil {
-				recorder.RecordError("refreshImage() failed", err)
+				errorx.RecordError("refreshImage() failed", err)
 				return "", err
 			}
 			return mediaId, nil
@@ -75,7 +75,7 @@ func GetMediaId(imageName string) (string, error) {
 func refreshImage(imageName string) (string, error) {
 	mediaId, err := uploadImage(imageName)
 	if err != nil {
-		recorder.RecordError("uploadImage() failed", err)
+		errorx.RecordError("uploadImage() failed", err)
 		return "", err
 	}
 	err = store.SetMediaId(mediaId, imageName, time.Hour*24*2)
@@ -91,7 +91,7 @@ func uploadImage(imageName string) (string, error) {
 	fileName := fmt.Sprintf("%s/%s", resourcePath, imageName)
 	media, err := GetAccount().GetMaterial().MediaUpload(material.MediaTypeImage, fileName)
 	if err != nil {
-		recorder.RecordError("MediaUpload() failed", err)
+		errorx.RecordError("MediaUpload() failed", err)
 		return "", err
 	}
 	return media.MediaID, nil

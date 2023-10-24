@@ -6,10 +6,9 @@ import (
 	"log"
 	"openai/internal/service/api2d"
 	"openai/internal/service/email"
+	"openai/internal/service/errorx"
 	"openai/internal/service/ohmygpt"
-	"openai/internal/service/recorder"
 	"openai/internal/service/sb"
-	"openai/internal/store"
 	"openai/internal/util"
 )
 
@@ -20,7 +19,7 @@ func init() {
 		sendYesterdayReportEmail()
 	})
 	if err != nil {
-		recorder.RecordError("AddFunc() failed", err)
+		errorx.RecordError("AddFunc() failed", err)
 		return
 	}
 	c1.Start()
@@ -32,7 +31,7 @@ func init() {
 			checkVendorBalance()
 		})
 		if err != nil {
-			recorder.RecordError("AddFunc() failed", err)
+			errorx.RecordError("AddFunc() failed", err)
 			return
 		}
 		c2.Start()
@@ -68,16 +67,8 @@ func sendYesterdayReportEmail() {
 	subject := fmt.Sprintf("[%s/%s] Summary for %s", util.GetAccount(), util.GetEnv(), yesterday)
 
 	body := ""
-	errorContent := ""
-	errors, _ := store.GetErrors(yesterday)
-	count := len(errors)
-	for idx, myError := range errors {
-		errorContent += util.TimestampToTimeStr(myError.TimestampInSeconds) + "  " + myError.ErrorStr + "\n"
-		if idx != count-1 {
-			errorContent += "-----------------------------------\n"
-		}
-	}
-	errorTitle := fmt.Sprintf("[%d errors]\n", count)
+	errCnt, errorContent := errorx.GetErrorsDesc(yesterday)
+	errorTitle := fmt.Sprintf("[%d errors]\n", errCnt)
 	body += errorTitle + errorContent
 
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
