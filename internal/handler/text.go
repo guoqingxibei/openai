@@ -30,7 +30,7 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 	}
 
 	if len(msg.Content) > maxLengthOfQuestion {
-		reply = util.BuildTextReply(constant.TooLongQuestion)
+		reply = util.BuildTextReply("哎呀，输入太长了~")
 		return
 	}
 

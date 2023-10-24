@@ -16,7 +16,7 @@ func switchMode(mode string, msg *message.MixMessage) *message.Reply {
 }
 
 func buildModeDesc(userName string, mode string) (desc string) {
-	desc = fmt.Sprintf("已切换到「%s」模式，每次提问消耗次数%d。", mode, logic.GetTimesPerQuestion(mode))
+	desc = fmt.Sprintf("已切换到「%s」模式，每次对话消耗次数%d。", mode, logic.GetTimesPerQuestion(mode))
 	if mode == constant.GPT3 {
 		return
 	}

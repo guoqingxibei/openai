@@ -18,9 +18,9 @@ func DecreaseBalance(userName string, mode string) (bool, string) {
 	if mode == constant.GPT4 || mode == constant.Draw {
 		paidBalance, _ := store.GetPaidBalance(userName)
 		if paidBalance < timesPerQuestion {
-			gpt4BalanceTip := "【余额不足】抱歉，付费次数剩余%d次，不足以继续使用%s模式(每次提问消耗次数%d)，" +
+			gpt4BalanceTip := "【余额不足】抱歉，付费次数剩余%d次，不足以继续使用%s模式(每次对话消耗次数%d)，" +
 				"可<a href=\"%s\">点我充值次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。" +
-				"\n\n%s在此模式下，每次提问仅消耗次数1。"
+				"\n\n%s在此模式下，每次对话仅消耗次数1。"
 			return false,
 				fmt.Sprintf(gpt4BalanceTip,
 					paidBalance,

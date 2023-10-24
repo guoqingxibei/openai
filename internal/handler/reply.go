@@ -37,7 +37,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 
 	exists, _ := store.ReplyChunksExists(msgId)
 	if !exists {
-		fmt.Fprint(w, constant.ExpireError)
+		fmt.Fprint(w, "哎呀，消息过期了，重新提问吧~")
 		return
 	}
 

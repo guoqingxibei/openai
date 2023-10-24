@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	StartMark = "[START]"
-	EndMark   = "[END]"
+	StartMark     = "[START]"
+	EndMark       = "[END]"
+	censorWarning = "【温馨提醒】很抱歉识别出了可能不宜讨论的内容。如有误判，可回复contact联系作者，作者将继续进行优化调整。\n\n为了公众号能持续向大家提供服务，请大家不要在这里讨论色情、政治、暴恐、VPN等相关内容，谢谢配合❤️"
 )
 
 func ChatCompletionStream(aiVendor string, userName string, msgId int64,
@@ -75,9 +76,9 @@ func censorChunk(chunk string, isFirstChunk bool) (bool, string) {
 	passedCensor := true || baidu.Censor(chunk)
 	if !passedCensor {
 		if isFirstChunk {
-			chunk = constant.CensorWarning
+			chunk = censorWarning
 		} else {
-			chunk = "\n\n" + constant.CensorWarning
+			chunk = "\n\n" + censorWarning
 		}
 	}
 	return passedCensor, chunk

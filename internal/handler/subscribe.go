@@ -4,7 +4,6 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
-	"openai/internal/constant"
 	"openai/internal/store"
 	"openai/internal/util"
 	"time"
@@ -17,5 +16,12 @@ func onSubscribe(msg *message.MixMessage) *message.Reply {
 	if err == redis.Nil {
 		_ = store.SetSubscribeTimestamp(userName, time.Now().Unix())
 	}
-	return util.BuildTextReply(constant.SubscribeReply)
+
+	var reply string
+	if util.AccountIsUncle() {
+		reply = "此公众号已接入ChatGPT 3.5/4，可以<a href=\"https://cxyds.top/2023/07/03/faq.html\">点我了解详细用法</a>。\n\n现在，你可以直接用文字或语音和我对话咯~"
+	} else {
+		reply = "此公众号已接入ChatGPT 3.5/4和MidJourney，可以<a href=\"https://cxyds.top/2023/07/03/faq.html\">点我了解详细用法</a>。\n\n现在，你可以直接用文字或语音和我对话咯~"
+	}
+	return util.BuildTextReply(reply)
 }

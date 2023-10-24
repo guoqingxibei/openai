@@ -2,7 +2,6 @@ package logic
 
 import (
 	"log"
-	"openai/internal/constant"
 	"openai/internal/store"
 )
 
@@ -28,5 +27,5 @@ func selectAppending() string {
 	//if rand.Intn(2) == 0 {
 	//	return constant.DonateReminder
 	//}
-	return constant.JoinGroupReminder
+	return "【温馨提示】为了方便大家反馈问题和互相交流，uncle特地建了个群👇\n\n![](./images/group_qr.jpg)"
 }
