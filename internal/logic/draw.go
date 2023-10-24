@@ -2,63 +2,27 @@ package logic
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/bsm/redislock"
-	"github.com/go-http-utils/headers"
 	"github.com/robfig/cron"
 	"github.com/silenceper/wechat/v2/officialaccount/material"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"io"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"net/url"
-	"openai/internal/config"
-	"openai/internal/constant"
+	"openai/internal/model"
 	"openai/internal/service/errorx"
+	"openai/internal/service/ohmygpt"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
-	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"time"
 )
 
-type commonResponse struct {
-	StatusCode int    `json:"statusCode"`
-	Message    string `json:"message"`
-}
-
-type taskResponse struct {
-	commonResponse
-	Data int `json:"data"` // taskId
-}
-
-type statusResponse struct {
-	commonResponse
-	Data struct {
-		Status     string `json:"status"`
-		FailReason string `json:"failReason"`
-		ImageDcUrl string `json:"imageDcUrl"`
-		Action     string `json:"action"`
-		Actions    []struct {
-			CustomId string `json:"customId"`
-			Label    string `json:"label"`
-		}
-	} `json:"data"`
-}
-
 const (
-	imageDir       = "midjourney-images"
-	modeMidJourney = "midjourney"
-	typeNormal     = "NORMAL"
-	actionUpscale  = "UPSCALE"
-	actionImagine  = "IMAGINE"
-	statusSuccess  = "SUCCESS"
+	imageDir = "midjourney-images"
 )
 
 var ctx = context.Background()
@@ -85,50 +49,14 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 		return "抱歉，你之前的画图任务仍在进行中，请稍后再提交新的任务。"
 	}
 
-	start := time.Now()
-	imagineUrl := config.C.Ohmygpt.BaseURL + "/api/v1/ai/draw/mj/imagine"
-
-	params := url.Values{}
-	params.Set("model", modeMidJourney)
-	params.Set("prompt", prompt)
-	params.Set("type", typeNormal)
-	data := params.Encode()
-	payload := strings.NewReader(data)
-
-	req, err := http.NewRequest(http.MethodPost, imagineUrl, payload)
 	failureReply := "画图任务提交失败，请稍后重试，本次任务不会消耗次数。"
+	taskResp, err := ohmygpt.SubmitDrawTask(prompt)
 	if err != nil {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		errorx.RecordError("http.NewRequest() failed", err)
+		errorx.RecordError("ohmygpt.SubmitDrawTask() failed", err)
 		return failureReply
 	}
 
-	req.Header.Add(headers.Authorization, constant.AuthorizationPrefixBearer+config.C.Ohmygpt.Key)
-	req.Header.Add(headers.ContentType, constant.ContentTypeFormURLEncoded)
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		errorx.RecordError("client.Do() failed", err)
-		return failureReply
-	}
-
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		errorx.RecordError("ioutil.ReadAll() failed", err)
-		return failureReply
-	}
-
-	var taskResp taskResponse
-	_ = json.Unmarshal(body, &taskResp)
-	log.Printf("[SubmitDrawTaskAPI] Duration: %dms, prompt: 「%s」,response: 「%s」",
-		int(time.Since(start).Milliseconds()),
-		prompt,
-		util.EscapeNewline(string(body)),
-	)
 	if taskResp.StatusCode != 200 {
 		if taskResp.Message != "" {
 			failureReply += fmt.Sprintf("\n\n失败原因是「%s」", taskResp.Message)
@@ -138,85 +66,8 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 	}
 
 	taskId := taskResp.Data
-	_ = store.AppendPendingTaskId(taskId)
-	_ = store.AppendPendingTaskIdsForUser(user, taskId)
-	_ = store.SetUserForTaskId(taskId, user)
-	return "画图任务已成功提交，作品将在约1分钟后奉上！敬请期待..."
-}
-
-func getTaskStatus(taskId int) (statusResp *statusResponse, err error) {
-	start := time.Now()
-	getStatusUrl := config.C.Ohmygpt.BaseURL + "/api/v1/ai/draw/mj/query"
-
-	params := url.Values{}
-	params.Set("model", modeMidJourney)
-	params.Set("taskId", strconv.Itoa(taskId))
-	data := params.Encode()
-	payload := strings.NewReader(data)
-
-	req, err := http.NewRequest(http.MethodPost, getStatusUrl, payload)
-	if err != nil {
-		return
-	}
-
-	req.Header.Add(headers.Authorization, constant.AuthorizationPrefixBearer+config.C.Ohmygpt.Key)
-	req.Header.Add(headers.ContentType, constant.ContentTypeFormURLEncoded)
-
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return
-	}
-
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		return
-	}
-
-	statusResp = &statusResponse{}
-	_ = json.Unmarshal(body, &statusResp)
-	log.Printf("[GetTaskStatusAPI] Duration: %dms, taskId: %d, response: 「%s」",
-		int(time.Since(start).Milliseconds()),
-		taskId,
-		util.EscapeNewline(string(body)),
-	)
-	if statusResp.StatusCode != 200 {
-		err = errors.New(
-			fmt.Sprintf("GetTaskStatus API failed with status code %d, response is 「%s」",
-				statusResp.StatusCode,
-				body,
-			),
-		)
-	}
-	return
-}
-
-func downloadImage(imageUrl string, fileName string) (err error) {
-	start := time.Now()
-	response, err := http.Get(imageUrl)
-	if err != nil {
-		return
-	}
-	defer response.Body.Close()
-
-	file, err := os.Create(fileName)
-	if err != nil {
-		return
-	}
-	defer file.Close()
-
-	_, err = io.Copy(file, response.Body)
-	if err != nil {
-		return
-	}
-
-	log.Printf("[DownloadImageAPI] Duration: %dms, fileName: %s, imageUrl: %s",
-		int(time.Since(start).Milliseconds()),
-		fileName,
-		imageUrl,
-	)
-	return
+	onTaskCreated(user, taskId)
+	return "画图任务已成功提交，作品将在1分钟后奉上！敬请期待..."
 }
 
 func checkPendingTasks() {
@@ -236,10 +87,6 @@ func checkPendingTasks() {
 	}
 }
 
-func buildTaskLockKey(taskId int) string {
-	return fmt.Sprintf("task-id:%d:lock", taskId)
-}
-
 func checkTask(taskId int) error {
 	locker := store.GetLocker()
 	lock, err := locker.Obtain(ctx, buildTaskLockKey(taskId), time.Minute*5, nil)
@@ -254,17 +101,26 @@ func checkTask(taskId int) error {
 	}
 
 	log.Printf("[task %d] Obtained task lock, continue to check", taskId)
-	statusResp, err := getTaskStatus(taskId)
+	statusResp, err := ohmygpt.GetTaskStatus(taskId)
 	if err != nil {
 		return err
 	}
 
+	if statusResp.StatusCode != 200 {
+		return errors.New(fmt.Sprintf("GetTaskStatus(%d) failed: status code is %d, error message is 「%s」",
+			taskId,
+			statusResp.StatusCode,
+			statusResp.Message,
+		))
+	}
+
+	user, _ := store.GetUserByTaskId(taskId)
 	data := statusResp.Data
 	status := data.Status
 	action := data.Action
-	log.Printf("[task %d] Status is %s, action is %s", taskId, status, action)
-	if status == statusSuccess {
-		if action == actionImagine {
+	log.Printf("[task %d] Status is %s, action is %s, user is %s", taskId, status, action, user)
+	if status == ohmygpt.StatusSuccess {
+		if action == ohmygpt.ActionImagine {
 			log.Printf("[task %d] Executing UPSCALE actions...", taskId)
 			for _, action := range data.Actions {
 				customId := action.CustomId
@@ -275,25 +131,20 @@ func checkTask(taskId int) error {
 						continue
 					}
 
-					subtaskId, err = executeAction(taskId, customId)
+					subtaskId, err = ohmygpt.ExecuteAction(taskId, customId)
 					if err != nil {
 						return err
 					}
 
-					_ = store.SetSubtaskId(taskId, customId, subtaskId)
-					_ = store.AppendPendingTaskId(subtaskId)
-					user, _ := store.GetUserByTaskId(taskId)
-					_ = store.SetUserForTaskId(subtaskId, user)
+					onSubtaskCreated(user, subtaskId, taskId, customId, data.FinishTime)
 				}
 			}
-			user, _ := store.GetUserByTaskId(taskId)
-			_ = store.RemovePendingTaskId(taskId)
-			_ = store.RemovePendingTaskIdForUser(user, taskId)
+			onTaskFinished(user, taskId)
 			log.Printf("[task %d] All eligible subtasks are submitted, removed this task", taskId)
 			return nil
 		}
 
-		if action == actionUpscale {
+		if action == ohmygpt.ActionUpscale {
 			log.Printf("[task %d] Downloading image...", taskId)
 			imageUrl := data.ImageDcUrl
 			imageName, err := extractImageName(imageUrl)
@@ -302,7 +153,7 @@ func checkTask(taskId int) error {
 			}
 
 			filename := imageDir + "/" + imageName
-			err = downloadImage(imageUrl, filename)
+			err = util.DownloadFile(imageUrl, filename)
 			if err != nil {
 				return err
 			}
@@ -314,19 +165,43 @@ func checkTask(taskId int) error {
 			}
 
 			log.Printf("[task %d] Sending image to user...", taskId)
-			user, _ := store.GetUserByTaskId(taskId)
 			err = wechat.GetAccount().
 				GetCustomerMessageManager().Send(message.NewCustomerImgMessage(user, media.MediaID))
 			if err != nil {
 				return err
 			}
 
+			onTaskFinished(user, taskId)
 			log.Printf("[task %d] Sent upscaled image to user, removed this task", taskId)
-			_ = store.RemovePendingTaskId(taskId)
-			_ = store.RemovePendingTaskIdForUser(user, taskId)
 			return nil
 		}
 	}
+
+	if status == ohmygpt.StatusFailure {
+		if action == ohmygpt.ActionImagine {
+			_, err := ohmygpt.SubmitDrawTask(data.Prompt)
+			if err != nil {
+				return err
+			}
+
+			onTaskFinished(user, taskId)
+			onTaskCreated(user, taskId)
+			return nil
+		}
+
+		if action == ohmygpt.ActionUpscale {
+			task, _ := store.GetTask(taskId)
+			subtaskId, err := ohmygpt.ExecuteAction(task.ParentTaskId, task.CustomId)
+			if err != nil {
+				return err
+			}
+
+			onTaskFinished(user, taskId)
+			onSubtaskCreated(user, subtaskId, task.ParentTaskId, task.CustomId, task.ParentTaskFinishTime)
+			return nil
+		}
+	}
+
 	log.Printf("[task %d] Skipped", taskId)
 	return nil
 }
@@ -341,59 +216,31 @@ func extractImageName(imageUrl string) (imageName string, err error) {
 	return
 }
 
-func executeAction(taskId int, customId string) (subTaskId int, err error) {
-	start := time.Now()
-	actionUrl := config.C.Ohmygpt.BaseURL + "/api/v1/ai/draw/mj/action"
+func buildTaskLockKey(taskId int) string {
+	return fmt.Sprintf("task-id:%d:lock", taskId)
+}
 
-	params := url.Values{}
-	params.Set("model", modeMidJourney)
-	params.Set("taskId", strconv.Itoa(taskId))
-	params.Set("customId", customId)
-	params.Set("type", typeNormal)
-
-	data := params.Encode()
-	payload := strings.NewReader(data)
-
-	req, err := http.NewRequest(http.MethodPost, actionUrl, payload)
-	if err != nil {
-		errorx.RecordError("http.NewRequest() failed", err)
-		return
+func onSubtaskCreated(user string, subtaskId int, taskId int, customId string, parentTaskFinishTime time.Time) {
+	subtask := model.Task{
+		TaskId:               subtaskId,
+		ParentTaskId:         taskId,
+		ParentTaskFinishTime: parentTaskFinishTime,
+		CustomId:             customId,
 	}
+	_ = store.SetTask(subtaskId, subtask)
+	_ = store.SetSubtaskId(taskId, customId, subtaskId)
+	_ = store.AppendPendingTaskId(subtaskId)
+	_ = store.AppendPendingTaskIdsForUser(user, subtaskId)
+	_ = store.SetUserForTaskId(subtaskId, user)
+}
 
-	req.Header.Add(headers.Authorization, constant.AuthorizationPrefixBearer+config.C.Ohmygpt.Key)
-	req.Header.Add(headers.ContentType, constant.ContentTypeFormURLEncoded)
+func onTaskFinished(user string, taskId int) {
+	_ = store.RemovePendingTaskId(taskId)
+	_ = store.RemovePendingTaskIdForUser(user, taskId)
+}
 
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		errorx.RecordError("client.Do() failed", err)
-		return
-	}
-
-	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
-	if err != nil {
-		errorx.RecordError("ioutil.ReadAll() failed", err)
-		return
-	}
-
-	var taskResp taskResponse
-	_ = json.Unmarshal(body, &taskResp)
-	log.Printf("[ExecuteActionAPI] Duration: %dms, taskId: %d, customeId: %s, response: 「%s」",
-		int(time.Since(start).Milliseconds()),
-		taskId,
-		customId,
-		util.EscapeNewline(string(body)),
-	)
-	if taskResp.StatusCode != 200 {
-		errMsg := "ExecuteActionAPI failed"
-		if taskResp.Message != "" {
-			errMsg = fmt.Sprintf("%s, reason is 「%s」", errMsg, taskResp.Message)
-		}
-		err = errors.New(errMsg)
-		return
-	}
-
-	subTaskId = taskResp.Data
-	return
+func onTaskCreated(user string, taskId int) {
+	_ = store.AppendPendingTaskId(taskId)
+	_ = store.AppendPendingTaskIdsForUser(user, taskId)
+	_ = store.SetUserForTaskId(taskId, user)
 }

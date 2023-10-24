@@ -1,7 +1,9 @@
 package store
 
 import (
+	"encoding/json"
 	"fmt"
+	"openai/internal/model"
 	"strconv"
 	"time"
 )
@@ -39,12 +41,12 @@ func GetUserByTaskId(taskId int) (user string, err error) {
 	return client.Get(ctx, buildTaskIdUserKey(taskId)).Result()
 }
 
-func buildSubtaskKey(parentTaskId int, customId string) string {
-	return fmt.Sprintf("task-id:%d:custom-id:%s:sub-task-id", parentTaskId, customId)
+func buildSubtaskIdKey(taskId int, customId string) string {
+	return fmt.Sprintf("task-id:%d:custom-id:%s:sub-task-id", taskId, customId)
 }
 
 func GetSubtaskId(taskId int, customId string) (subtaskId int, err error) {
-	subtaskIdStr, err := client.Get(ctx, buildSubtaskKey(taskId, customId)).Result()
+	subtaskIdStr, err := client.Get(ctx, buildSubtaskIdKey(taskId, customId)).Result()
 	if err != nil {
 		return
 	}
@@ -54,7 +56,7 @@ func GetSubtaskId(taskId int, customId string) (subtaskId int, err error) {
 }
 
 func SetSubtaskId(taskId int, customId string, subtaskId int) (err error) {
-	return client.Set(ctx, buildSubtaskKey(taskId, customId), subtaskId, WEEK).Err()
+	return client.Set(ctx, buildSubtaskIdKey(taskId, customId), subtaskId, WEEK).Err()
 }
 
 func buildUserPendingTaskIdsKey(user string) string {
@@ -81,5 +83,24 @@ func GetPendingTaskIdsForUser(user string) (ids []int, err error) {
 		id, _ := strconv.Atoi(idStr)
 		ids = append(ids, id)
 	}
+	return
+}
+
+func buildTaskKey(taskId int) string {
+	return fmt.Sprintf("task-id:%d", taskId)
+}
+
+func SetTask(taskId int, subtask model.Task) error {
+	bytes, _ := json.Marshal(subtask)
+	return client.Set(ctx, buildTaskKey(taskId), string(bytes), WEEK).Err()
+}
+
+func GetTask(taskId int) (task model.Task, err error) {
+	subtaskStr, err := client.Get(ctx, buildTaskKey(taskId)).Result()
+	if err != nil {
+		return
+	}
+
+	_ = json.Unmarshal([]byte(subtaskStr), &task)
 	return
 }
