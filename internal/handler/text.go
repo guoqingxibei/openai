@@ -24,8 +24,11 @@ const (
 )
 
 func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
-	// be compatible with voice message
-	if msg.Recognition != "" {
+	if msg.MsgType == message.MsgTypeVoice {
+		if msg.Recognition == "" {
+			reply = util.BuildTextReply("抱歉，未识别到有效内容。")
+			return
+		}
 		msg.Content = msg.Recognition
 	}
 
@@ -69,17 +72,17 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 	drawReplyIsLate := false
 	replyChan := make(chan string, 1)
 	go func() {
-		isVoice := msg.Recognition != ""
+		isVoice := msg.MsgType == message.MsgTypeVoice
 		if mode == constant.Draw {
 			if isVoice {
 				logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
-				replyChan <- "draw模式下，不支持可能造成误解的语音输入，请准确输入文字描述。"
+				replyChan <- "draw模式下，暂不支持可能会造成误解的语音输入，请输入更准确的文字描述。"
 				return
 			}
 
 			if !util.IsEnglishSentence(question) {
 				logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
-				replyChan <- "由于MidJourney对非英文的支持非常差劲，所以目前只接受英文描述。"
+				replyChan <- "目前，由于MidJourney对非英文的支持非常弱鸡，所以为了获得更好的用户体验，请用英文进行输入。"
 				return
 			}
 
