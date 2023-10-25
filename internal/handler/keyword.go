@@ -4,16 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/redis/go-redis/v9"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"log"
 	"openai/internal/constant"
 	"openai/internal/logic"
 	"openai/internal/service/errorx"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
-	"strconv"
 	"strings"
 )
 
@@ -26,13 +23,14 @@ const (
 	transfer = "transfer"
 	clear    = "clear"
 	invite   = "invite"
-	reset    = "jgq-reset"
+
+	reset       = "jgq-reset"
+	switchEmail = "jgq-email"
 )
 
 // prefix keyword
 const (
-	generateCode = "generate-code"
-	code         = "code:"
+	generateCode = "jgq-gen-code"
 )
 
 type CodeDetail struct {
@@ -50,7 +48,7 @@ var keywords = []string{
 	donate, group, help, contact, report, transfer, clear, invite, reset,
 	constant.GPT3, constant.GPT4, constant.Draw,
 }
-var keywordPrefixes = []string{generateCode, code}
+var keywordPrefixes = []string{generateCode, switchEmail}
 
 func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 	question := msg.Content
@@ -86,15 +84,15 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 		case report:
 			reply = showReport()
 		case generateCode:
-			reply = doGenerateCode(question, msg)
-		case code:
-			reply = useCodeWithPrefix(question, msg)
+			reply = doGenerateCode(question)
 		case clear:
 			reply = clearHistory(msg)
 		case invite:
 			reply = getInvitationCode(msg)
 		case reset:
 			reply = resetBalance(msg)
+		case switchEmail:
+			reply = switchEmailNotification(question)
 		case constant.GPT3:
 			fallthrough
 		case constant.GPT4:
@@ -127,26 +125,9 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 	return false, nil
 }
 
-func resetBalance(msg *message.MixMessage) (reply *message.Reply) {
-	userName := string(msg.FromUserName)
-	_ = store.SetPaidBalance(userName, 0)
-	_ = logic.SetBalanceOfToday(userName, 0)
-	return util.BuildTextReply("你的剩余次数已被重置。")
-}
-
 func clearHistory(msg *message.MixMessage) (reply *message.Reply) {
 	_ = store.DelMessages(string(msg.FromUserName))
 	return util.BuildTextReply("上下文已被清除。现在，你可以开始全新的对话啦。")
-}
-
-func useCodeWithPrefix(question string, msg *message.MixMessage) (reply *message.Reply) {
-	code := strings.Replace(question, code, "", 1)
-	codeDetailStr, err := store.GetCodeDetail(code)
-	if err == redis.Nil {
-		return util.BuildTextReply("无效的code。")
-	}
-
-	return useCode(codeDetailStr, msg)
 }
 
 func useCode(codeDetailStr string, msg *message.MixMessage) (reply *message.Reply) {
@@ -170,44 +151,6 @@ func getShowBalanceTipWhenUseCode() string {
 		return "回复help，可查看剩余次数。"
 	}
 	return "点击菜单「次数-剩余次数」，可查看剩余次数。"
-}
-
-func doGenerateCode(question string, msg *message.MixMessage) (reply *message.Reply) {
-	fields := strings.Fields(question)
-	if len(fields) <= 1 {
-		return util.BuildTextReply("Invalid generate-code usage")
-	}
-
-	timesStr := fields[1]
-	times, err := strconv.Atoi(timesStr)
-	if err != nil {
-		errorx.RecordError("strconv.Atoi() failed", err)
-		return util.BuildTextReply("Invalid generate-code usage")
-	}
-
-	quantity := 1
-	if len(fields) > 2 {
-		quantityStr := fields[2]
-		quantity, err = strconv.Atoi(quantityStr)
-		if err != nil {
-			log.Printf("quantityStr is %s, strconv.Atoi error is %v", quantityStr, err)
-			return util.BuildTextReply("Invalid generate-code usage")
-		}
-	}
-
-	var codes []string
-	for i := 0; i < quantity; i++ {
-		code := uuid.New().String()
-		codeDetail := CodeDetail{
-			Code:   code,
-			Times:  times,
-			Status: created,
-		}
-		codeDetailBytes, _ := json.Marshal(codeDetail)
-		_ = store.SetCodeDetail(code, string(codeDetailBytes), false)
-		codes = append(codes, code)
-	}
-	return util.BuildTextReply(strings.Join(codes, "\n"))
 }
 
 func showReport() (reply *message.Reply) {
