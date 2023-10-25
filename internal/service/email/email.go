@@ -7,17 +7,7 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/store"
-	"time"
 )
-
-func init() {
-	go func() {
-		for true {
-			time.Sleep(time.Second * 10)
-			SendEmail("email notification test", "this is a test")
-		}
-	}()
-}
 
 var emailConfig = config.C.Email
 

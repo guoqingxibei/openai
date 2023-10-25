@@ -49,7 +49,7 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 	taskIds, _ := store.GetPendingTaskIdsForUser(user)
 	if len(taskIds) > 0 {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		return "抱歉，你之前的画图任务仍在进行中，请稍后再提交新的任务。"
+		return "抱歉，你仍有进行中的画图任务，请稍后提交新的任务。"
 	}
 
 	failureReply := "画图任务提交失败，请稍后重试，本次任务不会消耗次数。"
