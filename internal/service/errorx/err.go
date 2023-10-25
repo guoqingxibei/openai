@@ -12,6 +12,10 @@ import (
 
 func RecordError(desc string, err error) {
 	go func() {
+		if true {
+			return
+		}
+
 		log.Println(desc, err)
 		myErr := model.MyError{
 			ErrorStr:           fmt.Sprintf("[%s]\n%s", desc, err.Error()),
