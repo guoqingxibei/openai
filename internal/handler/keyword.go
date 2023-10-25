@@ -47,7 +47,8 @@ const (
 )
 
 var keywords = []string{
-	donate, group, help, contact, report, transfer, clear, invite, reset, constant.GPT3, constant.GPT4,
+	donate, group, help, contact, report, transfer, clear, invite, reset,
+	constant.GPT3, constant.GPT4, constant.Draw,
 }
 var keywordPrefixes = []string{generateCode, code}
 
@@ -97,6 +98,8 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 		case constant.GPT3:
 			fallthrough
 		case constant.GPT4:
+			fallthrough
+		case constant.Draw:
 			reply = switchMode(keyword, msg)
 		}
 		return true, reply
