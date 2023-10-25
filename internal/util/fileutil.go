@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
 	"time"
 )
 
@@ -15,6 +16,11 @@ func DownloadFile(url string, fileName string) (err error) {
 		return
 	}
 	defer response.Body.Close()
+
+	err = os.MkdirAll(filepath.Dir(fileName), os.ModePerm)
+	if err != nil {
+		return
+	}
 
 	file, err := os.Create(fileName)
 	if err != nil {
