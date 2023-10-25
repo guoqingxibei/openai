@@ -319,18 +319,18 @@ func AppendError(day string, myErr model.MyError) error {
 }
 
 func GetErrors(day string) ([]model.MyError, error) {
-	var chatApiErrors []model.MyError
+	var myErrors []model.MyError
 	errStrs, err := client.LRange(ctx, buildErrorsKey(day), 0, -1).Result()
 	if err != nil {
-		return chatApiErrors, err
+		return myErrors, err
 	}
 
 	for _, errStr := range errStrs {
 		var chatApiError model.MyError
 		_ = json.Unmarshal([]byte(errStr), &chatApiError)
-		chatApiErrors = append(chatApiErrors, chatApiError)
+		myErrors = append(myErrors, chatApiError)
 	}
-	return chatApiErrors, err
+	return myErrors, err
 }
 
 func GetErrorsLen(day string) (int64, error) {

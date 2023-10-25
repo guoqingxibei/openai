@@ -10,12 +10,13 @@ import (
 	"time"
 )
 
-func RecordError(desc string, err error) {
+func RecordError(title string, err error) {
 	go func() {
-		log.Println(desc, err)
+		log.Println(title, err)
 		myErr := model.MyError{
-			ErrorStr:           fmt.Sprintf("[%s]\n%s", desc, err.Error()),
-			TimestampInSeconds: time.Now().Unix(),
+			Title:  title,
+			Detail: err.Error(),
+			Time:   time.Now(),
 		}
 		today := util.Today()
 		_ = store.AppendError(today, myErr)
@@ -36,7 +37,7 @@ func GetErrorsDesc(day string) (errCnt int, detail string) {
 	errors, _ := store.GetErrors(day)
 	errCnt = len(errors)
 	for idx, myError := range errors {
-		detail += util.TimestampToTimeStr(myError.TimestampInSeconds) + "\n" + myError.ErrorStr + "\n"
+		detail += fmt.Sprintf("%s\n%s\n%s\n", util.FormatTime(myError.Time), myError.Title, myError.Detail)
 		if idx != errCnt-1 {
 			detail += "-----------------------------------\n"
 		}

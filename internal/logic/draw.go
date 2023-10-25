@@ -84,7 +84,7 @@ func checkPendingTasks() {
 		go func() {
 			err := checkTask(taskId)
 			if err != nil {
-				errorx.RecordError(fmt.Sprintf("checkTask(%d)", taskId), err)
+				errorx.RecordError(fmt.Sprintf("checkTask(%d) failed", taskId), err)
 			}
 		}()
 	}
