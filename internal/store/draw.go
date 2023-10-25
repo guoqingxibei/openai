@@ -104,3 +104,20 @@ func GetTask(taskId int) (task model.Task, err error) {
 	_ = json.Unmarshal([]byte(subtaskStr), &task)
 	return
 }
+
+func buildImageSentKey(imageName string) string {
+	return fmt.Sprintf("image:%s:sent", imageName)
+}
+
+func SetImageSent(imageName string) error {
+	return client.Set(ctx, buildImageSentKey(imageName), true, WEEK).Err()
+}
+
+func GetImageSent(imageName string) (sent bool, err error) {
+	sentStr, err := client.Get(ctx, buildImageSentKey(imageName)).Result()
+	if err != nil {
+		return
+	}
+
+	return sentStr == strconv.FormatBool(true), nil
+}

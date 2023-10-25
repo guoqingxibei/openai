@@ -8,6 +8,7 @@ import (
 	"github.com/robfig/cron"
 	"github.com/silenceper/wechat/v2/officialaccount/material"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
+	"golang.org/x/sync/errgroup"
 	"log"
 	"net/url"
 	"openai/internal/model"
@@ -26,6 +27,8 @@ const (
 )
 
 var ctx = context.Background()
+
+const enableHighQualityImage = false
 
 func init() {
 	if !util.AccountIsUncle() || !util.EnvIsProd() {
@@ -121,6 +124,36 @@ func checkTask(taskId int) error {
 	log.Printf("[task %d] Status is %s, action is %s, user is %s", taskId, status, action, user)
 	if status == ohmygpt.StatusSuccess {
 		if action == ohmygpt.ActionImagine {
+			if !enableHighQualityImage {
+				log.Printf("[task %d] Downloading image...", taskId)
+				fileName, err := downloadImage(data.ImageDcUrl)
+				if err != nil {
+					return err
+				}
+
+				log.Printf("[task %d] Spliting images...", taskId)
+				splitImages, err := util.SplitImage(fileName)
+				if err != nil {
+					return err
+				}
+
+				g := new(errgroup.Group)
+				for _, splitImage := range splitImages {
+					splitImage := splitImage
+					g.Go(func() error {
+						log.Printf("[task %d] Sending image to user...", taskId)
+						return sendSplitImageToUser(splitImage, user)
+					})
+				}
+				err = g.Wait()
+				if err != nil {
+					return err
+				}
+
+				onTaskFinished(user, taskId)
+				return nil
+			}
+
 			log.Printf("[task %d] Executing UPSCALE actions...", taskId)
 			for _, action := range data.Actions {
 				customId := action.CustomId
@@ -146,27 +179,10 @@ func checkTask(taskId int) error {
 
 		if action == ohmygpt.ActionUpscale {
 			log.Printf("[task %d] Downloading image...", taskId)
-			imageUrl := data.ImageDcUrl
-			imageName, err := extractImageName(imageUrl)
-			if err != nil {
-				return err
-			}
-
-			filename := imageDir + "/" + imageName
-			err = util.DownloadFile(imageUrl, filename)
-			if err != nil {
-				return err
-			}
-
-			log.Printf("[task %d] Uploading image to wechat...", taskId)
-			media, err := wechat.GetAccount().GetMaterial().MediaUpload(material.MediaTypeImage, filename)
-			if err != nil {
-				return err
-			}
+			image, err := downloadImage(data.ImageDcUrl)
 
 			log.Printf("[task %d] Sending image to user...", taskId)
-			err = wechat.GetAccount().
-				GetCustomerMessageManager().Send(message.NewCustomerImgMessage(user, media.MediaID))
+			err = sendImageToUser(image, user)
 			if err != nil {
 				return err
 			}
@@ -206,6 +222,35 @@ func checkTask(taskId int) error {
 	return nil
 }
 
+func sendImageToUser(image string, user string) error {
+	media, err := wechat.GetAccount().GetMaterial().MediaUpload(material.MediaTypeImage, image)
+	if err != nil {
+		return err
+	}
+
+	err = wechat.GetAccount().
+		GetCustomerMessageManager().Send(message.NewCustomerImgMessage(user, media.MediaID))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func downloadImage(imageUrl string) (fileName string, err error) {
+	imageName, err := extractImageName(imageUrl)
+	if err != nil {
+		return
+	}
+
+	fileName = imageDir + "/" + imageName
+	err = util.DownloadFile(imageUrl, fileName)
+	if err != nil {
+		return
+	}
+
+	return
+}
+
 func extractImageName(imageUrl string) (imageName string, err error) {
 	parsedURL, err := url.Parse(imageUrl)
 	if err != nil {
@@ -243,4 +288,20 @@ func onTaskCreated(user string, taskId int) {
 	_ = store.AppendPendingTaskId(taskId)
 	_ = store.AppendPendingTaskIdsForUser(user, taskId)
 	_ = store.SetUserForTaskId(taskId, user)
+}
+
+func sendSplitImageToUser(splitImage string, user string) error {
+	sent, _ := store.GetImageSent(splitImage)
+	if sent {
+		return nil
+	}
+
+	log.Println(splitImage)
+	err := sendImageToUser(splitImage, user)
+	if err != nil {
+		return err
+	}
+
+	_ = store.SetImageSent(splitImage)
+	return nil
 }
