@@ -11,7 +11,7 @@ func EscapeNewline(originStr string) string {
 
 func IsEnglishSentence(sentence string) bool {
 	for _, r := range sentence {
-		if r > unicode.MaxASCII {
+		if r > unicode.MaxASCII && !unicode.IsPunct(r) {
 			return false
 		}
 	}

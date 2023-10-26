@@ -17,4 +17,9 @@ func TestIsEnglishSentence(t *testing.T) {
 	if IsEnglishSentence(sentence3) {
 		t.Error("Wrong assessment for mixed sentence")
 	}
+
+	sentence4 := "Hi, how are you？"
+	if !IsEnglishSentence(sentence4) {
+		t.Error("Wrong assessment for English sentence with Chinese punctuation")
+	}
 }
