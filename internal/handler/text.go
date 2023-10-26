@@ -44,7 +44,7 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 
 	// when WeChat server retries
 	msgID := msg.MsgID
-	times, _ := store.IncAccessTimes(msgID)
+	times, _ := store.IncRequestTimesForMsg(msgID)
 	if times > 1 {
 		mode, _ := store.GetMode(string(msg.FromUserName))
 		reply = util.BuildTextReply(buildLateDrawReply(msgID, mode))
