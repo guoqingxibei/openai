@@ -110,7 +110,7 @@ func buildImageSentKey(imageName string) string {
 }
 
 func SetImageSent(imageName string) error {
-	return client.Set(ctx, buildImageSentKey(imageName), true, WEEK).Err()
+	return client.Set(ctx, buildImageSentKey(imageName), strconv.FormatBool(true), WEEK).Err()
 }
 
 func GetImageSent(imageName string) (sent bool, err error) {
