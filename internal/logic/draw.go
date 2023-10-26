@@ -200,13 +200,13 @@ func checkTask(taskId int) error {
 
 	if status == ohmygpt.StatusFailure {
 		if action == ohmygpt.ActionImagine {
-			_, err := ohmygpt.SubmitDrawTask(data.Prompt)
+			taskResp, err := ohmygpt.SubmitDrawTask(data.Prompt)
 			if err != nil {
 				return err
 			}
 
 			onTaskFinished(user, taskId)
-			onTaskCreated(user, taskId)
+			onTaskCreated(user, taskResp.Data)
 			return nil
 		}
 
