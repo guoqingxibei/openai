@@ -9,5 +9,5 @@ const (
 const (
 	TimesPerQuestionGPT3 = 1
 	TimesPerQuestionGPT4 = 10
-	TimesPerQuestionDraw = 15
+	TimesPerQuestionDraw = 10
 )
