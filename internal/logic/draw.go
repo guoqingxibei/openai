@@ -75,7 +75,7 @@ func SubmitDrawTask(prompt string, user string, mode string) string {
 
 	taskId := taskResp.Data
 	onTaskCreated(user, taskId)
-	return "画图任务已成功提交，作品将在1分钟后奉上！敬请期待..."
+	return "画图任务已提交，作品将在2分钟后奉上！敬请期待..."
 }
 
 func checkPendingTasks() {
@@ -161,6 +161,7 @@ func checkTask(taskId int) error {
 					return err
 				}
 
+				log.Printf("[task %d] Took %fs", taskId, time.Since(data.SubmitTime).Seconds())
 				onTaskFinished(user, taskId)
 				return nil
 			}
@@ -318,7 +319,6 @@ func sendSplitImageToUser(splitImage string, user string) error {
 		return nil
 	}
 
-	log.Println(splitImage)
 	err := sendImageToUser(splitImage, user)
 	if err != nil {
 		return err
