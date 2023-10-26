@@ -6,14 +6,15 @@ import (
 )
 
 func AccountIsUncle() bool {
-	return os.Getenv("ACCOUNT") == constant.Uncle
+	return GetAccount() == constant.Uncle
+}
+
+func AccountIsBrother() bool {
+	return GetAccount() == constant.Brother
 }
 
 func GetAccount() string {
-	if AccountIsUncle() {
-		return constant.Uncle
-	}
-	return constant.Brother
+	return os.Getenv("ACCOUNT")
 }
 
 func EnvIsProd() bool {

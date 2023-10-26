@@ -24,7 +24,7 @@ func init() {
 	}
 	c1.Start()
 
-	if util.AccountIsUncle() {
+	if util.AccountIsBrother() && util.EnvIsProd() {
 		c2 := cron.New()
 		// Execute once every half an hour
 		err = c2.AddFunc("0 */10 * * * *", func() {
