@@ -4,12 +4,10 @@ import "C"
 import (
 	"context"
 	"errors"
-	"fmt"
 	_openai "github.com/sashabaranov/go-openai"
 	"io"
 	"openai/internal/config"
 	"openai/internal/constant"
-	"openai/internal/service/errorx"
 	"openai/internal/util"
 )
 
@@ -106,8 +104,6 @@ func ChatCompletionsStream(
 			if !ok {
 				break
 			}
-		} else {
-			errorx.RecordError("Choices is empty", errors.New(fmt.Sprintf("response is [%+v]", response)))
 		}
 	}
 }

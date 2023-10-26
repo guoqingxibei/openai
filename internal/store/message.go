@@ -1,23 +1,25 @@
 package store
 
 import (
+	"fmt"
 	"github.com/redis/go-redis/v9"
 	_openai "github.com/sashabaranov/go-openai"
+	"log"
 	"openai/internal/util"
 	"time"
 )
 
-func SetMessages(toUserName string, messages []_openai.ChatCompletionMessage) error {
-	newRoundsStr, err := util.StringifyMessages(messages)
+func SetMessages(user string, messages []_openai.ChatCompletionMessage) error {
+	messagesStr, err := util.StringifyMessages(messages)
 	if err != nil {
 		return err
 	}
-	return client.Set(ctx, buildMessagesKey(toUserName), newRoundsStr, time.Minute*5).Err()
+	return client.Set(ctx, buildMessagesKey(user), messagesStr, time.Minute*5).Err()
 }
 
-func GetMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
+func GetMessages(user string) ([]_openai.ChatCompletionMessage, error) {
 	var messages []_openai.ChatCompletionMessage
-	messagesStr, err := client.Get(ctx, buildMessagesKey(toUserName)).Result()
+	messagesStr, err := client.Get(ctx, buildMessagesKey(user)).Result()
 	if err != nil {
 		if err == redis.Nil {
 			return messages, nil
@@ -26,15 +28,16 @@ func GetMessages(toUserName string) ([]_openai.ChatCompletionMessage, error) {
 	}
 	messages, err = util.ParseMessages(messagesStr)
 	if err != nil {
+		log.Println(fmt.Sprintf("util.ParseMessages() failed, messagesStr is %s", messagesStr), err)
 		return nil, err
 	}
 	return messages, nil
 }
 
-func DelMessages(toUserName string) error {
-	return client.Del(ctx, buildMessagesKey(toUserName)).Err()
+func DelMessages(user string) error {
+	return client.Del(ctx, buildMessagesKey(user)).Err()
 }
 
-func buildMessagesKey(toUserName string) string {
-	return "user:" + toUserName + ":messages"
+func buildMessagesKey(user string) string {
+	return "user:" + user + ":messages"
 }

@@ -24,6 +24,7 @@ func ChatCompletionStream(aiVendor string, userName string, msgId int64,
 	if err != nil {
 		return err
 	}
+
 	messages = append(messages, _openai.ChatCompletionMessage{
 		Role:    _openai.ChatMessageRoleUser,
 		Content: question,
