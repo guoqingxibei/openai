@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	inviterReward = 10
+	inviterReward = 15
 	inviteeReward = 0
 )
 const sizeOfCode = 6 // the length of invitation code
