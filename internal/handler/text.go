@@ -80,12 +80,6 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 				return
 			}
 
-			if !util.IsEnglishSentence(question) {
-				logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
-				replyChan <- "目前，由于MidJourney对非英文的支持非常弱鸡，所以为了获得更好的用户体验，请用英文进行输入。"
-				return
-			}
-
 			drawReply := logic.SubmitDrawTask(question, userName, mode)
 			replyChan <- drawReply
 			if drawReplyIsLate {
