@@ -136,7 +136,6 @@ func checkTask(taskId int) error {
 	if status == ohmygpt.StatusSuccess {
 		if action == ohmygpt.ActionImagine {
 			if !enableHighQualityImage {
-
 				log.Printf("[task %d] Downloading image...", taskId)
 				fileName, err := downloadImage(data.ImageDcUrl)
 				if err != nil {
@@ -206,6 +205,17 @@ func checkTask(taskId int) error {
 	}
 
 	if status == ohmygpt.StatusFailure {
+		reply := fmt.Sprintf("抱歉，任务执行失败，请稍后重试。失败原因是「%s」", data.FailReason)
+		err = wechat.GetAccount().
+			GetCustomerMessageManager().Send(message.NewCustomerTextMessage(user, reply))
+		if err != nil {
+			return err
+		}
+
+		onTaskFinished(user, taskId)
+		log.Printf("[task %d] Abandoned this task due to failure, failure reason is 「%s」", taskId, data.FailReason)
+		return nil
+
 		if action == ohmygpt.ActionImagine {
 			taskResp, err := ohmygpt.SubmitDrawTask(data.Prompt)
 			if err != nil {
