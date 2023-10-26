@@ -127,9 +127,16 @@ func checkTask(taskId int) error {
 	status := data.Status
 	action := data.Action
 	log.Printf("[task %d] Status is %s, action is %s, user is %s", taskId, status, action, user)
+	if time.Now().After(data.StartTime.Add(time.Minute * 30)) {
+		onTaskFinished(user, taskId)
+		log.Printf("[task %d] Abandoned this task due to timeout", taskId)
+		return errors.New("abandoned this task due to timeout")
+	}
+
 	if status == ohmygpt.StatusSuccess {
 		if action == ohmygpt.ActionImagine {
 			if !enableHighQualityImage {
+
 				log.Printf("[task %d] Downloading image...", taskId)
 				fileName, err := downloadImage(data.ImageDcUrl)
 				if err != nil {
