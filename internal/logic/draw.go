@@ -11,14 +11,13 @@ import (
 	"golang.org/x/sync/errgroup"
 	"log"
 	"net/url"
-	"openai/internal/model"
+	"openai/internal/constant"
 	"openai/internal/service/errorx"
 	"openai/internal/service/ohmygpt"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
 	"path/filepath"
-	"strings"
 	"time"
 )
 
@@ -27,8 +26,6 @@ const (
 )
 
 var ctx = context.Background()
-
-const enableHighQualityImage = false
 
 func init() {
 	if !util.AccountIsUncle() || !util.EnvIsProd() {
@@ -128,81 +125,40 @@ func checkTask(taskId int) error {
 	action := data.Action
 	log.Printf("[task %d] Status is %s, action is %s, user is %s", taskId, status, action, user)
 	if time.Now().After(data.SubmitTime.Add(time.Minute * 30)) {
-		onTaskFinished(user, taskId)
+		onTaskFinished(user, taskId, false)
 		log.Printf("[task %d] Abandoned this task due to timeout", taskId)
 		return errors.New("abandoned this task due to timeout")
 	}
 
 	if status == ohmygpt.StatusSuccess {
-		if action == ohmygpt.ActionImagine {
-			if !enableHighQualityImage {
-				log.Printf("[task %d] Downloading image...", taskId)
-				fileName, err := downloadImage(data.ImageDcUrl)
-				if err != nil {
-					return err
-				}
-
-				log.Printf("[task %d] Spliting images...", taskId)
-				splitImages, err := util.SplitImage(fileName)
-				if err != nil {
-					return err
-				}
-
-				g := new(errgroup.Group)
-				for _, splitImage := range splitImages {
-					splitImage := splitImage
-					g.Go(func() error {
-						log.Printf("[task %d] Sending image to user...", taskId)
-						return sendSplitImageToUser(splitImage, user)
-					})
-				}
-				err = g.Wait()
-				if err != nil {
-					return err
-				}
-
-				log.Printf("[task %d] Took %fs", taskId, time.Since(data.SubmitTime).Seconds())
-				onTaskFinished(user, taskId)
-				return nil
-			}
-
-			log.Printf("[task %d] Executing UPSCALE actions...", taskId)
-			for _, action := range data.Actions {
-				customId := action.CustomId
-				if strings.Contains(customId, "upsample::1") || strings.Contains(customId, "upsample::2") {
-					subtaskId, _ := store.GetSubtaskId(taskId, customId)
-					if subtaskId != 0 {
-						log.Printf("[task %d] Skipped submitted subtask with customId: %s", taskId, customId)
-						continue
-					}
-
-					subtaskId, err = ohmygpt.ExecuteAction(taskId, customId)
-					if err != nil {
-						return err
-					}
-
-					onSubtaskCreated(user, subtaskId, taskId, customId, data.FinishTime)
-				}
-			}
-			onTaskFinished(user, taskId)
-			log.Printf("[task %d] All eligible subtasks are submitted, removed this task", taskId)
-			return nil
+		log.Printf("[task %d] Downloading image...", taskId)
+		fileName, err := downloadImage(data.ImageDcUrl)
+		if err != nil {
+			return err
 		}
 
-		if action == ohmygpt.ActionUpscale {
-			log.Printf("[task %d] Downloading image...", taskId)
-			image, err := downloadImage(data.ImageDcUrl)
-
-			log.Printf("[task %d] Sending image to user...", taskId)
-			err = sendImageToUser(image, user)
-			if err != nil {
-				return err
-			}
-
-			onTaskFinished(user, taskId)
-			log.Printf("[task %d] Sent upscaled image to user, removed this task", taskId)
-			return nil
+		log.Printf("[task %d] Spliting images...", taskId)
+		splitImages, err := util.SplitImage(fileName)
+		if err != nil {
+			return err
 		}
+
+		g := new(errgroup.Group)
+		for _, splitImage := range splitImages {
+			splitImage := splitImage
+			g.Go(func() error {
+				log.Printf("[task %d] Sending image to user...", taskId)
+				return sendSplitImageToUser(splitImage, user)
+			})
+		}
+		err = g.Wait()
+		if err != nil {
+			return err
+		}
+
+		log.Printf("[task %d] Took %fs", taskId, time.Since(data.SubmitTime).Seconds())
+		onTaskFinished(user, taskId, true)
+		return nil
 	}
 
 	if status == ohmygpt.StatusFailure {
@@ -213,32 +169,9 @@ func checkTask(taskId int) error {
 			return err
 		}
 
-		onTaskFinished(user, taskId)
+		onTaskFinished(user, taskId, false)
 		log.Printf("[task %d] Abandoned this task due to failure, failure reason is 「%s」", taskId, data.FailReason)
 		return nil
-
-		if action == ohmygpt.ActionImagine {
-			taskResp, err := ohmygpt.SubmitDrawTask(data.Prompt)
-			if err != nil {
-				return err
-			}
-
-			onTaskFinished(user, taskId)
-			onTaskCreated(user, taskResp.Data)
-			return nil
-		}
-
-		if action == ohmygpt.ActionUpscale {
-			task, _ := store.GetTask(taskId)
-			subtaskId, err := ohmygpt.ExecuteAction(task.ParentTaskId, task.CustomId)
-			if err != nil {
-				return err
-			}
-
-			onTaskFinished(user, taskId)
-			onSubtaskCreated(user, subtaskId, task.ParentTaskId, task.CustomId, task.ParentTaskFinishTime)
-			return nil
-		}
 	}
 
 	log.Printf("[task %d] Skipped", taskId)
@@ -288,29 +221,18 @@ func buildTaskLockKey(taskId int) string {
 	return fmt.Sprintf("task-id:%d:lock", taskId)
 }
 
-func onSubtaskCreated(user string, subtaskId int, taskId int, customId string, parentTaskFinishTime time.Time) {
-	subtask := model.Task{
-		TaskId:               subtaskId,
-		ParentTaskId:         taskId,
-		ParentTaskFinishTime: parentTaskFinishTime,
-		CustomId:             customId,
-	}
-	_ = store.SetTask(subtaskId, subtask)
-	_ = store.SetSubtaskId(taskId, customId, subtaskId)
-	_ = store.AppendPendingTaskId(subtaskId)
-	_ = store.AppendPendingTaskIdsForUser(user, subtaskId)
-	_ = store.SetUserForTaskId(subtaskId, user)
-}
-
-func onTaskFinished(user string, taskId int) {
-	_ = store.RemovePendingTaskId(taskId)
-	_ = store.RemovePendingTaskIdForUser(user, taskId)
-}
-
 func onTaskCreated(user string, taskId int) {
 	_ = store.AppendPendingTaskId(taskId)
 	_ = store.AppendPendingTaskIdsForUser(user, taskId)
 	_ = store.SetUserForTaskId(taskId, user)
+}
+
+func onTaskFinished(user string, taskId int, isSuccessful bool) {
+	_ = store.RemovePendingTaskId(taskId)
+	_ = store.RemovePendingTaskIdForUser(user, taskId)
+	if !isSuccessful {
+		AddPaidBalance(user, constant.TimesPerQuestionDraw)
+	}
 }
 
 func sendSplitImageToUser(splitImage string, user string) error {
