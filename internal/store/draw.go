@@ -69,7 +69,7 @@ func AppendPendingTaskIdsForUser(user string, taskId int) (err error) {
 		return
 	}
 
-	err = client.Expire(ctx, buildUserPendingTaskIdsKey(user), time.Minute*2).Err()
+	err = client.Expire(ctx, buildUserPendingTaskIdsKey(user), time.Minute*10).Err()
 	return
 }
 
