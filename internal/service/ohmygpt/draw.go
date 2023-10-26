@@ -33,7 +33,7 @@ type StatusResponse struct {
 	Data struct {
 		Status     string    `json:"status"`
 		Prompt     string    `json:"prompt"`
-		StartTime  time.Time `json:"startTime"`
+		SubmitTime time.Time `json:"submitTime"`
 		FinishTime time.Time `json:"finishTime"`
 		FailReason string    `json:"failReason"`
 		ImageDcUrl string    `json:"imageDcUrl"`
