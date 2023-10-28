@@ -3,10 +3,10 @@ package handler
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/uuid"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"openai/internal/constant"
 	"openai/internal/logic"
+	"openai/internal/model"
 	"openai/internal/service/errorx"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
@@ -31,17 +31,6 @@ const (
 // prefix keyword
 const (
 	generateCode = "jgq-gen-code"
-)
-
-type CodeDetail struct {
-	Code   string `json:"code"`
-	Times  int    `json:"times"`
-	Status string `json:"status"`
-}
-
-const (
-	created = "created"
-	used    = "used"
 )
 
 var keywords = []string{
@@ -78,9 +67,9 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 		case group:
 			reply = showImage(keyword)
 		case help:
-			reply = showUsage(msg)
+			reply = logic.ShowUsage(msg)
 		case transfer:
-			reply = doTransfer(msg)
+			reply = logic.Transfer(msg)
 		case report:
 			reply = showReport()
 		case generateCode:
@@ -131,15 +120,15 @@ func clearHistory(msg *message.MixMessage) (reply *message.Reply) {
 }
 
 func useCode(codeDetailStr string, msg *message.MixMessage) (reply *message.Reply) {
-	var codeDetail CodeDetail
+	var codeDetail model.CodeDetail
 	_ = json.Unmarshal([]byte(codeDetailStr), &codeDetail)
-	if codeDetail.Status == used {
+	if codeDetail.Status == constant.Used {
 		return util.BuildTextReply("此code之前已被激活，无需重复激活。")
 	}
 
 	userName := string(msg.FromUserName)
 	newBalance := logic.AddPaidBalance(userName, codeDetail.Times)
-	codeDetail.Status = used
+	codeDetail.Status = constant.Used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = store.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)
 	return util.BuildTextReply(fmt.Sprintf("【激活成功】此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。"+
@@ -173,46 +162,4 @@ func showImage(keyword string) (reply *message.Reply) {
 		return util.BuildTextReply(constant.TryAgain)
 	}
 	return util.BuildImageReply(QrMediaId)
-}
-
-func showUsage(msg *message.MixMessage) (reply *message.Reply) {
-	userName := string(msg.FromUserName)
-	mode, _ := store.GetMode(userName)
-	usage := fmt.Sprintf("【模式】当前模式是%s，每次对话消耗次数%d。\n", mode, logic.GetTimesPerQuestion(mode))
-
-	usage += logic.BuildChatUsage(userName)
-	balance, _ := store.GetPaidBalance(userName)
-	usage += fmt.Sprintf("付费次数剩余%d次，可以<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
-		balance,
-		util.GetPayLink(userName),
-		util.GetInvitationTutorialLink(),
-	)
-	usage += "\n\n<a href=\"https://cxyds.top/2023/07/03/faq.html\">更多用法</a>" +
-		" | <a href=\"https://cxyds.top/2023/09/17/group-qr.html\">交流群</a>" +
-		" | <a href=\"https://cxyds.top/2023/09/17/writer-qr.html\">联系作者</a>"
-	return util.BuildTextReply(usage)
-}
-
-func doTransfer(msg *message.MixMessage) (reply *message.Reply) {
-	if !util.AccountIsUncle() {
-		return util.BuildTextReply("此公众号不支持迁移，请移步公众号「程序员uncle」进行迁移。")
-	}
-
-	userName := string(msg.FromUserName)
-	paidBalance, _ := store.GetPaidBalance(userName)
-	replyText := "你的付费次数剩余0次，无需迁移。"
-	if paidBalance > 0 {
-		_ = store.SetPaidBalance(userName, 0)
-		code := uuid.New().String()
-		codeDetail := CodeDetail{
-			Code:   code,
-			Times:  paidBalance,
-			Status: created,
-		}
-		codeDetailBytes, _ := json.Marshal(codeDetail)
-		_ = store.SetCodeDetail(code, string(codeDetailBytes), true)
-		replyText = fmt.Sprintf("你的付费次数剩余%d次，已在此公众号下清零。请复制下面的code发送给新公众号「程序员brother」，"+
-			"即可完成迁移。感谢你的一路陪伴❤️\n\n%s", paidBalance, code)
-	}
-	return util.BuildTextReply(replyText)
 }

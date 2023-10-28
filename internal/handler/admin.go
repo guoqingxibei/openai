@@ -7,6 +7,7 @@ import (
 	"log"
 	"openai/internal/constant"
 	"openai/internal/logic"
+	"openai/internal/model"
 	"openai/internal/service/errorx"
 	"openai/internal/store"
 	"openai/internal/util"
@@ -75,10 +76,10 @@ func doGenerateCode(question string) (reply *message.Reply) {
 	var codes []string
 	for i := 0; i < quantity; i++ {
 		code := uuid.New().String()
-		codeDetail := CodeDetail{
+		codeDetail := model.CodeDetail{
 			Code:   code,
 			Times:  times,
-			Status: created,
+			Status: constant.Created,
 		}
 		codeDetailBytes, _ := json.Marshal(codeDetail)
 		_ = store.SetCodeDetail(code, string(codeDetailBytes), false)

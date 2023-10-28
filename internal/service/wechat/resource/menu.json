@@ -29,13 +29,18 @@
       },
       {
         "type": "click",
-        "name": "使用gpt3",
+        "name": "GPT-3对话",
         "key": "gpt3"
       },
       {
         "type": "click",
-        "name": "使用gpt4",
+        "name": "GPT-4对话",
         "key": "gpt4"
+      },
+      {
+        "type": "click",
+        "name": "AI画图",
+        "key": "draw"
       }
     ]
   },

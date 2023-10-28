@@ -4,6 +4,7 @@ import (
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
 	"openai/internal/constant"
+	"openai/internal/logic"
 )
 
 func onClick(msg *message.MixMessage) (reply *message.Reply) {
@@ -18,7 +19,7 @@ func onClick(msg *message.MixMessage) (reply *message.Reply) {
 	case clear:
 		reply = clearHistory(msg)
 	case help:
-		reply = showUsage(msg)
+		reply = logic.ShowUsage(msg)
 	case invite:
 		reply = getInvitationCode(msg)
 	case donate:
