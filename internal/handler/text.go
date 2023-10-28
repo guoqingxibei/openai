@@ -120,7 +120,7 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 
 func buildLateDrawReply(msgId int64, mode string) (reply string) {
 	if mode == constant.Draw {
-		reply = "正在提交画图任务，静候佳音..."
+		reply = "正在提交绘画任务，静候佳音..."
 	} else {
 		reply = buildReply(msgId)
 	}

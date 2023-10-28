@@ -18,7 +18,7 @@ func GetTimesPerQuestion(mode string) (times int) {
 
 func GetModeDesc(mode string) string {
 	if mode == constant.Draw {
-		return fmt.Sprintf("当前模式是%s，每次画图消耗次数%d。", GetModeName(mode), GetTimesPerQuestion(mode))
+		return fmt.Sprintf("当前模式是%s，每次绘画消耗次数%d。", GetModeName(mode), GetTimesPerQuestion(mode))
 	}
 
 	return fmt.Sprintf("当前模式是%s，每次对话消耗次数%d。", GetModeName(mode), GetTimesPerQuestion(mode))
@@ -26,7 +26,7 @@ func GetModeDesc(mode string) string {
 
 func GetModeName(mode string) string {
 	if mode == constant.Draw {
-		return "AI画图"
+		return "AI绘画"
 	}
 
 	if mode == constant.GPT3 {

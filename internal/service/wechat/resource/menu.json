@@ -39,7 +39,7 @@
       },
       {
         "type": "click",
-        "name": "AI画图",
+        "name": "AI绘画",
         "key": "draw"
       }
     ]
