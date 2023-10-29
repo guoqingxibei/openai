@@ -18,7 +18,7 @@ func Transfer(msg *message.MixMessage) (reply *message.Reply) {
 
 	userName := string(msg.FromUserName)
 	paidBalance, _ := store.GetPaidBalance(userName)
-	replyText := "你的付费次数剩余0次，无需迁移。"
+	replyText := "你的付费额度剩余0次，无需迁移。"
 	if paidBalance > 0 {
 		_ = store.SetPaidBalance(userName, 0)
 		code := uuid.New().String()
@@ -29,7 +29,7 @@ func Transfer(msg *message.MixMessage) (reply *message.Reply) {
 		}
 		codeDetailBytes, _ := json.Marshal(codeDetail)
 		_ = store.SetCodeDetail(code, string(codeDetailBytes), true)
-		replyText = fmt.Sprintf("你的付费次数剩余%d次，已在此公众号下清零。请复制下面的code发送给新公众号「程序员brother」，"+
+		replyText = fmt.Sprintf("你的付费额度剩余%d次，已在此公众号下清零。请复制下面的code发送给新公众号「程序员brother」，"+
 			"即可完成迁移。感谢你的一路陪伴❤️\n\n%s", paidBalance, code)
 	}
 	return util.BuildTextReply(replyText)

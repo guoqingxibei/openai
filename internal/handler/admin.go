@@ -47,7 +47,7 @@ func resetBalance(msg *message.MixMessage) (reply *message.Reply) {
 	userName := string(msg.FromUserName)
 	_ = store.SetPaidBalance(userName, 0)
 	_ = logic.SetBalanceOfToday(userName, 0)
-	return util.BuildTextReply("你的剩余次数已被重置。")
+	return util.BuildTextReply("你的付费额度已被重置。")
 }
 
 func doGenerateCode(question string) (reply *message.Reply) {

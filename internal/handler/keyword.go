@@ -131,15 +131,15 @@ func useCode(codeDetailStr string, msg *message.MixMessage) (reply *message.Repl
 	codeDetail.Status = constant.Used
 	codeDetailBytes, _ := json.Marshal(codeDetail)
 	_ = store.SetCodeDetail(codeDetail.Code, string(codeDetailBytes), false)
-	return util.BuildTextReply(fmt.Sprintf("【激活成功】此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。"+
+	return util.BuildTextReply(fmt.Sprintf("【激活成功】此code已被激活，额度为%d，你当前剩余的总付费次数为%d次。\n\n"+
 		getShowBalanceTipWhenUseCode(), codeDetail.Times, newBalance))
 }
 
 func getShowBalanceTipWhenUseCode() string {
 	if util.AccountIsUncle() {
-		return "回复help，可查看剩余次数。"
+		return "温馨提示，回复help，可查看剩余次数。"
 	}
-	return "点击菜单「次数-剩余次数」，可查看剩余次数。"
+	return "温馨提示，点击菜单「次数-剩余次数」，可查看剩余次数。"
 }
 
 func showReport() (reply *message.Reply) {
