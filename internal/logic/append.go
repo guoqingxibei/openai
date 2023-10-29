@@ -19,6 +19,8 @@ func incUsedTimes(user string) int {
 }
 
 func ShouldAppend(user string) bool {
+	return false
+
 	times := incUsedTimes(user)
 	return times%triggerTimes == 0
 }
