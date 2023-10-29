@@ -1,10 +1,8 @@
 package store
 
 import (
-	"fmt"
 	"github.com/redis/go-redis/v9"
 	_openai "github.com/sashabaranov/go-openai"
-	"log"
 	"openai/internal/util"
 	"time"
 )
@@ -28,7 +26,6 @@ func GetMessages(user string) ([]_openai.ChatCompletionMessage, error) {
 	}
 	messages, err = util.ParseMessages(messagesStr)
 	if err != nil {
-		log.Println(fmt.Sprintf("util.ParseMessages() failed, messagesStr is %s", messagesStr), err)
 		return nil, err
 	}
 	return messages, nil

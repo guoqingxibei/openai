@@ -6,6 +6,7 @@ import (
 	"errors"
 	_openai "github.com/sashabaranov/go-openai"
 	"io"
+	"log"
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/util"
@@ -82,6 +83,7 @@ func ChatCompletionsStream(
 	client := getClient(aiVendor)
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
+		log.Println("client.CreateChatCompletionStream() failed", err)
 		errorHandler(err)
 		return
 	}
@@ -95,6 +97,7 @@ func ChatCompletionsStream(
 		}
 
 		if err != nil {
+			log.Println("stream.Recv() failed", err)
 			errorHandler(err)
 			return
 		}
