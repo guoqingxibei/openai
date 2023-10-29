@@ -45,7 +45,7 @@ func init() {
 func SubmitDrawTask(prompt string, user string, mode string) string {
 	if !util.IsEnglishSentence(prompt) {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		return "由于MidJourney对非英文的支持非常有限，所以draw模式下暂时仅支持英文输入。"
+		return "由于midjourney对非英文的支持非常有限，所以系统目前仅支持英文输入。"
 	}
 
 	taskIds, _ := store.GetPendingTaskIdsForUser(user)
