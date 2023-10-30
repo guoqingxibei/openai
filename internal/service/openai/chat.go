@@ -68,7 +68,8 @@ func ChatCompletionsStream(
 	messages []_openai.ChatCompletionMessage,
 	processWord func(word string) bool,
 	done func(),
-	errorHandler func(err error)) {
+	errorHandler func(err error),
+) {
 	model := _openai.GPT3Dot5Turbo
 	if mode == constant.GPT4 {
 		model = _openai.GPT4
