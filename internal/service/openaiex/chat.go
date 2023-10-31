@@ -4,20 +4,22 @@ import "C"
 import (
 	"context"
 	"errors"
+	"fmt"
 	openai "github.com/sashabaranov/go-openai"
 	"io"
 	"log"
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/util"
+	"time"
 )
 
 const CurrentModel = openai.GPT3Dot5Turbo
+const timeout = 10
 
 var ohmygptClient *openai.Client
 var sbClient *openai.Client
 var api2dClient *openai.Client
-var ctx = context.Background()
 
 func init() {
 	ohmygptClient = createClientWithVendor(constant.Ohmygpt)
@@ -66,8 +68,8 @@ func CreateChatStream(
 	messages []openai.ChatCompletionMessage,
 	mode string,
 	aiVendor string,
-	processWord func(string2 string),
-) (reply string, err error) {
+	processWord func(string),
+) (reply string, _err error) {
 	model := openai.GPT3Dot5Turbo
 	if mode == constant.GPT4 {
 		model = openai.GPT4
@@ -80,28 +82,54 @@ func CreateChatStream(
 		MaxTokens: min(4000-tokenCount, 2000),
 	}
 	client := getClient(aiVendor)
-	stream, err := client.CreateChatCompletionStream(ctx, req)
-	if err != nil {
-		log.Println("client.CreateChatCompletionStream() failed", err)
-		return
-	}
-	defer stream.Close()
 
-	for {
-		response, err := stream.Recv()
-		if errors.Is(err, io.EOF) {
-			return reply, nil
-		}
-
+	doneChan := make(chan bool, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	go func() {
+		stream, err := client.CreateChatCompletionStream(ctx, req)
 		if err != nil {
-			log.Println("stream.Recv() failed", err)
-			return "", err
+			log.Println("client.CreateChatCompletionStream() failed", err)
+			_err = err
+			doneChan <- true
+			return
+		}
+		defer stream.Close()
+
+		for {
+			response, err := stream.Recv()
+			if errors.Is(err, io.EOF) {
+				_err = nil
+				doneChan <- true
+				return
+			}
+
+			if err != nil {
+				log.Println("stream.Recv() failed", err)
+				_err = err
+				doneChan <- true
+				return
+			}
+
+			if len(response.Choices) > 0 {
+				content := response.Choices[0].Delta.Content
+				reply += content
+				processWord(content)
+			}
+		}
+	}()
+
+	// fail if the first word didn't reach in specified time
+	select {
+	case <-time.After(time.Second * timeout):
+		if reply == "" {
+			cancel()
+			errMsg := fmt.Sprintf("not yet start responding in %d seconds", timeout)
+			return "", errors.New(errMsg)
 		}
 
-		if len(response.Choices) > 0 {
-			content := response.Choices[0].Delta.Content
-			reply += content
-			processWord(content)
-		}
+		<-doneChan
+	case <-doneChan:
 	}
+	return
 }
