@@ -2,12 +2,12 @@ package store
 
 import (
 	"github.com/redis/go-redis/v9"
-	_openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
 	"openai/internal/util"
 	"time"
 )
 
-func SetMessages(user string, messages []_openai.ChatCompletionMessage) error {
+func SetMessages(user string, messages []openai.ChatCompletionMessage) error {
 	messagesStr, err := util.StringifyMessages(messages)
 	if err != nil {
 		return err
@@ -15,8 +15,8 @@ func SetMessages(user string, messages []_openai.ChatCompletionMessage) error {
 	return client.Set(ctx, buildMessagesKey(user), messagesStr, time.Minute*5).Err()
 }
 
-func GetMessages(user string) ([]_openai.ChatCompletionMessage, error) {
-	var messages []_openai.ChatCompletionMessage
+func GetMessages(user string) ([]openai.ChatCompletionMessage, error) {
+	var messages []openai.ChatCompletionMessage
 	messagesStr, err := client.Get(ctx, buildMessagesKey(user)).Result()
 	if err != nil {
 		if err == redis.Nil {

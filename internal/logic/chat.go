@@ -1,7 +1,7 @@
 package logic
 
 import (
-	_openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
 	"log"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
@@ -28,7 +28,8 @@ func CreateChatStreamEx(
 	isVoice bool,
 	mode string,
 ) {
-	messages, err := buildMessages(user, msgId, question)
+	model := getModel(mode)
+	messages, err := buildMessages(user, question, model)
 	if err != nil {
 		onFailure(user, msgId, mode, err)
 		return
@@ -41,7 +42,7 @@ func CreateChatStreamEx(
 		if isVoice {
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 		}
-		reply, err = openaiex.CreateChatStream(messages, mode, vendor,
+		reply, err = openaiex.CreateChatStream(messages, model, vendor,
 			func(word string) {
 				_ = store.AppendReplyChunk(msgId, word)
 			},
@@ -62,6 +63,14 @@ func CreateChatStreamEx(
 	_ = store.SetMessages(user, messages)
 }
 
+func getModel(mode string) string {
+	model := openai.GPT3Dot5Turbo
+	if mode == constant.GPT4 {
+		model = openai.GPT4
+	}
+	return model
+}
+
 func onFailure(user string, msgId int64, mode string, err error) {
 	AddPaidBalance(user, GetTimesPerQuestion(mode))
 	_ = store.DelReplyChunks(msgId)
@@ -71,17 +80,20 @@ func onFailure(user string, msgId int64, mode string, err error) {
 	errorx.RecordError("CreateChatStreamEx() failed", err)
 }
 
-func buildMessages(user string, msgId int64, question string) (messages []_openai.ChatCompletionMessage, err error) {
+func buildMessages(user string, question string, model string) (
+	messages []openai.ChatCompletionMessage,
+	err error,
+) {
 	messages, err = store.GetMessages(user)
 	if err != nil {
 		return
 	}
 
-	messages = append(messages, _openai.ChatCompletionMessage{
-		Role:    _openai.ChatMessageRoleUser,
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleUser,
 		Content: question,
 	})
-	messages, err = util.RotateMessages(messages, openaiex.CurrentModel)
+	messages, err = util.RotateMessages(messages, model)
 	return
 }
 

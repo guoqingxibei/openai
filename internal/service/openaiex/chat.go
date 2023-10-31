@@ -14,7 +14,6 @@ import (
 	"time"
 )
 
-const CurrentModel = openai.GPT3Dot5Turbo
 const timeout = 10
 
 var ohmygptClient *openai.Client
@@ -66,15 +65,11 @@ func getClient(vendor string) *openai.Client {
 
 func CreateChatStream(
 	messages []openai.ChatCompletionMessage,
-	mode string,
+	model string,
 	aiVendor string,
 	processWord func(string),
 ) (reply string, _err error) {
-	model := openai.GPT3Dot5Turbo
-	if mode == constant.GPT4 {
-		model = openai.GPT4
-	}
-	tokenCount := util.CalTokenCount4Messages(messages, CurrentModel)
+	tokenCount := util.CalTokenCount4Messages(messages, model)
 	req := openai.ChatCompletionRequest{
 		Model:     model,
 		Messages:  messages,

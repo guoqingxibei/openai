@@ -3,13 +3,13 @@ package util
 import (
 	"encoding/json"
 	"fmt"
-	_openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
 	"github.com/tiktoken-go/tokenizer"
 )
 
 var enc, _ = tokenizer.Get(tokenizer.Cl100kBase)
 
-func StringifyMessages(messages []_openai.ChatCompletionMessage) (string, error) {
+func StringifyMessages(messages []openai.ChatCompletionMessage) (string, error) {
 	bytes, err := json.Marshal(messages)
 	if err != nil {
 		return "", nil
@@ -17,8 +17,8 @@ func StringifyMessages(messages []_openai.ChatCompletionMessage) (string, error)
 	return string(bytes), nil
 }
 
-func ParseMessages(messagesStr string) ([]_openai.ChatCompletionMessage, error) {
-	var messages []_openai.ChatCompletionMessage
+func ParseMessages(messagesStr string) ([]openai.ChatCompletionMessage, error) {
+	var messages []openai.ChatCompletionMessage
 	err := json.Unmarshal([]byte(messagesStr), &messages)
 	if err != nil {
 		return nil, err
@@ -32,21 +32,21 @@ func getTokenCount(str string) int {
 	return len(tokenIds)
 }
 
-func CalTokenCount4Messages(messages []_openai.ChatCompletionMessage, model string) int {
+func CalTokenCount4Messages(messages []openai.ChatCompletionMessage, model string) int {
 	var tokensPerMessage, tokensPerName int
 	switch model {
-	case _openai.GPT3Dot5Turbo:
-		return CalTokenCount4Messages(messages, _openai.GPT3Dot5Turbo0301)
-	case _openai.GPT4:
-		return CalTokenCount4Messages(messages, _openai.GPT40314)
-	case _openai.GPT3Dot5Turbo0301:
+	case openai.GPT3Dot5Turbo:
+		return CalTokenCount4Messages(messages, openai.GPT3Dot5Turbo0301)
+	case openai.GPT4:
+		return CalTokenCount4Messages(messages, openai.GPT40314)
+	case openai.GPT3Dot5Turbo0301:
 		tokensPerMessage = 4
 		tokensPerName = -1
-	case _openai.GPT40314:
+	case openai.GPT40314:
 		tokensPerMessage = 3
 		tokensPerName = 1
 	default:
-		panic(fmt.Sprintf("num_tokens_from_messages() is not implemented for model %s.", model))
+		panic(fmt.Sprintf("CalTokenCount4Messages() is not implemented for model %s.", model))
 	}
 
 	// Get message token count
@@ -63,11 +63,7 @@ func CalTokenCount4Messages(messages []_openai.ChatCompletionMessage, model stri
 	return numTokens
 }
 
-func RotateMessages(messages []_openai.ChatCompletionMessage, model string) ([]_openai.ChatCompletionMessage, error) {
-	if model != _openai.GPT3Dot5Turbo {
-		panic(fmt.Sprintf("RotateMessages() is not implemented for model %s.", model))
-	}
-
+func RotateMessages(messages []openai.ChatCompletionMessage, model string) ([]openai.ChatCompletionMessage, error) {
 	tokenCount := CalTokenCount4Messages(messages, model)
 	for tokenCount > 2000 {
 		messages = messages[1:]
@@ -76,9 +72,9 @@ func RotateMessages(messages []_openai.ChatCompletionMessage, model string) ([]_
 	return messages, nil
 }
 
-func AppendAssistantMessage(messages []_openai.ChatCompletionMessage, answer string) []_openai.ChatCompletionMessage {
-	messages = append(messages, _openai.ChatCompletionMessage{
-		Role:    _openai.ChatMessageRoleAssistant,
+func AppendAssistantMessage(messages []openai.ChatCompletionMessage, answer string) []openai.ChatCompletionMessage {
+	messages = append(messages, openai.ChatCompletionMessage{
+		Role:    openai.ChatMessageRoleAssistant,
 		Content: answer,
 	})
 	return messages
