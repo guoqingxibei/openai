@@ -1,10 +1,10 @@
-package openai
+package openaiex
 
 import "C"
 import (
 	"context"
 	"errors"
-	_openai "github.com/sashabaranov/go-openai"
+	openai "github.com/sashabaranov/go-openai"
 	"io"
 	"log"
 	"openai/internal/config"
@@ -12,11 +12,11 @@ import (
 	"openai/internal/util"
 )
 
-const CurrentModel = _openai.GPT3Dot5Turbo
+const CurrentModel = openai.GPT3Dot5Turbo
 
-var ohmygptClient *_openai.Client
-var sbClient *_openai.Client
-var api2dClient *_openai.Client
+var ohmygptClient *openai.Client
+var sbClient *openai.Client
+var api2dClient *openai.Client
 var ctx = context.Background()
 
 func init() {
@@ -25,7 +25,7 @@ func init() {
 	api2dClient = createClientWithVendor(constant.OpenaiApi2d)
 }
 
-func createClientWithVendor(aiVendor string) *_openai.Client {
+func createClientWithVendor(aiVendor string) *openai.Client {
 	if aiVendor == constant.Ohmygpt {
 		baseUrl := config.C.Ohmygpt.BaseURL
 		if config.C.Ohmygpt.UseAzure {
@@ -39,10 +39,10 @@ func createClientWithVendor(aiVendor string) *_openai.Client {
 	return createClient(config.C.OpenaiApi2d.Key, config.C.OpenaiApi2d.BaseURL)
 }
 
-func createClient(key string, baseURL string) *_openai.Client {
-	var defaultConfig = _openai.DefaultConfig(key)
+func createClient(key string, baseURL string) *openai.Client {
+	var defaultConfig = openai.DefaultConfig(key)
 	defaultConfig.BaseURL = baseURL + "/v1"
-	return _openai.NewClientWithConfig(defaultConfig)
+	return openai.NewClientWithConfig(defaultConfig)
 }
 
 func min(a int, b int) int {
@@ -52,7 +52,7 @@ func min(a int, b int) int {
 	return b
 }
 
-func getClient(vendor string) *_openai.Client {
+func getClient(vendor string) *openai.Client {
 	if vendor == constant.Ohmygpt {
 		return ohmygptClient
 	}
@@ -62,20 +62,18 @@ func getClient(vendor string) *_openai.Client {
 	return api2dClient
 }
 
-func ChatCompletionsStream(
-	aiVendor string,
+func CreateChatStream(
+	messages []openai.ChatCompletionMessage,
 	mode string,
-	messages []_openai.ChatCompletionMessage,
-	processWord func(word string) bool,
-	done func(),
-	errorHandler func(err error),
-) {
-	model := _openai.GPT3Dot5Turbo
+	aiVendor string,
+	processWord func(string2 string),
+) (reply string, err error) {
+	model := openai.GPT3Dot5Turbo
 	if mode == constant.GPT4 {
-		model = _openai.GPT4
+		model = openai.GPT4
 	}
 	tokenCount := util.CalTokenCount4Messages(messages, CurrentModel)
-	req := _openai.ChatCompletionRequest{
+	req := openai.ChatCompletionRequest{
 		Model:     model,
 		Messages:  messages,
 		Stream:    true,
@@ -85,7 +83,6 @@ func ChatCompletionsStream(
 	stream, err := client.CreateChatCompletionStream(ctx, req)
 	if err != nil {
 		log.Println("client.CreateChatCompletionStream() failed", err)
-		errorHandler(err)
 		return
 	}
 	defer stream.Close()
@@ -93,21 +90,18 @@ func ChatCompletionsStream(
 	for {
 		response, err := stream.Recv()
 		if errors.Is(err, io.EOF) {
-			done()
-			return
+			return reply, nil
 		}
 
 		if err != nil {
 			log.Println("stream.Recv() failed", err)
-			errorHandler(err)
-			return
+			return "", err
 		}
 
 		if len(response.Choices) > 0 {
-			ok := processWord(response.Choices[0].Delta.Content)
-			if !ok {
-				break
-			}
+			content := response.Choices[0].Delta.Content
+			reply += content
+			processWord(content)
 		}
 	}
 }

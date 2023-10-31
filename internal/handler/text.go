@@ -3,7 +3,6 @@ package handler
 import (
 	"fmt"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"log"
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
@@ -47,7 +46,7 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 	times, _ := store.IncRequestTimesForMsg(msgID)
 	if times > 1 {
 		mode, _ := store.GetMode(string(msg.FromUserName))
-		reply = util.BuildTextReply(buildLateDrawReply(msgID, mode))
+		reply = util.BuildTextReply(buildLateReply(msgID, mode))
 		return
 	}
 
@@ -60,10 +59,10 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 
 func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 	msgId := msg.MsgID
-	userName := string(msg.FromUserName)
+	user := string(msg.FromUserName)
 	question := strings.TrimSpace(msg.Content)
-	mode, _ := store.GetMode(userName)
-	ok, balanceTip := logic.DecreaseBalance(userName, mode)
+	mode, _ := store.GetMode(user)
+	ok, balanceTip := logic.DecreaseBalance(user, mode)
 	if !ok {
 		reply = balanceTip
 		return
@@ -74,17 +73,11 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 	go func() {
 		isVoice := msg.MsgType == message.MsgTypeVoice
 		if mode == constant.Draw {
-			if isVoice {
-				logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
-				replyChan <- "draw模式下，暂不支持可能会造成误解的语音输入，请输入更准确的文字描述。"
-				return
-			}
-
-			drawReply := logic.SubmitDrawTask(question, userName, mode)
+			drawReply := logic.SubmitDrawTask(question, user, mode, isVoice)
 			replyChan <- drawReply
 			if drawReplyIsLate {
-				err := wechat.GetAccount().
-					GetCustomerMessageManager().Send(message.NewCustomerTextMessage(userName, drawReply))
+				err := wechat.GetAccount().GetCustomerMessageManager().
+					Send(message.NewCustomerTextMessage(user, drawReply))
 				if err != nil {
 					errorx.RecordError("GetCustomerMessageManager().Send() failed", err)
 				}
@@ -92,20 +85,8 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 			return
 		}
 
-		err := logic.ChatCompletionStream(constant.Ohmygpt, userName, msgId, question, isVoice, mode)
-		if err != nil {
-			log.Printf("First ChatCompletionStream() failed, msgId is %d, error is %s", msgId, err)
-			// retry
-			_ = store.DelReplyChunks(msgId)
-			err = logic.ChatCompletionStream(constant.OpenaiSb, userName, msgId, question, isVoice, mode)
-			if err != nil {
-				errorx.RecordError("Second ChatCompletionStream() failed", err)
-				logic.AddPaidBalance(userName, logic.GetTimesPerQuestion(mode))
-				replyChan <- constant.TryAgain
-				return
-			}
-		}
-		replyChan <- buildReply(msgId)
+		logic.CreateChatStreamEx(user, msgId, question, isVoice, mode)
+		replyChan <- buildReplyForChat(msgId)
 	}()
 	select {
 	case reply = <-replyChan:
@@ -113,21 +94,21 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 		if mode == constant.Draw {
 			drawReplyIsLate = true
 		}
-		reply = buildLateDrawReply(msgId, mode)
+		reply = buildLateReply(msgId, mode)
 	}
 	return
 }
 
-func buildLateDrawReply(msgId int64, mode string) (reply string) {
+func buildLateReply(msgId int64, mode string) (reply string) {
 	if mode == constant.Draw {
 		reply = "正在提交绘画任务，静候佳音..."
 	} else {
-		reply = buildReply(msgId)
+		reply = buildReplyForChat(msgId)
 	}
 	return
 }
 
-func buildReply(msgId int64) string {
+func buildReplyForChat(msgId int64) string {
 	reply, reachEnd := logic.FetchReply(msgId)
 	if len(reply) > maxLengthOfReply {
 		reply = buildReplyWithShowMore(string([]rune(reply)[:maxRuneLengthOfReply]), msgId)

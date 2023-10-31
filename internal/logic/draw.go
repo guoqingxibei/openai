@@ -42,7 +42,12 @@ func init() {
 	}
 }
 
-func SubmitDrawTask(prompt string, user string, mode string) string {
+func SubmitDrawTask(prompt string, user string, mode string, isVoice bool) string {
+	if isVoice {
+		AddPaidBalance(user, GetTimesPerQuestion(mode))
+		return "draw模式下，暂不支持可能会造成误解的语音输入，请输入更准确的文字描述。"
+	}
+
 	if !util.IsEnglishSentence(prompt) {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
 		return "由于midjourney对非英文的支持非常有限，所以系统目前仅支持英文输入。"
