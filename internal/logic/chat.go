@@ -9,11 +9,14 @@ import (
 	"openai/internal/store"
 	"openai/internal/util"
 	"strings"
+	"time"
 )
 
 const (
-	StartMark = "[START]"
-	EndMark   = "[END]"
+	startMark = "[START]"
+	endMark   = "[END]"
+
+	maxFetchTimes = 6000
 )
 
 var aiVendors = []string{constant.Ohmygpt, constant.OpenaiApi2d, constant.OpenaiSb}
@@ -34,7 +37,7 @@ func CreateChatStreamEx(
 	reply := ""
 	for _, vendor := range aiVendors {
 		_ = store.DelReplyChunks(msgId)
-		_ = store.AppendReplyChunk(msgId, StartMark)
+		_ = store.AppendReplyChunk(msgId, startMark)
 		if isVoice {
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 		}
@@ -54,7 +57,7 @@ func CreateChatStreamEx(
 		return
 	}
 
-	_ = store.AppendReplyChunk(msgId, EndMark)
+	_ = store.AppendReplyChunk(msgId, endMark)
 	messages = util.AppendAssistantMessage(messages, reply)
 	_ = store.SetMessages(user, messages)
 }
@@ -62,9 +65,9 @@ func CreateChatStreamEx(
 func onFailure(user string, msgId int64, mode string, err error) {
 	AddPaidBalance(user, GetTimesPerQuestion(mode))
 	_ = store.DelReplyChunks(msgId)
-	_ = store.AppendReplyChunk(msgId, StartMark)
+	_ = store.AppendReplyChunk(msgId, startMark)
 	_ = store.AppendReplyChunk(msgId, constant.TryAgain)
-	_ = store.AppendReplyChunk(msgId, EndMark)
+	_ = store.AppendReplyChunk(msgId, endMark)
 	errorx.RecordError("CreateChatStreamEx() failed", err)
 }
 
@@ -88,10 +91,37 @@ func FetchReply(msgId int64) (string, bool) {
 		return "", false
 	}
 
-	reachEnd := chunks[len(chunks)-1] == EndMark
+	reachEnd := chunks[len(chunks)-1] == endMark
 	if reachEnd {
 		chunks = chunks[:len(chunks)-1]
 	}
 	reply := strings.Join(chunks, "")
 	return reply, reachEnd
+}
+
+func FetchingReply(msgId int64, sendSegment func(segment string)) {
+	var startIndex int64 = 1
+	fetchTimes := 0
+	for {
+		fetchTimes++
+		if fetchTimes > maxFetchTimes {
+			break
+		}
+
+		chunks, _ := store.GetReplyChunks(msgId, startIndex, -1)
+		length := len(chunks)
+		if length >= 1 {
+			reachEnd := chunks[length-1] == endMark
+			if reachEnd {
+				chunks = chunks[:length-1]
+			}
+			segment := strings.Join(chunks, "")
+			sendSegment(segment)
+			startIndex += int64(length)
+			if reachEnd {
+				break
+			}
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
 }

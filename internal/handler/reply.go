@@ -4,16 +4,10 @@ import (
 	"fmt"
 	"net/http"
 	"openai/internal/constant"
-	replylogic "openai/internal/logic"
+	"openai/internal/logic"
 	"openai/internal/service/errorx"
 	"openai/internal/store"
 	"strconv"
-	"strings"
-	"time"
-)
-
-const (
-	maxFetchTimes = 6000
 )
 
 func GetReplyStream(w http.ResponseWriter, r *http.Request) {
@@ -41,31 +35,11 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var startIndex int64 = 1
-	fetchTimes := 0
-	for {
-		fetchTimes++
-		if fetchTimes > maxFetchTimes {
-			break
+	logic.FetchingReply(msgId, func(segment string) {
+		fmt.Fprint(w, segment)
+		flusher, ok := w.(http.Flusher)
+		if ok {
+			flusher.Flush()
 		}
-
-		chunks, _ := store.GetReplyChunks(msgId, startIndex, -1)
-		length := len(chunks)
-		if length >= 1 {
-			reachEnd := chunks[length-1] == replylogic.EndMark
-			if reachEnd {
-				chunks = chunks[:length-1]
-			}
-			fmt.Fprint(w, strings.Join(chunks, ""))
-			flusher, ok := w.(http.Flusher)
-			if ok {
-				flusher.Flush()
-			}
-			startIndex += int64(length)
-			if reachEnd {
-				break
-			}
-		}
-		time.Sleep(100 * time.Millisecond)
-	}
+	})
 }
