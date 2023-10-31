@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	openai "github.com/sashabaranov/go-openai"
+	"github.com/sashabaranov/go-openai"
 	"io"
 	"log"
 	"openai/internal/config"
