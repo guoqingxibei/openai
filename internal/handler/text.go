@@ -24,7 +24,7 @@ const (
 	maxLengthOfQuestion  = 2000
 )
 
-func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
+func onReceiveText(msg *message.MixMessage) (reply *message.Reply) {
 	if msg.MsgType == message.MsgTypeVoice {
 		if msg.Recognition == "" {
 			reply = util.BuildTextReply("抱歉，未识别到有效内容。")
@@ -52,14 +52,11 @@ func onReceiveText(msg *message.MixMessage) (reply *message.Reply, err error) {
 		return
 	}
 
-	replyStr, err := genReply4Text(msg)
-	if err == nil {
-		reply = util.BuildTextReply(replyStr)
-	}
+	reply = util.BuildTextReply(genReply4Text(msg))
 	return
 }
 
-func genReply4Text(msg *message.MixMessage) (reply string, err error) {
+func genReply4Text(msg *message.MixMessage) (reply string) {
 	msgId := msg.MsgID
 	user := string(msg.FromUserName)
 	question := strings.TrimSpace(msg.Content)

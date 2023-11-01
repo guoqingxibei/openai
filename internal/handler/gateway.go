@@ -57,7 +57,6 @@ func talk(msg *message.MixMessage) (reply *message.Reply) {
 		}
 	}()
 
-	var err error
 	switch msg.MsgType {
 	case message.MsgTypeEvent:
 		switch msg.Event {
@@ -75,14 +74,10 @@ func talk(msg *message.MixMessage) (reply *message.Reply) {
 	case message.MsgTypeVoice:
 		fallthrough
 	case message.MsgTypeText:
-		reply, err = onReceiveText(msg)
+		reply = onReceiveText(msg)
 	default:
 		log.Printf("未实现的消息类型: %s\n", msg.MsgType)
 		reply = util.BuildTextReply("抱歉，目前还只支持文本和语音消息哦~")
 	}
-	if err != nil {
-		errorx.RecordError("Talk() failed", err)
-		return util.BuildTextReply(constant.TryAgain)
-	}
-	return reply
+	return
 }
