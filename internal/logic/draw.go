@@ -18,6 +18,7 @@ import (
 	"openai/internal/store"
 	"openai/internal/util"
 	"path/filepath"
+	"runtime/debug"
 	"time"
 )
 
@@ -89,6 +90,13 @@ func checkPendingTasks() {
 	for _, taskId := range taskIds {
 		taskId := taskId
 		go func() {
+			defer func() {
+				if r := recover(); r != nil {
+					panicMsg := fmt.Sprintf("%v\n%s", r, debug.Stack())
+					errorx.RecordError("panic captured", errors.New(panicMsg))
+				}
+			}()
+
 			err := checkTask(taskId)
 			if err != nil {
 				errorx.RecordError(fmt.Sprintf("checkTask(%d) failed", taskId), err)

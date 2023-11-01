@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"openai/internal/config"
@@ -10,6 +11,7 @@ import (
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -71,6 +73,13 @@ func genReply4Text(msg *message.MixMessage) (reply string, err error) {
 	drawReplyIsLate := false
 	replyChan := make(chan string, 1)
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				panicMsg := fmt.Sprintf("%v\n%s", r, debug.Stack())
+				errorx.RecordError("panic captured", errors.New(panicMsg))
+			}
+		}()
+
 		isVoice := msg.MsgType == message.MsgTypeVoice
 		if mode == constant.Draw {
 			drawReply := logic.SubmitDrawTask(question, user, mode, isVoice)

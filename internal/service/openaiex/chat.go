@@ -10,7 +10,9 @@ import (
 	"log"
 	"openai/internal/config"
 	"openai/internal/constant"
+	"openai/internal/service/errorx"
 	"openai/internal/util"
+	"runtime/debug"
 	"time"
 )
 
@@ -82,6 +84,13 @@ func CreateChatStream(
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				panicMsg := fmt.Sprintf("%v\n%s", r, debug.Stack())
+				errorx.RecordError("panic captured", errors.New(panicMsg))
+			}
+		}()
+
 		stream, err := client.CreateChatCompletionStream(ctx, req)
 		if err != nil {
 			log.Println("client.CreateChatCompletionStream() failed", err)

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"fmt"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
@@ -48,10 +49,10 @@ func ServeWechat(rw http.ResponseWriter, req *http.Request) {
 // Talk https://developers.weixin.qq.com/doc/offiaccount/Message_Management/Passive_user_reply_message.html
 // 微信服务器在五秒内收不到响应会断掉连接，并且重新发起请求，总共重试三次
 func talk(msg *message.MixMessage) (reply *message.Reply) {
-	// unhandled exception
 	defer func() {
 		if r := recover(); r != nil {
-			fmt.Println("Captured panic:", r, string(debug.Stack()))
+			panicMsg := fmt.Sprintf("%v\n%s", r, debug.Stack())
+			errorx.RecordError("panic captured", errors.New(panicMsg))
 			reply = util.BuildTextReply(constant.TryAgain)
 		}
 	}()
