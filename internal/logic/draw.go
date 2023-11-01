@@ -49,18 +49,25 @@ func SubmitDrawTask(prompt string, user string, mode string, isVoice bool) strin
 		return "绘画模式下，暂不支持可能造成误解的语音输入，请输入文字描述。"
 	}
 
-	if !util.IsEnglishSentence(prompt) {
-		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		return "由于midjourney对非英文的支持非常有限，所以系统目前仅支持英文输入。"
-	}
-
 	taskIds, _ := store.GetPendingTaskIdsForUser(user)
 	if len(taskIds) > 0 {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
 		return "你仍有进行中的绘画任务，请稍后提交新的任务。"
 	}
 
-	failureReply := "绘画任务提交失败，请稍后重试，本次任务不会消耗次数。"
+	replyPrefix := ""
+	if !util.IsEnglishSentence(prompt) {
+		trans, err := transToEngEx(prompt)
+		if err != nil {
+			AddPaidBalance(user, GetTimesPerQuestion(mode))
+			errorx.RecordError("openaiex.transToEng() failed", err)
+			return "翻译失败，请重试。"
+		}
+		prompt = trans
+		replyPrefix = fmt.Sprintf("检测到非英文输入，系统自动翻译为「%s」\n\n", trans)
+	}
+
+	failureReply := replyPrefix + "绘画任务提交失败，请稍后重试，本次任务不会消耗次数。"
 	taskResp, err := ohmygpt.SubmitDrawTask(prompt)
 	if err != nil {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
@@ -70,7 +77,7 @@ func SubmitDrawTask(prompt string, user string, mode string, isVoice bool) strin
 
 	if taskResp.StatusCode != 200 {
 		if taskResp.Message != "" {
-			failureReply += fmt.Sprintf("\n\n失败原因是「%s」", taskResp.Message)
+			failureReply += fmt.Sprintf("失败原因是「%s」", taskResp.Message)
 		}
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
 		return failureReply
@@ -78,7 +85,7 @@ func SubmitDrawTask(prompt string, user string, mode string, isVoice bool) strin
 
 	taskId := taskResp.Data
 	onTaskCreated(user, taskId)
-	return "绘画任务已提交，作品将在2分钟后奉上！敬请期待..."
+	return replyPrefix + "绘画任务已提交，作品将在2分钟后奉上！敬请期待..."
 }
 
 func checkPendingTasks() {

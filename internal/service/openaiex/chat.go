@@ -137,3 +137,45 @@ func CreateChatStream(
 	}
 	return
 }
+
+func TransToEng(original string, vendor string) (trans string, err error) {
+	start := time.Now()
+	defer func() {
+		log.Printf("[TransToEngAPI] Duration: %dms, original: 「%s」,trans: 「%s」",
+			int(time.Since(start).Milliseconds()),
+			original,
+			util.EscapeNewline(trans),
+		)
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
+	defer cancel()
+	client := getClient(vendor)
+	resp, err := client.CreateChatCompletion(
+		ctx,
+		openai.ChatCompletionRequest{
+			Model: openai.GPT3Dot5Turbo,
+			Messages: []openai.ChatCompletionMessage{
+				{
+					Role:    openai.ChatMessageRoleSystem,
+					Content: "You will be provided with a sentence in non-English, and your task is to translate it into English.",
+				},
+				{
+					Role:    openai.ChatMessageRoleUser,
+					Content: original,
+				},
+			},
+		},
+	)
+	if err != nil {
+		return
+	}
+
+	if len(resp.Choices) <= 0 {
+		err = errors.New("no available choice")
+		return
+	}
+
+	trans = resp.Choices[0].Message.Content
+	return
+}
