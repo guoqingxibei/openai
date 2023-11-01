@@ -20,7 +20,7 @@ func buildModeDesc(userName string, mode string) (desc string) {
 	if mode == constant.Draw {
 		return fmt.Sprintf("已切换到「%s」模式，每次绘画消耗次数%d。"+
 			"你的付费额度剩余%d次，<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。"+
-			"\n\n此模式下，你需要用英文给出描述，稍后midjourney将为你奉上精美作品。"+
+			"\n\n在此模式下，你给出图片描述，稍后midjourney为你奉上精美作品。"+
 			"开始之前，请务必仔细阅读<a href=\"%s\">这篇教程</a>。",
 			logic.GetModeName(mode),
 			logic.GetTimesPerQuestion(mode),
