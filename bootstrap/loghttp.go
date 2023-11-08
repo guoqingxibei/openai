@@ -2,7 +2,6 @@ package bootstrap
 
 import (
 	"bytes"
-	"encoding/xml"
 	"github.com/felixge/httpsnoop"
 	"io"
 	"io/ioutil"
@@ -30,6 +29,7 @@ type HTTPReqInfo struct {
 	user      string
 	msgId     int64
 	content   string
+	body      string
 }
 
 type Msg struct {
@@ -42,31 +42,17 @@ type Image struct {
 	MediaId string `xml:"MediaId"`
 }
 
-func parseMsg(data []byte) (*Msg, error) {
-	var msg Msg
-	if err := xml.Unmarshal(data, &msg); err != nil {
-		return nil, err
-	}
-	return &msg, nil
-}
-
 func LogRequestHandler(h http.Handler) http.Handler {
 	fn := func(w http.ResponseWriter, r *http.Request) {
 		bodyBytes, _ := io.ReadAll(r.Body)
 		r.Body.Close()
 		r.Body = ioutil.NopCloser(bytes.NewBuffer(bodyBytes))
-		inMsg, _ := parseMsg(bodyBytes)
-		if inMsg == nil {
-			inMsg = &Msg{}
-		}
 		ri := &HTTPReqInfo{
 			method:    r.Method,
 			uri:       r.URL.Path,
 			referer:   r.Header.Get("Referer"),
 			userAgent: r.Header.Get("User-Agent"),
-			user:      inMsg.FromUserName,
-			msgId:     inMsg.MsgId,
-			content:   inMsg.Content,
+			body:      string(bodyBytes),
 		}
 
 		ri.ipaddr = requestGetRemoteAddress(r)
@@ -115,15 +101,14 @@ func requestGetRemoteAddress(r *http.Request) string {
 }
 
 func logHTTPReq(ri *HTTPReqInfo) {
-	log.Printf("[HTTP] %s %s %d %dms %s %dB %s %d 「%s」",
+	log.Printf("[HTTP] %s %s %d %dms %s %dB 「%s」",
 		ri.method,
 		ri.uri,
 		ri.code,
 		ri.duration.Milliseconds(),
 		ri.ipaddr,
 		ri.size,
-		ri.user,
-		ri.msgId,
-		util.EscapeNewline(ri.content),
+		util.EscapeNewline(ri.body),
 	)
+	return
 }
