@@ -137,7 +137,7 @@ func buildReplyForChat(msgId int64) string {
 			}
 		}
 	}
-	return reply
+	return strings.TrimSpace(reply)
 }
 
 func buildReplyWithShowMore(answer string, msgId int64) string {
