@@ -26,8 +26,8 @@ func init() {
 
 	if util.AccountIsBrother() && util.EnvIsProd() {
 		c2 := cron.New()
-		// Execute once every half an hour
-		err = c2.AddFunc("0 */10 * * * *", func() {
+		// Execute once every hour
+		err = c2.AddFunc("0 0 * * * *", func() {
 			checkVendorBalance()
 		})
 		if err != nil {
