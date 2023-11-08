@@ -65,13 +65,13 @@ func Transaction(w http.ResponseWriter, r *http.Request) {
 func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 	notifyReq, err := wechat.V3ParseNotify(r)
 	if err != nil {
-		errorx.RecordError("wechat.V3ParseNotify()", err)
+		errorx.RecordError("wechat.V3ParseNotify() failed", err)
 		return
 	}
 
 	result, err := wechatService.VerifySignAndDecrypt(notifyReq)
 	if err != nil {
-		errorx.RecordError("wechatService.VerifySignAndDecrypt()", err)
+		errorx.RecordError("wechatService.VerifySignAndDecrypt() failed", err)
 		return
 	}
 

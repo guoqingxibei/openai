@@ -73,7 +73,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 		defer func() {
 			if r := recover(); r != nil {
 				panicMsg := fmt.Sprintf("%v\n%s", r, debug.Stack())
-				errorx.RecordError("panic captured", errors.New(panicMsg))
+				errorx.RecordError("failed due to a panic", errors.New(panicMsg))
 			}
 		}()
 

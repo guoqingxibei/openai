@@ -29,7 +29,7 @@ func Censor(text string) bool {
 	payload := strings.NewReader("text=" + text)
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
-		errorx.RecordError("http.NewRequest() api failed", err)
+		errorx.RecordError("http.NewRequest() failed", err)
 		return true
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")

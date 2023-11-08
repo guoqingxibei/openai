@@ -20,7 +20,7 @@ func GetReplyStream(w http.ResponseWriter, r *http.Request) {
 	msgIdStr := r.URL.Query().Get("msgId")
 	msgId, err := strconv.ParseInt(msgIdStr, 10, 64)
 	if err != nil {
-		errorx.RecordError("Invalid msgId", err)
+		errorx.RecordError("failed due to invalid msgId", err)
 		fmt.Fprint(w, "Invalid msgId")
 		return
 	}
