@@ -16,7 +16,7 @@ import (
 	"time"
 )
 
-const timeout = 10
+const timeout = 20
 
 var ohmygptClient *openai.Client
 var sbClient *openai.Client
