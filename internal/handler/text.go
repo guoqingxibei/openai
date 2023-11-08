@@ -96,7 +96,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 	}()
 	select {
 	case reply = <-replyChan:
-	case <-time.After(time.Millisecond * 2000):
+	case <-time.After(time.Millisecond * 3000):
 		if mode == constant.Draw {
 			drawReplyIsLate = true
 		}
