@@ -35,9 +35,9 @@ func CreateChatStreamEx(
 	}
 
 	model := getModel(mode)
-	// return a maximum of 2000 token (~1000 Chinese characters)
+	// return a maximum of 3000 token (~1500 Chinese characters)
 	tokenCount := util.CalTokenCount4Messages(messages, model)
-	maxTokens := util.Min(4000-tokenCount, 2000)
+	maxTokens := util.Min(5000-tokenCount, 3000)
 
 	reply := ""
 	for _, vendor := range aiVendors {

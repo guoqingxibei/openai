@@ -21,7 +21,7 @@ import (
 const (
 	maxLengthOfReply     = 4000
 	maxRuneLengthOfReply = 200
-	maxLengthOfQuestion  = 2000
+	maxLengthOfQuestion  = 3000 // ~ 1000 Chinese characters
 )
 
 func onReceiveText(msg *message.MixMessage) (reply *message.Reply) {
