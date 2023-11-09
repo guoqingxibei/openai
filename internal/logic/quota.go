@@ -67,20 +67,10 @@ func calculateQuota(user string) int {
 	subscribeTimestamp, _ := store.GetSubscribeTimestamp(user)
 	subscribeInterval := currentTimestamp - subscribeTimestamp
 	quota := 0
-	if util.AccountIsUncle() {
-		if subscribeInterval < oneMonth {
-			quota = 10
-		} else {
-			quota = 1
-		}
+	if subscribeInterval < oneWeek {
+		quota = 10
 	} else {
-		if subscribeInterval < oneWeek {
-			quota = 5
-		} else if subscribeInterval < 2*oneWeek {
-			quota = 2
-		} else {
-			quota = 1
-		}
+		quota = 2
 	}
 	return quota
 }
