@@ -28,12 +28,16 @@ func CreateChatStreamEx(
 	isVoice bool,
 	mode string,
 ) {
-	model := getModel(mode)
-	messages, err := buildMessages(user, question, model)
+	messages, err := buildMessages(user, question, mode)
 	if err != nil {
 		onFailure(user, msgId, mode, err)
 		return
 	}
+
+	model := getModel(mode)
+	// return a maximum of 2000 token (~1000 Chinese characters)
+	tokenCount := util.CalTokenCount4Messages(messages, model)
+	maxTokens := util.Min(4000-tokenCount, 2000)
 
 	reply := ""
 	for _, vendor := range aiVendors {
@@ -42,7 +46,11 @@ func CreateChatStreamEx(
 		if isVoice {
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 		}
-		reply, err = openaiex.CreateChatStream(messages, model, vendor,
+		reply, err = openaiex.CreateChatStream(
+			messages,
+			model,
+			maxTokens,
+			vendor,
 			func(word string) {
 				_ = store.AppendReplyChunk(msgId, word)
 			},
@@ -63,12 +71,16 @@ func CreateChatStreamEx(
 	_ = store.SetMessages(user, messages)
 }
 
-func getModel(mode string) string {
-	model := openai.GPT3Dot5Turbo
-	if mode == constant.GPT4 {
+func getModel(mode string) (model string) {
+	switch mode {
+	case constant.GPT3:
+		model = openai.GPT3Dot5Turbo
+	case constant.GPT4:
 		model = openai.GPT4
+	case constant.Translate:
+		model = openai.GPT3Dot5Turbo
 	}
-	return model
+	return
 }
 
 func onFailure(user string, msgId int64, mode string, err error) {
@@ -80,10 +92,19 @@ func onFailure(user string, msgId int64, mode string, err error) {
 	errorx.RecordError("CreateChatStreamEx() failed", err)
 }
 
-func buildMessages(user string, question string, model string) (
+func buildMessages(user string, question string, mode string) (
 	messages []openai.ChatCompletionMessage,
 	err error,
 ) {
+	if mode == constant.Translate {
+		targetLang := constant.English
+		if util.IsEnglishSentence(question) {
+			targetLang = constant.Chinese
+		}
+		messages = util.BuildTransMessages(question, targetLang)
+		return
+	}
+
 	messages, err = store.GetMessages(user)
 	if err != nil {
 		return
@@ -93,7 +114,7 @@ func buildMessages(user string, question string, model string) (
 		Role:    openai.ChatMessageRoleUser,
 		Content: question,
 	})
-	messages, err = util.RotateMessages(messages, model)
+	messages, err = util.RotateMessages(messages, getModel(mode))
 	return
 }
 

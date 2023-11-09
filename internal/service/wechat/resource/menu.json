@@ -41,6 +41,11 @@
         "type": "click",
         "name": "AI绘画",
         "key": "draw"
+      },
+      {
+        "type": "click",
+        "name": "中英互译",
+        "key": "translate"
       }
     ]
   },

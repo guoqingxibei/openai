@@ -17,8 +17,20 @@ func switchMode(mode string, msg *message.MixMessage) *message.Reply {
 
 func buildModeDesc(userName string, mode string) (desc string) {
 	balance, _ := store.GetPaidBalance(userName)
-	if mode == constant.Draw {
-		return fmt.Sprintf("已切换到「%s」模式，每次绘画消耗次数%d。"+
+	switch mode {
+	case constant.GPT3:
+		fallthrough
+	case constant.GPT4:
+		desc = fmt.Sprintf("已切换到「%s」模式，每次对话消耗次数%d。"+
+			"你的付费额度剩余%d次，<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
+			logic.GetModeName(mode),
+			logic.GetTimesPerQuestion(mode),
+			balance,
+			util.GetPayLink(userName),
+			util.GetInvitationTutorialLink(),
+		)
+	case constant.Draw:
+		desc = fmt.Sprintf("已切换到「%s」模式，每次绘画消耗次数%d。"+
 			"你的付费额度剩余%d次，<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。"+
 			"\n\n在此模式下，你给出图片描述，稍后midjourney为你奉上精美作品。"+
 			"开始之前，请务必仔细阅读<a href=\"%s\">这篇教程</a>。",
@@ -29,14 +41,15 @@ func buildModeDesc(userName string, mode string) (desc string) {
 			util.GetInvitationTutorialLink(),
 			"https://cxyds.top/2023/10/27/ai-draw.html",
 		)
+	case constant.Translate:
+		desc = fmt.Sprintf("已切换到「%s」模式，每次翻译消耗次数%d，此模式由OpenAI提供技术支持。"+
+			"你的付费额度剩余%d次，<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
+			logic.GetModeName(mode),
+			logic.GetTimesPerQuestion(mode),
+			balance,
+			util.GetPayLink(userName),
+			util.GetInvitationTutorialLink(),
+		)
 	}
-
-	return fmt.Sprintf("已切换到「%s」模式，每次对话消耗次数%d。"+
-		"你的付费额度剩余%d次，<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
-		logic.GetModeName(mode),
-		logic.GetTimesPerQuestion(mode),
-		balance,
-		util.GetPayLink(userName),
-		util.GetInvitationTutorialLink(),
-	)
+	return
 }
