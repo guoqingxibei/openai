@@ -50,7 +50,7 @@ func checkVendorBalance() {
 		alarm = true
 	}
 	api2dBalance, _ := api2d.GetApi2dBalance()
-	if api2dBalance < 10 {
+	if api2dBalance < 1 {
 		alarm = true
 	}
 	if alarm {
