@@ -145,7 +145,7 @@ func TransToEng(original string, vendor string) (trans string, err error) {
 	resp, err := client.CreateChatCompletion(
 		ctx,
 		openai.ChatCompletionRequest{
-			Model:            "gpt-3.5-turbo-1106",
+			Model:            openai.GPT3Dot5Turbo1106,
 			Messages:         util.BuildTransMessages(original, constant.English),
 			MaxTokens:        1000,
 			FrequencyPenalty: 1,

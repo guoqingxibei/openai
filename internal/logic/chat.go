@@ -74,11 +74,11 @@ func CreateChatStreamEx(
 func getModel(mode string) (model string) {
 	switch mode {
 	case constant.GPT3:
-		model = "gpt-3.5-turbo-1106"
+		model = openai.GPT3Dot5Turbo1106
 	case constant.GPT4:
 		model = openai.GPT4
 	case constant.Translate:
-		model = "gpt-3.5-turbo-1106"
+		model = openai.GPT3Dot5Turbo1106
 	}
 	return
 }
