@@ -86,8 +86,7 @@ func CreateChatStream(
 
 		stream, err := client.CreateChatCompletionStream(ctx, req)
 		if err != nil {
-			log.Println("client.CreateChatCompletionStream() failed", err)
-			_err = err
+			_err = fmt.Errorf("client.CreateChatCompletionStream() failed: %w", err)
 			doneChan <- true
 			return
 		}
@@ -102,8 +101,7 @@ func CreateChatStream(
 			}
 
 			if err != nil {
-				log.Println("stream.Recv() failed", err)
-				_err = err
+				_err = fmt.Errorf("stream.Recv() failed: %w", err)
 				doneChan <- true
 				return
 			}
