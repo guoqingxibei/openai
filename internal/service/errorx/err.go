@@ -36,11 +36,12 @@ func sendErrorAlarmEmail() {
 func GetErrorsDesc(day string) (errCnt int, detail string) {
 	errors, _ := store.GetErrors(day)
 	errCnt = len(errors)
+	// reverse errors
 	for idx, myError := range errors {
-		detail += fmt.Sprintf("%s\n%s\n%s\n", util.FormatTime(myError.Time), myError.Title, myError.Detail)
-		if idx != errCnt-1 {
-			detail += "-----------------------------------\n"
+		if idx != 0 {
+			detail = "-----------------------------------\n" + detail
 		}
+		detail = fmt.Sprintf("%s\n%s\n%s\n", util.FormatTime(myError.Time), myError.Title, myError.Detail) + detail
 	}
 	return
 }
