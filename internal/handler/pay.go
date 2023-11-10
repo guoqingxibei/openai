@@ -66,12 +66,14 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 	notifyReq, err := wechat.V3ParseNotify(r)
 	if err != nil {
 		errorx.RecordError("wechat.V3ParseNotify() failed", err)
+		fail(w)
 		return
 	}
 
 	result, err := wechatService.VerifySignAndDecrypt(notifyReq)
 	if err != nil {
 		errorx.RecordError("wechatService.VerifySignAndDecrypt() failed", err)
+		fail(w)
 		return
 	}
 
@@ -123,5 +125,12 @@ func GetTradeResult(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	data, _ := json.Marshal(tradeResult{balance, transaction.Redeemed})
+	w.Write(data)
+}
+
+func fail(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "application/json; charset=utf-8")
+	w.WriteHeader(http.StatusInternalServerError)
+	data, _ := json.Marshal(wechat.V3NotifyRsp{Code: gopay.FAIL, Message: "失败"})
 	w.Write(data)
 }
