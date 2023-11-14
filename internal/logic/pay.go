@@ -22,7 +22,7 @@ func InitiateTransaction(
 		return "", "", err
 	}
 
-	now := time.Now().Unix()
+	now := time.Now()
 	transaction := model.Transaction{
 		OutTradeNo:  tradeNo,
 		OpenId:      openid,
@@ -33,8 +33,8 @@ func InitiateTransaction(
 		PriceInFen:  priceInFen,
 		Times:       times,
 		Description: description,
-		CreatedTime: now,
-		UpdatedTime: now,
+		CreatedAt:   now,
+		UpdatedAt:   now,
 	}
 	_ = store.SetTransaction(tradeNo, transaction)
 	return prepayId, tradeNo, err

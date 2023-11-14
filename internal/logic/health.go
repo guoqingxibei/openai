@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"github.com/robfig/cron"
 	"log"
+	"openai/internal/constant"
 	"openai/internal/service/api2d"
 	"openai/internal/service/email"
 	"openai/internal/service/errorx"
 	"openai/internal/service/ohmygpt"
 	"openai/internal/service/sb"
+	"openai/internal/store"
 	"openai/internal/util"
 )
 
@@ -67,17 +69,36 @@ func sendYesterdayReportEmail() {
 	subject := fmt.Sprintf("[%s/%s] Summary for %s", util.GetAccount(), util.GetEnv(), yesterday)
 
 	body := ""
-	errCnt, errorContent := errorx.GetErrorsDesc(yesterday)
-	errorTitle := fmt.Sprintf("[%d errors]\n", errCnt)
-	body += errorTitle + errorContent
-
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
 	sbBalance, _ := sb.GetSbBalance()
 	api2dBalance, _ := api2d.GetApi2dBalance()
-	balanceTitle := "\n[balance]\n"
-	balanceContent := fmt.Sprintf("Ohmygpt: ￥%.2f\nSB: ￥%.2f\nApi2d: ￥%.2f",
+	balanceTitle := "[balance]\n"
+	balanceContent := fmt.Sprintf("Ohmygpt: ￥%.2f\nSB: ￥%.2f\nApi2d: ￥%.2f\n",
 		ohmygptBalance, sbBalance, api2dBalance)
 	body += balanceTitle + balanceContent
+
+	tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
+	transactionTitle := fmt.Sprintf("\n[%d transactions]\n", len(tradeNos))
+	transactionBody := ""
+	for _, tradeNo := range tradeNos {
+		transaction, _ := store.GetTransaction(tradeNo)
+		paidAccount := constant.Brother
+		if transaction.UncleOpenId != "" {
+			paidAccount = constant.Uncle
+		}
+		transactionLine := fmt.Sprintf(
+			"%s ￥%d %s\n",
+			util.FormatTime(transaction.UpdatedAt),
+			transaction.PriceInFen/100,
+			paidAccount,
+		)
+		transactionBody = transactionLine + transactionBody
+	}
+	body += transactionTitle + transactionBody
+
+	errCnt, errorContent := errorx.GetErrorsDesc(yesterday)
+	errorTitle := fmt.Sprintf("\n[%d errors]\n", errCnt)
+	body += errorTitle + errorContent
 
 	email.SendEmail(subject, body)
 }

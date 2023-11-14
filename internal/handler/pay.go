@@ -9,6 +9,7 @@ import (
 	"openai/internal/service/errorx"
 	wechatService "openai/internal/service/wechat"
 	"openai/internal/store"
+	"openai/internal/util"
 	"time"
 )
 
@@ -82,10 +83,11 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 	transaction.TradeState = result.TradeState
 	payload, _ := json.Marshal(result)
 	transaction.Payload = string(payload)
-	transaction.UpdatedTime = time.Now().Unix()
+	transaction.UpdatedAt = time.Now()
 
 	if result.TradeState == "SUCCESS" {
 		if !transaction.Redeemed {
+			_ = store.AppendSuccessOutTradeNo(util.Today(), outTradeNo)
 			openId := transaction.OpenId
 			times := transaction.Times
 			useUncleDB := false
