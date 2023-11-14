@@ -16,8 +16,6 @@ import (
 	"time"
 )
 
-const timeout = 20
-
 var ohmygptClient *openai.Client
 var sbClient *openai.Client
 var api2dClient *openai.Client
@@ -115,8 +113,9 @@ func CreateChatStream(
 	}()
 
 	// fail if the first word didn't reach in specified time
+	timeout := getTimeout(model)
 	select {
-	case <-time.After(time.Second * timeout):
+	case <-time.After(time.Second * time.Duration(timeout)):
 		if reply == "" {
 			cancel()
 			errMsg := fmt.Sprintf("not yet start responding in %d seconds", timeout)
@@ -125,6 +124,18 @@ func CreateChatStream(
 
 		<-doneChan
 	case <-doneChan:
+	}
+	return
+}
+
+func getTimeout(model string) (timeout int) {
+	switch model {
+	case openai.GPT3Dot5Turbo:
+		fallthrough
+	case openai.GPT3Dot5Turbo1106:
+		timeout = 5
+	default:
+		timeout = 20
 	}
 	return
 }
