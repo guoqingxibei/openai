@@ -76,7 +76,7 @@ func getModel(mode string) (model string) {
 	case constant.GPT3:
 		model = openai.GPT3Dot5Turbo1106
 	case constant.GPT4:
-		model = openai.GPT4
+		model = openai.GPT4TurboPreview
 	case constant.Translate:
 		model = openai.GPT3Dot5Turbo1106
 	}
