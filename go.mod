@@ -13,7 +13,7 @@ require (
 	github.com/google/uuid v1.4.0
 	github.com/redis/go-redis/v9 v9.3.0
 	github.com/robfig/cron v1.2.0
-	github.com/sashabaranov/go-openai v1.17.5
+	github.com/sashabaranov/go-openai v1.17.6
 	github.com/silenceper/wechat/v2 v2.1.6
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.5.1 // indirect
