@@ -45,8 +45,8 @@ func DecreaseBalance(userName string, mode string) (bool, string) {
 	if balance < timesPerQuestion {
 		paidBalance, _ := store.GetPaidBalance(userName)
 		if paidBalance < timesPerQuestion {
-			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费额度(%d次)和付费额度已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
-				"如果使用量很大，可以<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。"
+			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费额度(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
+				"如果使用量大，可以<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数，次数永久有效。"
 			return false, fmt.Sprintf(gpt3BalanceTip,
 				GetQuota(userName),
 				util.GetPayLink(userName),
