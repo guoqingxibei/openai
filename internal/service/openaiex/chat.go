@@ -61,6 +61,7 @@ func CreateChatStream(
 	model string,
 	maxTokens int,
 	aiVendor string,
+	attemptNumber int,
 	processWord func(string),
 ) (reply string, _err error) {
 	req := openai.ChatCompletionRequest{
@@ -113,7 +114,7 @@ func CreateChatStream(
 	}()
 
 	// fail if the first word didn't reach in specified time
-	timeout := getTimeout(model)
+	timeout := getTimeout(model, attemptNumber)
 	select {
 	case <-time.After(time.Second * time.Duration(timeout)):
 		if reply == "" {
@@ -128,14 +129,14 @@ func CreateChatStream(
 	return
 }
 
-func getTimeout(model string) (timeout int) {
+func getTimeout(model string, attemptNumber int) (timeout int) {
 	switch model {
 	case openai.GPT3Dot5Turbo:
 		fallthrough
 	case openai.GPT3Dot5Turbo1106:
-		timeout = 5
+		timeout = 5 + attemptNumber*3
 	default:
-		timeout = 20
+		timeout = 20 + attemptNumber*5
 	}
 	return
 }

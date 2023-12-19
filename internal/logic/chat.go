@@ -40,7 +40,7 @@ func CreateChatStreamEx(
 	maxTokens := util.Min(5000-tokenCount, 3000)
 
 	reply := ""
-	for _, vendor := range aiVendors {
+	for attemptNumber, vendor := range aiVendors {
 		_ = store.DelReplyChunks(msgId)
 		_ = store.AppendReplyChunk(msgId, startMark)
 		if isVoice {
@@ -51,6 +51,7 @@ func CreateChatStreamEx(
 			model,
 			maxTokens,
 			vendor,
+			attemptNumber,
 			func(word string) {
 				_ = store.AppendReplyChunk(msgId, word)
 			},
