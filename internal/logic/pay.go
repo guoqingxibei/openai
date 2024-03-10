@@ -1,7 +1,7 @@
 package logic
 
 import (
-	"github.com/go-pay/gopay/pkg/util"
+	"github.com/go-pay/util"
 	"log"
 	"openai/internal/model"
 	"openai/internal/service/wechat"
