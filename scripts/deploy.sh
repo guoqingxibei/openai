@@ -13,7 +13,7 @@ if [ "$ENV" = "staging" ]; then
   FULL_SERVICE_NAME="${SERVICE_NAME}-staging"
 else
   BRANCH="main"
-  FULL_SERVICE_NAME="openai"
+  FULL_SERVICE_NAME="${SERVICE_NAME}"
 fi
 
 VM=us-jumpbox
