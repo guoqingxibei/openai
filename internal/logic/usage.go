@@ -12,10 +12,13 @@ func ShowUsage(msg *message.MixMessage) (reply *message.Reply) {
 	mode, _ := store.GetMode(user)
 	usage := "【模式】" + GetModeDesc(mode)
 
-	usage += fmt.Sprintf("\n【额度】免费额度剩余%d次，每天免费%d次。", GetBalance(user), GetQuota(user))
-	balance, _ := store.GetPaidBalance(user)
+	usage += "\n【额度】"
+	paidBalance, _ := store.GetPaidBalance(user)
+	if paidBalance <= 0 {
+		usage += fmt.Sprintf("免费额度剩余%d次，每天免费%d次。", GetBalance(user), GetQuota(user))
+	}
 	usage += fmt.Sprintf("付费额度剩余%d次，<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
-		balance,
+		paidBalance,
 		util.GetPayLink(user),
 		util.GetInvitationTutorialLink(),
 	)

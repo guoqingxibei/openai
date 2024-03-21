@@ -41,10 +41,10 @@ func DecreaseBalance(userName string, mode string) (bool, string) {
 		return true, ""
 	}
 
-	balance := GetBalance(userName)
-	if balance < timesPerQuestion {
-		paidBalance, _ := store.GetPaidBalance(userName)
-		if paidBalance < timesPerQuestion {
+	paidBalance, _ := store.GetPaidBalance(userName)
+	if paidBalance < timesPerQuestion {
+		balance := GetBalance(userName)
+		if balance < timesPerQuestion {
 			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费额度(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
 				"如果使用量大，可以<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数，次数永久有效。"
 			return false, fmt.Sprintf(gpt3BalanceTip,
@@ -53,9 +53,9 @@ func DecreaseBalance(userName string, mode string) (bool, string) {
 				util.GetInvitationTutorialLink(),
 			)
 		}
-		_, _ = store.DecrPaidBalance(userName, int64(timesPerQuestion))
-	} else {
 		_, _ = store.DecrBalance(userName, util.Today())
+	} else {
+		_, _ = store.DecrPaidBalance(userName, int64(timesPerQuestion))
 	}
 	return true, ""
 }
