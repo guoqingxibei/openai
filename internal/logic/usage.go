@@ -17,7 +17,7 @@ func ShowUsage(msg *message.MixMessage) (reply *message.Reply) {
 	if paidBalance <= 0 {
 		usage += fmt.Sprintf("免费额度剩余%d次，每天免费%d次。", GetBalance(user), GetQuota(user))
 	}
-	usage += fmt.Sprintf("付费额度剩余%d次，<a href=\"%s\">点我购买次数</a>或者<a href=\"%s\">邀请好友获取次数</a>。",
+	usage += fmt.Sprintf("付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。",
 		paidBalance,
 		util.GetPayLink(user),
 		util.GetInvitationTutorialLink(),
