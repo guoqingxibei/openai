@@ -1,6 +1,7 @@
 package logic
 
 import (
+	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"log"
@@ -15,8 +16,10 @@ const oneWeek = 7 * 24 * 3600
 
 func DecreaseBalance(userName string, mode string) (bool, string) {
 	timesPerQuestion := GetTimesPerQuestion(mode)
+	paidBalance, err := store.GetPaidBalance(userName)
+	hasPaid := !errors.Is(err, redis.Nil)
+
 	if mode == constant.GPT4 || mode == constant.Draw {
-		paidBalance, _ := store.GetPaidBalance(userName)
 		if paidBalance < timesPerQuestion {
 			gpt4BalanceTip := "【余额不足】抱歉，付费额度剩余%d次，不足以继续使用%s模式(每次绘画消耗次数%d)，" +
 				"<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。" +
@@ -41,22 +44,30 @@ func DecreaseBalance(userName string, mode string) (bool, string) {
 		return true, ""
 	}
 
-	paidBalance, _ := store.GetPaidBalance(userName)
-	if paidBalance < timesPerQuestion {
-		balance := GetBalance(userName)
-		if balance < timesPerQuestion {
-			gpt3BalanceTip := "【余额不足】抱歉，你今天的免费额度(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
-				"如果使用量大，可以<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数，次数永久有效。"
+	if hasPaid {
+		if paidBalance < timesPerQuestion {
+			gpt3BalanceTip := "【余额不足】抱歉，你的付费额度已用完，" +
+				"请<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。"
 			return false, fmt.Sprintf(gpt3BalanceTip,
-				GetQuota(userName),
 				util.GetPayLink(userName),
 				util.GetInvitationTutorialLink(),
 			)
 		}
-		_, _ = store.DecrBalance(userName, util.Today())
-	} else {
 		_, _ = store.DecrPaidBalance(userName, int64(timesPerQuestion))
+		return true, ""
 	}
+
+	balance := GetBalance(userName)
+	if balance < timesPerQuestion {
+		gpt3BalanceTip := "【余额不足】抱歉，你今天的免费额度(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
+			"如果使用量大，可以<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数，次数永久有效。"
+		return false, fmt.Sprintf(gpt3BalanceTip,
+			GetQuota(userName),
+			util.GetPayLink(userName),
+			util.GetInvitationTutorialLink(),
+		)
+	}
+	_, _ = store.DecrBalance(userName, util.Today())
 	return true, ""
 }
 

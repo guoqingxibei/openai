@@ -1,7 +1,9 @@
 package logic
 
 import (
+	"errors"
 	"fmt"
+	"github.com/redis/go-redis/v9"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"openai/internal/store"
 	"openai/internal/util"
@@ -13,8 +15,9 @@ func ShowUsage(msg *message.MixMessage) (reply *message.Reply) {
 	usage := "【模式】" + GetModeDesc(mode)
 
 	usage += "\n【额度】"
-	paidBalance, _ := store.GetPaidBalance(user)
-	if paidBalance <= 0 {
+	paidBalance, err := store.GetPaidBalance(user)
+	hasPaid := !errors.Is(err, redis.Nil)
+	if !hasPaid {
 		usage += fmt.Sprintf("免费额度剩余%d次，每天免费%d次。", GetBalance(user), GetQuota(user))
 	}
 	usage += fmt.Sprintf("付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。",
