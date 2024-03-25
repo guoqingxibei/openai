@@ -59,11 +59,6 @@
       },
       {
         "type": "click",
-        "name": "进交流群",
-        "key": "group"
-      },
-      {
-        "type": "click",
         "name": "联系作者",
         "key": "contact"
       }
