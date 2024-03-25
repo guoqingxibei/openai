@@ -48,14 +48,14 @@
     "name": "其他",
     "sub_button": [
       {
+        "type": "click",
+        "name": "清除历史",
+        "key": "clear"
+      },
+      {
         "type": "view",
         "name": "常见问题",
         "url": "https://cxyds.top/2023/07/03/faq.html"
-      },
-      {
-        "type": "click",
-        "name": "清除上下文",
-        "key": "clear"
       },
       {
         "type": "click",
