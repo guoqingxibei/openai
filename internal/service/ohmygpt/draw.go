@@ -45,6 +45,7 @@ type StatusResponse struct {
 const (
 	ModeMidJourney = "midjourney"
 	TypeNormal     = "NORMAL"
+	TypeFast       = "FAST"
 
 	StatusSuccess = "SUCCESS"
 	StatusFailure = "FAILURE"
@@ -59,7 +60,7 @@ func SubmitDrawTask(prompt string) (response *TaskResponse, err error) {
 	params := url.Values{}
 	params.Set("model", ModeMidJourney)
 	params.Set("prompt", prompt)
-	params.Set("type", TypeNormal)
+	params.Set("type", TypeFast)
 	data := params.Encode()
 	payload := strings.NewReader(data)
 
