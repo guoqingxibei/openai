@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"errors"
 	"github.com/redis/go-redis/v9"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"log"
@@ -13,7 +14,7 @@ func onSubscribe(msg *message.MixMessage) *message.Reply {
 	userName := string(msg.FromUserName)
 	log.Println("新增关注:", userName)
 	_, err := store.GetSubscribeTimestamp(userName)
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		_ = store.SetSubscribeTimestamp(userName, time.Now().Unix())
 	}
 

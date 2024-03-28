@@ -2,6 +2,7 @@ package baidu
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron"
@@ -25,7 +26,7 @@ var baiduConfig = config.C.Baidu
 func init() {
 	_, err := store.GetBaiduApiAccessToken()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			_, err := refreshAccessToken()
 			if err != nil {
 				errorx.RecordError("refreshAccessToken() failed", err)
@@ -87,7 +88,7 @@ func generateAccessToken() (string, int, error) {
 func getAccessToken() (string, error) {
 	token, err := store.GetBaiduApiAccessToken()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return refreshAccessToken()
 		}
 		return "", err

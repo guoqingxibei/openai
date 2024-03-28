@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
 	"openai/internal/util"
@@ -19,7 +20,7 @@ func GetMessages(user string) ([]openai.ChatCompletionMessage, error) {
 	var messages []openai.ChatCompletionMessage
 	messagesStr, err := client.Get(ctx, buildMessagesKey(user)).Result()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return messages, nil
 		}
 		return nil, err

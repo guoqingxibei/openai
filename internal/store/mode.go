@@ -1,6 +1,7 @@
 package store
 
 import (
+	"errors"
 	"github.com/redis/go-redis/v9"
 	"openai/internal/constant"
 )
@@ -11,7 +12,7 @@ func buildModeKey(user string) string {
 
 func GetMode(user string) (string, error) {
 	result, err := client.Get(ctx, buildModeKey(user)).Result()
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		return constant.GPT3, nil
 	}
 	return result, err

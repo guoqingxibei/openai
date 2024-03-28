@@ -94,7 +94,7 @@ func calculateQuota(user string) int {
 func GetQuota(user string) int {
 	today := util.Today()
 	quota, err := store.GetQuota(user, today)
-	if err == redis.Nil {
+	if errors.Is(err, redis.Nil) {
 		quota = calculateQuota(user)
 		_ = store.SetQuota(user, today, quota)
 	}
@@ -104,7 +104,7 @@ func GetQuota(user string) int {
 func GetBalance(user string) int {
 	balance, err := fetchBalanceOfToday(user)
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			quota := GetQuota(user)
 			err := SetBalanceOfToday(user, quota)
 			if err != nil {

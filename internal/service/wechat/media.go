@@ -1,6 +1,7 @@
 package wechat
 
 import (
+	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron"
@@ -37,7 +38,7 @@ func initMedias() {
 func initMediaId(imageName string) {
 	_, err := store.GetMediaId(imageName)
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			_, _ = refreshImage(imageName)
 		} else {
 			log.Println("store.GetMediaId failed", err)
@@ -59,7 +60,7 @@ func initMediaId(imageName string) {
 func GetMediaId(imageName string) (string, error) {
 	mediaId, err := store.GetMediaId(imageName)
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			mediaId, err = refreshImage(imageName)
 			if err != nil {
 				errorx.RecordError("refreshImage() failed", err)
