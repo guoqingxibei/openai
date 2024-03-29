@@ -33,7 +33,7 @@ func DownloadFile(url string, fileName string) (err error) {
 		return
 	}
 
-	log.Printf("[DownloadFileAPI] Duration: %dms, fileName: %s, imageUrl: %s",
+	log.Printf("[DownloadFileAPI] Duration: %dms, fileName: %s, fileUrl: %s",
 		int(time.Since(start).Milliseconds()),
 		fileName,
 		url,

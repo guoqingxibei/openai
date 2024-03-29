@@ -153,6 +153,7 @@ func TransToEng(original string, vendor string) (trans string, err error) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
+
 	client := getClient(vendor)
 	resp, err := client.CreateChatCompletion(
 		ctx,

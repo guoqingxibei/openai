@@ -11,7 +11,7 @@ func transToEngEx(original string) (trans string, err error) {
 		if err == nil {
 			break
 		}
-		log.Printf("openaiex.transToEng(%s) failed %v", vendor, err)
+		log.Printf("openaiex.TransToEng(%s) failed %v", vendor, err)
 	}
 	return
 }

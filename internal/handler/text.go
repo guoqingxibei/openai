@@ -25,14 +25,6 @@ const (
 )
 
 func onReceiveText(msg *message.MixMessage) (reply *message.Reply) {
-	if msg.MsgType == message.MsgTypeVoice {
-		if msg.Recognition == "" {
-			reply = util.BuildTextReply("抱歉，未识别到有效内容。")
-			return
-		}
-		msg.Content = msg.Recognition
-	}
-
 	if len(msg.Content) > maxLengthOfQuestion {
 		reply = util.BuildTextReply("哎呀，输入太长了~")
 		return
@@ -91,6 +83,17 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 			return
 		}
 
+		if isVoice {
+			textResult, err := logic.GetTextFromVoice(msg.MediaID)
+			if err != nil {
+				errorx.RecordError("GetTextFromVoice() failed", err)
+			}
+			if textResult == "" {
+				replyChan <- "抱歉，未识别到有效内容。"
+				return
+			}
+			question = textResult
+		}
 		logic.CreateChatStreamEx(user, msgId, question, isVoice, mode)
 		replyChan <- buildReplyForChat(msgId)
 	}()
