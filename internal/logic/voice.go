@@ -51,7 +51,7 @@ func genVoiceFileName() string {
 	return fmt.Sprintf("%s/%s.mp3", voiceDir, voiceId)
 }
 
-func textToVoice(question string, user string) (err error) {
+func textToVoice(question string, user string, voiceSentPtr *bool) (err error) {
 	voiceFile := genVoiceFileName()
 	for _, vendor := range aiVendors {
 		err = openaiex.TextToVoice(question, voiceFile, vendor)
@@ -78,6 +78,7 @@ func textToVoice(question string, user string) (err error) {
 	}
 
 	for _, file := range voiceFiles {
+		*voiceSentPtr = true
 		err = sendVoiceToUser(file, user)
 		if err != nil {
 			return err
@@ -86,8 +87,8 @@ func textToVoice(question string, user string) (err error) {
 	return
 }
 
-func TextToVoiceEx(question string, user string) (reply string) {
-	err := textToVoice(question, user)
+func TextToVoiceEx(question string, user string, voiceSentPtr *bool) (reply string) {
+	err := textToVoice(question, user, voiceSentPtr)
 	if err != nil {
 		AddPaidBalance(user, calTimesForTTS(question))
 		errorx.RecordError("textToVoice failed", err)

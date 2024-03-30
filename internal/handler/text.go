@@ -67,6 +67,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 
 	replyIsLate := false
 	replyChan := make(chan string, 1)
+	voiceSent := false
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {
@@ -108,7 +109,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 		}
 
 		if mode == constant.TTS {
-			ttsReply := logic.TextToVoiceEx(question, user)
+			ttsReply := logic.TextToVoiceEx(question, user, &voiceSent)
 			replyChan <- ttsReply
 			if replyIsLate && ttsReply != "" {
 				err := wechat.GetAccount().GetCustomerMessageManager().
@@ -129,7 +130,9 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 		if mode == constant.Draw || mode == constant.TTS {
 			replyIsLate = true
 		}
-		reply = buildLateReply(msgId, mode)
+		if mode != constant.TTS || !voiceSent {
+			reply = buildLateReply(msgId, mode)
+		}
 	}
 	return
 }
