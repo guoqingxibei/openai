@@ -14,10 +14,26 @@ import (
 const oneMonth = 30 * 24 * 3600
 const oneWeek = 7 * 24 * 3600
 
-func DecreaseBalance(userName string, mode string) (bool, string) {
+func DecreaseBalance(userName string, mode string, question string) (bool, string) {
 	timesPerQuestion := GetTimesPerQuestion(mode)
 	paidBalance, err := store.GetPaidBalance(userName)
 	hasPaid := !errors.Is(err, redis.Nil)
+
+	if mode == constant.TTS {
+		times := calTimesForTTS(question)
+		if paidBalance < times {
+			balanceTip := "【余额不足】抱歉，付费额度剩余%d次，而此次语音转换需要消耗%d次，" +
+				"请<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。"
+			return false, fmt.Sprintf(balanceTip,
+				paidBalance,
+				times,
+				util.GetPayLink(userName),
+				util.GetInvitationTutorialLink(),
+			)
+		}
+
+		_, _ = store.DecrPaidBalance(userName, int64(times))
+	}
 
 	if mode == constant.GPT4 || mode == constant.Draw {
 		if paidBalance < timesPerQuestion {
@@ -41,33 +57,35 @@ func DecreaseBalance(userName string, mode string) (bool, string) {
 		}
 
 		_, _ = store.DecrPaidBalance(userName, int64(timesPerQuestion))
-		return true, ""
 	}
 
-	if hasPaid {
-		if paidBalance < timesPerQuestion {
-			gpt3BalanceTip := "【余额不足】抱歉，你的付费额度已用完，" +
-				"请<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。"
-			return false, fmt.Sprintf(gpt3BalanceTip,
-				util.GetPayLink(userName),
-				util.GetInvitationTutorialLink(),
-			)
+	// below is for GPT-3
+	if mode == constant.GPT3 {
+		if hasPaid {
+			if paidBalance < timesPerQuestion {
+				gpt3BalanceTip := "【余额不足】抱歉，你的付费额度已用完，" +
+					"请<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。"
+				return false, fmt.Sprintf(gpt3BalanceTip,
+					util.GetPayLink(userName),
+					util.GetInvitationTutorialLink(),
+				)
+			}
+			_, _ = store.DecrPaidBalance(userName, int64(timesPerQuestion))
+		} else {
+			balance := GetBalance(userName)
+			if balance < timesPerQuestion {
+				gpt3BalanceTip := "【余额不足】抱歉，你今天的免费额度(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
+					"如果使用量大，可以<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数，次数永久有效。"
+				return false, fmt.Sprintf(gpt3BalanceTip,
+					GetQuota(userName),
+					util.GetPayLink(userName),
+					util.GetInvitationTutorialLink(),
+				)
+			}
+			_, _ = store.DecrBalance(userName, util.Today())
 		}
-		_, _ = store.DecrPaidBalance(userName, int64(timesPerQuestion))
-		return true, ""
 	}
 
-	balance := GetBalance(userName)
-	if balance < timesPerQuestion {
-		gpt3BalanceTip := "【余额不足】抱歉，你今天的免费额度(%d次)已用完，明天再来吧。费用昂贵，敬请谅解❤️\n\n" +
-			"如果使用量大，可以<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数，次数永久有效。"
-		return false, fmt.Sprintf(gpt3BalanceTip,
-			GetQuota(userName),
-			util.GetPayLink(userName),
-			util.GetInvitationTutorialLink(),
-		)
-	}
-	_, _ = store.DecrBalance(userName, util.Today())
 	return true, ""
 }
 

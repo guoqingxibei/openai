@@ -3,8 +3,11 @@ package openaiex
 import (
 	"context"
 	"github.com/sashabaranov/go-openai"
+	"io"
 	"log"
 	"openai/internal/util"
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -30,5 +33,41 @@ func VoiceToText(voiceFile string, vendor string) (text string, err error) {
 		Format:   openai.AudioResponseFormatText,
 	})
 	text = strings.TrimSpace(response.Text)
+	return
+}
+
+func TextToVoice(text string, voiceFile string, vendor string) (err error) {
+	start := time.Now()
+	defer func() {
+		log.Printf("[TextToVoice] Duration: %dms, text: 「%s」",
+			int(time.Since(start).Milliseconds()),
+			text,
+		)
+	}()
+
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)
+	defer cancel()
+
+	client := getClient(vendor)
+	response, err := client.CreateSpeech(ctx, openai.CreateSpeechRequest{
+		Model: openai.TTSModel1HD,
+		Voice: openai.VoiceEcho,
+		Input: text,
+	})
+	if err != nil {
+		return
+	}
+
+	buf, err := io.ReadAll(response)
+	if err != nil {
+		return
+	}
+
+	err = os.MkdirAll(filepath.Dir(voiceFile), os.ModePerm)
+	if err != nil {
+		return
+	}
+
+	err = os.WriteFile(voiceFile, buf, 0644)
 	return
 }

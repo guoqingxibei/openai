@@ -16,6 +16,8 @@ func onClick(msg *message.MixMessage) (reply *message.Reply) {
 		fallthrough
 	case constant.Draw:
 		fallthrough
+	case constant.TTS:
+		fallthrough
 	case constant.Translate:
 		reply = switchMode(msg.EventKey, msg)
 	case clear:

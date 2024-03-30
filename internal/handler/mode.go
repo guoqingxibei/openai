@@ -41,6 +41,16 @@ func buildModeDesc(userName string, mode string) (desc string) {
 			util.GetInvitationTutorialLink(),
 			"https://cxyds.top/2023/10/27/ai-draw.html",
 		)
+	case constant.TTS:
+		desc = fmt.Sprintf("已切换到「%s」模式，每%d字消耗次数1。"+
+			"你的付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。"+
+			"\n\n在此模式下，你输入文字，OpenAI为你转换成语音。",
+			logic.GetModeName(mode),
+			constant.CharCountPerTimeTTS,
+			balance,
+			util.GetPayLink(userName),
+			util.GetInvitationTutorialLink(),
+		)
 	case constant.Translate:
 		desc = fmt.Sprintf("已切换到「%s」模式，每次翻译消耗次数%d，此模式由OpenAI提供技术支持。"+
 			"你的付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。",

@@ -53,13 +53,19 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 	user := string(msg.FromUserName)
 	question := strings.TrimSpace(msg.Content)
 	mode, _ := store.GetMode(user)
-	ok, balanceTip := logic.DecreaseBalance(user, mode)
+
+	isVoice := msg.MsgType == message.MsgTypeVoice
+	if isVoice && (mode == constant.Draw || mode == constant.TTS) {
+		return fmt.Sprintf("「%s」模式仅支持文字输入。", logic.GetModeName(mode))
+	}
+
+	ok, balanceTip := logic.DecreaseBalance(user, mode, question)
 	if !ok {
 		reply = balanceTip
 		return
 	}
 
-	drawReplyIsLate := false
+	replyIsLate := false
 	replyChan := make(chan string, 1)
 	go func() {
 		defer func() {
@@ -69,11 +75,10 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 			}
 		}()
 
-		isVoice := msg.MsgType == message.MsgTypeVoice
 		if mode == constant.Draw {
-			drawReply := logic.SubmitDrawTask(question, user, mode, isVoice)
+			drawReply := logic.SubmitDrawTask(question, user, mode)
 			replyChan <- drawReply
-			if drawReplyIsLate {
+			if replyIsLate {
 				err := wechat.GetAccount().GetCustomerMessageManager().
 					Send(message.NewCustomerTextMessage(user, drawReply))
 				if err != nil {
@@ -83,25 +88,46 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 			return
 		}
 
-		if isVoice {
-			textResult, err := logic.GetTextFromVoice(msg.MediaID)
-			if err != nil {
-				errorx.RecordError("GetTextFromVoice() failed", err)
+		if mode == constant.GPT3 || mode == constant.GPT4 {
+			// convert voice to text
+			if isVoice {
+				textResult, err := logic.GetTextFromVoice(msg.MediaID)
+				if err != nil {
+					errorx.RecordError("GetTextFromVoice() failed", err)
+				}
+				if textResult == "" {
+					replyChan <- "抱歉，未识别到有效内容。"
+					return
+				}
+				question = textResult
 			}
-			if textResult == "" {
-				replyChan <- "抱歉，未识别到有效内容。"
-				return
-			}
-			question = textResult
+
+			logic.CreateChatStreamEx(user, msgId, question, isVoice, mode)
+			replyChan <- buildReplyForChat(msgId)
+			return
 		}
-		logic.CreateChatStreamEx(user, msgId, question, isVoice, mode)
-		replyChan <- buildReplyForChat(msgId)
+
+		if mode == constant.TTS {
+			ttsReply := logic.TextToVoiceEx(question, user)
+			replyChan <- ttsReply
+			if replyIsLate && ttsReply != "" {
+				err := wechat.GetAccount().GetCustomerMessageManager().
+					Send(message.NewCustomerTextMessage(user, ttsReply))
+				if err != nil {
+					errorx.RecordError("GetCustomerMessageManager().Send() failed", err)
+				}
+			}
+			return
+		}
+
+		// Unknown mode
+		replyChan <- constant.TryAgain
 	}()
 	select {
 	case reply = <-replyChan:
-	case <-time.After(time.Millisecond * 2500):
-		if mode == constant.Draw {
-			drawReplyIsLate = true
+	case <-time.After(time.Millisecond * 3000):
+		if mode == constant.Draw || mode == constant.TTS {
+			replyIsLate = true
 		}
 		reply = buildLateReply(msgId, mode)
 	}
@@ -111,6 +137,8 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 func buildLateReply(msgId int64, mode string) (reply string) {
 	if mode == constant.Draw {
 		reply = "正在提交绘画任务，静候佳音..."
+	} else if mode == constant.TTS {
+		reply = "转换中，静候佳音..."
 	} else {
 		reply = buildReplyForChat(msgId)
 	}

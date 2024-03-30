@@ -43,12 +43,7 @@ func init() {
 	}
 }
 
-func SubmitDrawTask(prompt string, user string, mode string, isVoice bool) string {
-	if isVoice {
-		AddPaidBalance(user, GetTimesPerQuestion(mode))
-		return "绘画模式下，暂不支持可能造成误解的语音输入，请输入文字描述。"
-	}
-
+func SubmitDrawTask(prompt string, user string, mode string) string {
 	taskIds, _ := store.GetPendingTaskIdsForUser(user)
 	if len(taskIds) > 0 {
 		AddPaidBalance(user, GetTimesPerQuestion(mode))
@@ -204,12 +199,8 @@ func sendImageToUser(image string, user string) error {
 		return err
 	}
 
-	err = wechat.GetAccount().
+	return wechat.GetAccount().
 		GetCustomerMessageManager().Send(message.NewCustomerImgMessage(user, media.MediaID))
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func downloadImage(imageUrl string) (fileName string, err error) {

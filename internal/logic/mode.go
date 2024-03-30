@@ -3,6 +3,7 @@ package logic
 import (
 	"fmt"
 	"openai/internal/constant"
+	"unicode/utf8"
 )
 
 func GetTimesPerQuestion(mode string) (times int) {
@@ -19,6 +20,10 @@ func GetTimesPerQuestion(mode string) (times int) {
 	return
 }
 
+func calTimesForTTS(text string) int {
+	return divideAndCeil(utf8.RuneCountInString(text), constant.CharCountPerTimeTTS)
+}
+
 func GetModeDesc(mode string) (desc string) {
 	switch mode {
 	case constant.GPT3:
@@ -27,6 +32,8 @@ func GetModeDesc(mode string) (desc string) {
 		desc = fmt.Sprintf("当前模式是%s，每次对话消耗次数%d。", GetModeName(mode), GetTimesPerQuestion(mode))
 	case constant.Draw:
 		desc = fmt.Sprintf("当前模式是%s，每次绘画消耗次数%d。", GetModeName(mode), GetTimesPerQuestion(mode))
+	case constant.TTS:
+		desc = fmt.Sprintf("当前模式是%s，每%d字消耗次数1。", GetModeName(mode), constant.CharCountPerTimeTTS)
 	case constant.Translate:
 		desc = fmt.Sprintf("当前模式是%s，每次翻译消耗次数%d。", GetModeName(mode), GetTimesPerQuestion(mode))
 	}
@@ -41,8 +48,24 @@ func GetModeName(mode string) (name string) {
 		name = "GPT-4对话"
 	case constant.Draw:
 		name = "AI绘画"
+	case constant.TTS:
+		name = "文字转语音"
 	case constant.Translate:
 		name = "中英互译"
 	}
 	return
+}
+
+func divideAndCeil(num, divisor int) int {
+	if divisor == 0 {
+		panic("divisor cannot be zero")
+	}
+
+	result := num / divisor
+
+	if num%divisor == 0 {
+		return result
+	}
+
+	return result + 1
 }
