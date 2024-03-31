@@ -11,12 +11,7 @@ import (
 	"openai/internal/service/openaiex"
 	"openai/internal/service/wechat"
 	"openai/internal/util"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"sort"
 	"strconv"
-	"strings"
 )
 
 const (
@@ -64,14 +59,14 @@ func textToVoice(question string, user string, voiceSentPtr *bool) (err error) {
 		return
 	}
 
-	duration, err := getAudioDuration(voiceFile)
+	duration, err := util.GetAudioDuration(voiceFile)
 	if err != nil {
 		return
 	}
 
 	voiceFiles := []string{voiceFile}
 	if duration > maxSegmentDuration {
-		voiceFiles, err = splitAudioByDuration(voiceFile, strconv.Itoa(maxSegmentDuration))
+		voiceFiles, err = util.SplitAudioByDuration(voiceFile, strconv.Itoa(maxSegmentDuration))
 		if err != nil {
 			return err
 		}
@@ -94,46 +89,6 @@ func TextToVoiceEx(question string, user string, voiceSentPtr *bool) (reply stri
 		errorx.RecordError("textToVoice failed", err)
 		reply = constant.TryAgain
 	}
-	return
-}
-
-func getAudioDuration(inputFile string) (duration float64, err error) {
-	cmd := exec.Command("ffprobe", "-i", inputFile, "-show_entries", "format=duration", "-v", "quiet", "-of", "csv=p=0")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		return
-	}
-
-	return strconv.ParseFloat(strings.TrimSpace(string(output)), 64)
-}
-
-func splitAudioByDuration(inputFile string, segmentDuration string) (files []string, err error) {
-	outDir := inputFile[:len(inputFile)-4] + "-split-files"
-	err = os.Mkdir(outDir, 0755)
-	if err != nil {
-		return
-	}
-
-	cmd := exec.Command("ffmpeg", "-i", inputFile, "-f", "segment", "-segment_time", segmentDuration, outDir+"/%03d.mp3")
-	_, err = cmd.CombinedOutput()
-	if err != nil {
-		return
-	}
-
-	err = filepath.Walk(outDir, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if !info.IsDir() {
-			files = append(files, path)
-		}
-		return nil
-	})
-	if err != nil {
-		return
-	}
-
-	sort.Strings(files)
 	return
 }
 

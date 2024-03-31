@@ -19,6 +19,7 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/spf13/cast v1.6.0 // indirect
 	github.com/stretchr/testify v1.8.2 // indirect
+	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300
 	github.com/tidwall/gjson v1.17.1 // indirect
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tiktoken-go/tokenizer v0.1.0
