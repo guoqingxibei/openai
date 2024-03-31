@@ -7,6 +7,11 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sort"
+	"sync"
+)
+
+var (
+	mutex sync.Mutex
 )
 
 func GetAudioDuration(inputFile string) (duration float64, err error) {
@@ -31,6 +36,10 @@ func GetAudioDuration(inputFile string) (duration float64, err error) {
 }
 
 func SplitAudioByDuration(inputFile string, segmentDuration string) (files []string, err error) {
+	// invoking ffmpeg causes high CPU, concurrency is not allowed
+	mutex.Lock()
+	defer mutex.Unlock()
+
 	outDir := inputFile[:len(inputFile)-4] + "-split-files"
 	err = os.Mkdir(outDir, 0755)
 	if err != nil {
