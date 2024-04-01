@@ -102,7 +102,7 @@ func calculateQuota(user string) int {
 	subscribeInterval := currentTimestamp - subscribeTimestamp
 	quota := 0
 	if subscribeInterval < oneWeek {
-		quota = 10
+		quota = 5
 	} else {
 		quota = 2
 	}
