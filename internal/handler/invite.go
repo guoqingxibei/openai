@@ -11,7 +11,6 @@ import (
 
 const (
 	inviterReward = 15
-	inviteeReward = 0
 )
 const sizeOfCode = 6 // the length of invitation code
 const halfAnHour = 30 * 60
@@ -82,7 +81,6 @@ func doInvite(inviter string, msg *message.MixMessage) (reply *message.Reply) {
 	}
 
 	_ = logic.AddPaidBalance(inviter, inviterReward)
-	_ = logic.AddPaidBalance(user, inviteeReward)
 	_ = store.SetInviter(user, inviter)
 	return util.BuildTextReply(fmt.Sprintf(inviteSuccessMsg,
 		inviterReward,
