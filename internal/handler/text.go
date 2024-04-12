@@ -54,10 +54,12 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 	user := string(msg.FromUserName)
 	question := strings.TrimSpace(msg.Content)
 	mode, _ := store.GetMode(user)
+	paidBalance, _ := store.GetPaidBalance(user)
 	conv := model.Conversation{
-		Mode:     mode,
-		Question: question,
-		Time:     time.Now(),
+		Mode:        mode,
+		PaidBalance: paidBalance,
+		Question:    question,
+		Time:        time.Now(),
 	}
 	today := util.Today()
 

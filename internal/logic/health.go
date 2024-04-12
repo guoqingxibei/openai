@@ -111,8 +111,8 @@ func sendYesterdayReportEmail() {
 			if convIdx != 0 {
 				convContent += "-----------------------------------\n"
 			}
-			convContent += fmt.Sprintf("%s\nM: %s\nQ: %s\nA: %s\n",
-				util.FormatTime(conv.Time), conv.Mode, conv.Question, conv.Answer)
+			convContent += fmt.Sprintf("%s\nM: %s | P: %d\nQ: %s\nA: %s\n",
+				util.FormatTime(conv.Time), conv.Mode, conv.PaidBalance, conv.Question, conv.Answer)
 		}
 		convCnt += len(convs)
 	}
