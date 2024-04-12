@@ -7,6 +7,7 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/logic"
+	"openai/internal/model"
 	"openai/internal/service/errorx"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
@@ -53,6 +54,12 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 	user := string(msg.FromUserName)
 	question := strings.TrimSpace(msg.Content)
 	mode, _ := store.GetMode(user)
+	conv := model.Conversation{
+		Mode:     mode,
+		Question: question,
+		Time:     time.Now(),
+	}
+	today := util.Today()
 
 	isVoice := msg.MsgType == message.MsgTypeVoice
 	if isVoice && (mode == constant.Draw || mode == constant.TTS) {
@@ -74,6 +81,9 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 				panicMsg := fmt.Sprintf("%v\n%s", r, debug.Stack())
 				errorx.RecordError("failed due to a panic", errors.New(panicMsg))
 			}
+
+			// track conversation
+			_ = store.AppendConversation(user, today, conv)
 		}()
 
 		if mode == constant.Draw {
@@ -103,7 +113,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 				question = textResult
 			}
 
-			logic.CreateChatStreamEx(user, msgId, question, isVoice, mode)
+			conv.Answer = logic.CreateChatStreamEx(user, msgId, question, isVoice, mode)
 			replyChan <- buildReplyForChat(msgId)
 			return
 		}

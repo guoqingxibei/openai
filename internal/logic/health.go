@@ -100,5 +100,24 @@ func sendYesterdayReportEmail() {
 	errorTitle := fmt.Sprintf("\n[%d errors]\n", errCnt)
 	body += errorTitle + errorContent
 
+	users, _ := store.GetActiveUsers(yesterday)
+	userCnt := len(users)
+	convCnt := 0
+	convContent := ""
+	for idx, user := range users {
+		convContent += fmt.Sprintf("==%d/%d %s==\n", idx+1, userCnt, user)
+		convs, _ := store.GetConversations(user, yesterday)
+		for convIdx, conv := range convs {
+			if convIdx != 0 {
+				convContent += "-----------------------------------\n"
+			}
+			convContent += fmt.Sprintf("%s\nM: %s\nQ: %s\nA: %s\n",
+				util.FormatTime(conv.Time), conv.Mode, conv.Question, conv.Answer)
+		}
+		convCnt += len(convs)
+	}
+	convTitle := fmt.Sprintf("\n[%d convs | %d users]\n", convCnt, userCnt)
+	body += convTitle + convContent
+
 	email.SendEmail(subject, body)
 }

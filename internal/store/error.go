@@ -16,8 +16,8 @@ func AppendError(day string, myErr model.MyError) error {
 	if err != nil {
 		return err
 	}
-	err = client.Expire(ctx, buildErrorsKey(day), WEEK).Err()
-	return err
+
+	return client.Expire(ctx, buildErrorsKey(day), WEEK).Err()
 }
 
 func GetErrors(day string) ([]model.MyError, error) {

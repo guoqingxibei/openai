@@ -27,7 +27,7 @@ func CreateChatStreamEx(
 	question string,
 	isVoice bool,
 	mode string,
-) {
+) (fullReply string) {
 	messages, err := buildMessages(user, question, mode)
 	if err != nil {
 		onFailure(user, msgId, mode, err)
@@ -39,14 +39,13 @@ func CreateChatStreamEx(
 	tokenCount := util.CalTokenCount4Messages(messages, model)
 	maxTokens := util.Min(5000-tokenCount, 3000)
 
-	reply := ""
 	for attemptNumber, vendor := range aiVendors {
 		_ = store.DelReplyChunks(msgId)
 		_ = store.AppendReplyChunk(msgId, startMark)
 		if isVoice {
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 		}
-		reply, err = openaiex.CreateChatStream(
+		fullReply, err = openaiex.CreateChatStream(
 			messages,
 			model,
 			maxTokens,
@@ -68,8 +67,9 @@ func CreateChatStreamEx(
 	}
 
 	_ = store.AppendReplyChunk(msgId, endMark)
-	messages = util.AppendAssistantMessage(messages, reply)
+	messages = util.AppendAssistantMessage(messages, fullReply)
 	_ = store.SetMessages(user, messages)
+	return
 }
 
 func getModel(mode string) (model string) {
