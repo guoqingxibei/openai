@@ -72,29 +72,34 @@ func sendYesterdayReportEmail() {
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
 	sbBalance, _ := sb.GetSbBalance()
 	api2dBalance, _ := api2d.GetApi2dBalance()
-	balanceTitle := "[balance]\n"
+	balanceTitle := "[Balance]\n"
 	balanceContent := fmt.Sprintf("Ohmygpt: ￥%.2f\nSB: ￥%.2f\nApi2d: ￥%.2f\n",
 		ohmygptBalance, sbBalance, api2dBalance)
 	body += balanceTitle + balanceContent
 
-	tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
-	transactionTitle := fmt.Sprintf("\n[%d transactions]\n", len(tradeNos))
-	transactionBody := ""
-	for _, tradeNo := range tradeNos {
-		transaction, _ := store.GetTransaction(tradeNo)
-		paidAccount := constant.Brother
-		if transaction.UncleOpenId != "" {
-			paidAccount = constant.Uncle
+	if util.AccountIsBrother() {
+		tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
+		transactionTitle := fmt.Sprintf("\n[%d transactions]\n", len(tradeNos))
+		transactionContent := ""
+		for idx, tradeNo := range tradeNos {
+			transaction, _ := store.GetTransaction(tradeNo)
+			paidAccount := constant.Brother
+			if transaction.UncleOpenId != "" {
+				paidAccount = constant.Uncle
+			}
+			if idx != 0 {
+				transactionContent += "-----------------------------------\n"
+			}
+			transactionContent += fmt.Sprintf(
+				"%s\n%s\n￥%d %s\n",
+				util.FormatTime(transaction.UpdatedAt),
+				transaction.OpenId+transaction.UncleOpenId,
+				transaction.PriceInFen/100,
+				paidAccount,
+			)
 		}
-		transactionLine := fmt.Sprintf(
-			"%s ￥%d %s\n",
-			util.FormatTime(transaction.UpdatedAt),
-			transaction.PriceInFen/100,
-			paidAccount,
-		)
-		transactionBody = transactionLine + transactionBody
+		body += transactionTitle + transactionContent
 	}
-	body += transactionTitle + transactionBody
 
 	errCnt, errorContent := errorx.GetErrorsDesc(yesterday)
 	errorTitle := fmt.Sprintf("\n[%d errors]\n", errCnt)
@@ -105,14 +110,19 @@ func sendYesterdayReportEmail() {
 	convCnt := 0
 	convContent := ""
 	for idx, user := range users {
-		convContent += fmt.Sprintf("==%d/%d %s==\n", idx+1, userCnt, user)
+		convContent += fmt.Sprintf(">> %d/%d %s\n", idx+1, userCnt, user)
 		convs, _ := store.GetConversations(user, yesterday)
 		for convIdx, conv := range convs {
 			if convIdx != 0 {
 				convContent += "-----------------------------------\n"
 			}
-			convContent += fmt.Sprintf("%s\nM: %s | P: %d\nQ: %s\nA: %s\n",
-				util.FormatTime(conv.Time), conv.Mode, conv.PaidBalance, conv.Question, conv.Answer)
+			convContent += fmt.Sprintf("%s\n%s %d\nQ: %s\nA: %s\n",
+				util.FormatTime(conv.Time),
+				conv.Mode,
+				conv.PaidBalance,
+				conv.Question,
+				conv.Answer,
+			)
 		}
 		convCnt += len(convs)
 	}
