@@ -84,8 +84,10 @@ func sendYesterdayReportEmail() {
 		for idx, tradeNo := range tradeNos {
 			transaction, _ := store.GetTransaction(tradeNo)
 			paidAccount := constant.Brother
+			openId := transaction.OpenId
 			if transaction.UncleOpenId != "" {
 				paidAccount = constant.Uncle
+				openId = transaction.UncleOpenId
 			}
 			if idx != 0 {
 				transactionContent += "-----------------------------------\n"
@@ -93,7 +95,7 @@ func sendYesterdayReportEmail() {
 			transactionContent += fmt.Sprintf(
 				"%s\n%s\n￥%d %s\n",
 				util.FormatTime(transaction.UpdatedAt),
-				transaction.OpenId+transaction.UncleOpenId,
+				openId,
 				transaction.PriceInFen/100,
 				paidAccount,
 			)
@@ -120,8 +122,8 @@ func sendYesterdayReportEmail() {
 				util.FormatTime(conv.Time),
 				conv.Mode,
 				conv.PaidBalance,
-				conv.Question,
-				conv.Answer,
+				util.EscapeNewline(conv.Question),
+				util.EscapeNewline(conv.Answer),
 			)
 		}
 		convCnt += len(convs)
