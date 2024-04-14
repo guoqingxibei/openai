@@ -7,11 +7,13 @@ import (
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/store"
+	"openai/internal/util"
 )
 
 var emailConfig = config.C.Email
 
-func SendEmail(subject string, body string) {
+func SendEmail(subject string, mdBody string) {
+	htmlBody := util.MarkdownToHTML(mdBody)
 	status, _ := store.GetEmailNotificationStatus()
 	if status == constant.Off {
 		return
@@ -20,8 +22,16 @@ func SendEmail(subject string, body string) {
 	smtpServer := emailConfig.SmtpServer
 	from := emailConfig.From
 	to := emailConfig.To
-	msg := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s",
-		from, to, subject, body)
+	tmpl := `From: %s
+To: %s
+Subject: %s
+MIME-version: 1.0;
+Content-Type: text/html; 
+
+%s
+`
+	msg := fmt.Sprintf(tmpl,
+		from, to, subject, htmlBody)
 	err := smtp.SendMail(smtpServer+":587",
 		smtp.PlainAuth("", from, emailConfig.Pass, smtpServer),
 		from,

@@ -37,11 +37,13 @@ func GetErrorsDesc(day string) (errCnt int, detail string) {
 	errors, _ := store.GetErrors(day)
 	errCnt = len(errors)
 	// reverse errors
-	for idx, myError := range errors {
-		if idx != 0 {
-			detail = "-----------------------------------\n" + detail
-		}
-		detail = fmt.Sprintf("%s\n%s\n%s\n", util.FormatTime(myError.Time), myError.Title, myError.Detail) + detail
+	for _, myError := range errors {
+		errorTmpl := `
+### %s
+**%s**
+%s
+`
+		detail = fmt.Sprintf(errorTmpl, util.FormatTime(myError.Time), myError.Title, myError.Detail) + detail
 	}
 	return
 }

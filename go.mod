@@ -11,6 +11,7 @@ require (
 	github.com/go-http-utils/headers v0.0.0-20181008091004-fed159eddc2a
 	github.com/go-pay/gopay v1.5.100
 	github.com/go-pay/util v0.0.2
+	github.com/gomarkdown/markdown v0.0.0-20240328165702-4d01890c35c0
 	github.com/google/uuid v1.6.0
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/robfig/cron v1.2.0
