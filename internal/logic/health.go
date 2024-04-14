@@ -122,8 +122,8 @@ func sendYesterdayReportEmail() {
 				util.FormatTime(conv.Time),
 				conv.Mode,
 				conv.PaidBalance,
-				util.EscapeNewline(conv.Question),
-				util.EscapeNewline(conv.Answer),
+				util.TruncateAndEscapeNewLine(conv.Question, 100),
+				util.TruncateAndEscapeNewLine(conv.Answer, 100),
 			)
 		}
 		convCnt += len(convs)
