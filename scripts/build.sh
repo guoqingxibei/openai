@@ -9,4 +9,4 @@ if [ ! -d ${REPO_DIR} ]; then
 fi
 cd ${REPO_DIR}
 git fetch && git reset --hard origin/${BRANCH}
-/usr/bin/go build -o ${FULL_SERVICE_NAME}
+/usr/local/go/bin/go build -o ${FULL_SERVICE_NAME}
