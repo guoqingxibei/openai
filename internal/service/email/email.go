@@ -13,7 +13,7 @@ import (
 var emailConfig = config.C.Email
 
 func SendEmail(subject string, mdBody string) {
-	htmlBody := util.MarkdownToHTML(mdBody)
+	htmlBody := util.MarkdownToHtml(mdBody)
 	status, _ := store.GetEmailNotificationStatus()
 	if status == constant.Off {
 		return

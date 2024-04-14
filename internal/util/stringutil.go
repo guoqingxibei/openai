@@ -12,6 +12,12 @@ func EscapeNewline(originStr string) string {
 	return strings.ReplaceAll(originStr, "\n", `\n`)
 }
 
+func EscapeHtmlTags(origin string) string {
+	replaced := strings.ReplaceAll(origin, "<", "&lt;")
+	replaced = strings.ReplaceAll(replaced, ">", "&gt;")
+	return replaced
+}
+
 func IsEnglishSentence(sentence string) bool {
 	for _, r := range sentence {
 		if r > unicode.MaxASCII && !unicode.IsPunct(r) {
@@ -31,18 +37,14 @@ func TruncateString(origin string, maxLen int) string {
 	return origin
 }
 
-func TruncateAndEscapeNewLine(originStr string, maxLen int) string {
-	return EscapeNewline(TruncateString(originStr, maxLen))
-}
-
-func MarkdownToHTML(md string) string {
+func MarkdownToHtml(md string) string {
 	// create markdown parser with extensions
 	extensions := parser.CommonExtensions | parser.AutoHeadingIDs | parser.NoEmptyLineBeforeBlock | parser.HardLineBreak
 	p := parser.NewWithExtensions(extensions)
 	doc := p.Parse([]byte(md))
 
 	// create HTML renderer with extensions
-	htmlFlags := html.CommonFlags | html.HrefTargetBlank | html.CompletePage
+	htmlFlags := html.CompletePage
 	opts := html.RendererOptions{Flags: htmlFlags}
 	renderer := html.NewRenderer(opts)
 

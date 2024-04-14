@@ -12,6 +12,7 @@ import (
 	"openai/internal/service/sb"
 	"openai/internal/store"
 	"openai/internal/util"
+	"slices"
 )
 
 func init() {
@@ -68,6 +69,7 @@ func sendYesterdayReportEmail() {
 	subject := fmt.Sprintf("[%s/%s] Summary on %s", util.GetAccount(), util.GetEnv(), yesterday)
 
 	body := ""
+	var purchasedUsers []string
 	if util.AccountIsBrother() {
 		ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
 		sbBalance, _ := sb.GetSbBalance()
@@ -93,6 +95,7 @@ Time | User | Amount | Account
 					paidAccount = constant.Uncle
 					openId = transaction.UncleOpenId
 				}
+				purchasedUsers = append(purchasedUsers, openId)
 				txnContent += fmt.Sprintf(colTmpl,
 					util.FormatTime(transaction.UpdatedAt),
 					openId,
@@ -113,23 +116,30 @@ Time | User | Amount | Account
 	convCnt := 0
 	convContent := ""
 	for idx, user := range users {
-		convContent += fmt.Sprintf("## %d %s\n", idx+1, user)
 		convs, _ := store.GetConversations(user, yesterday)
-		for _, conv := range convs {
+		convsCnt := len(convs)
+		mark := ""
+		if slices.Contains(purchasedUsers, user) {
+			mark = " ★"
+		}
+		convContent += fmt.Sprintf("## %d/%d %s %d %s\n", idx+1, userCnt, user, convsCnt, mark)
+		for convIdx, conv := range convs {
 			convTmpl := `
-### %s %s %d
+### %d/%d %s %s %d
 **Q**: %s
 **A**: %s
 `
 			convContent += fmt.Sprintf(convTmpl,
+				convIdx+1,
+				convsCnt,
 				util.FormatTime(conv.Time),
 				conv.Mode,
 				conv.PaidBalance,
-				util.TruncateAndEscapeNewLine(conv.Question, 100),
-				util.TruncateAndEscapeNewLine(conv.Answer, 100),
+				truncateAndEscape(conv.Question),
+				truncateAndEscape(conv.Answer),
 			)
 		}
-		convCnt += len(convs)
+		convCnt += convsCnt
 	}
 	convTitle := fmt.Sprintf("\n# %d users | %d convs\n", userCnt, convCnt)
 	body += convTitle + convContent
@@ -152,4 +162,12 @@ Vendor | Balance
 		"Api2d", api2dBalance,
 	)
 	return balanceSect
+}
+
+func truncateAndEscape(origin string) string {
+	maxLen := 100
+	if util.IsEnglishSentence(origin) {
+		maxLen *= 5
+	}
+	return util.EscapeNewline(util.EscapeHtmlTags(util.TruncateString(origin, maxLen)))
 }
