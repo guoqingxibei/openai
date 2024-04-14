@@ -57,8 +57,7 @@ func checkVendorBalance() {
 	}
 	if alarm {
 		log.Println("Balance is insufficient, sending email...")
-		body := fmt.Sprintf("Ohmygpt: ￥%.2f\nSB: ￥%.2f\nApi2d: ￥%.2f",
-			ohmygptBalance, sbBalance, api2dBalance)
+		body := buildBalanceSection(ohmygptBalance, sbBalance, api2dBalance)
 		email.SendEmail("Insufficient Balance", body)
 	}
 	log.Println("Check finished")
@@ -72,19 +71,7 @@ func sendYesterdayReportEmail() {
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
 	sbBalance, _ := sb.GetSbBalance()
 	api2dBalance, _ := api2d.GetApi2dBalance()
-	balanceTmpl := `
-# Balance
-Vendor | Balance
--------|------
-%s | %.2f
-%s | %.2f
-%s | %.2f
-`
-	balanceSect := fmt.Sprintf(balanceTmpl,
-		"Ohmygpt", ohmygptBalance,
-		"SB", sbBalance,
-		"Api2d", api2dBalance,
-	)
+	balanceSect := buildBalanceSection(ohmygptBalance, sbBalance, api2dBalance)
 	body += balanceSect
 
 	if util.AccountIsBrother() {
@@ -148,4 +135,21 @@ Time | User | Amount | Account
 	body += convTitle + convContent
 
 	email.SendEmail(subject, body)
+}
+
+func buildBalanceSection(ohmygptBalance float64, sbBalance float64, api2dBalance float64) string {
+	balanceTmpl := `
+# Balance
+Vendor | Balance
+-------|------
+%s | %.2f
+%s | %.2f
+%s | %.2f
+`
+	balanceSect := fmt.Sprintf(balanceTmpl,
+		"Ohmygpt", ohmygptBalance,
+		"SB", sbBalance,
+		"Api2d", api2dBalance,
+	)
+	return balanceSect
 }
