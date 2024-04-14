@@ -5,6 +5,7 @@ import (
 	"github.com/robfig/cron"
 	"log"
 	"openai/internal/constant"
+	"openai/internal/model"
 	"openai/internal/service/api2d"
 	"openai/internal/service/email"
 	"openai/internal/service/errorx"
@@ -112,11 +113,31 @@ Time | User | Amount | Account
 	body += errorTitle + errorContent
 
 	users, _ := store.GetActiveUsers(yesterday)
+	user2Convs := make(map[string][]model.Conversation)
+	for _, user := range users {
+		convs, _ := store.GetConversations(user, yesterday)
+		user2Convs[user] = convs
+	}
+	compareUserFunc := func(a, b string) int {
+		aPurchased := slices.Contains(purchasedUsers, a)
+		bPurchased := slices.Contains(purchasedUsers, b)
+		if !aPurchased && !bPurchased || aPurchased && bPurchased {
+			return user2Convs[a][0].Time.Compare(user2Convs[b][0].Time)
+		}
+
+		if aPurchased {
+			return -1
+		}
+
+		return 1
+	}
+	slices.SortFunc(users, compareUserFunc)
+
 	userCnt := len(users)
 	convCnt := 0
 	convContent := ""
 	for idx, user := range users {
-		convs, _ := store.GetConversations(user, yesterday)
+		convs := user2Convs[user]
 		convsCnt := len(convs)
 		mark := ""
 		if slices.Contains(purchasedUsers, user) {
