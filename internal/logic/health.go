@@ -68,13 +68,13 @@ func sendYesterdayReportEmail() {
 	subject := fmt.Sprintf("[%s/%s] Summary on %s", util.GetAccount(), util.GetEnv(), yesterday)
 
 	body := ""
-	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
-	sbBalance, _ := sb.GetSbBalance()
-	api2dBalance, _ := api2d.GetApi2dBalance()
-	balanceSect := buildBalanceSection(ohmygptBalance, sbBalance, api2dBalance)
-	body += balanceSect
-
 	if util.AccountIsBrother() {
+		ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
+		sbBalance, _ := sb.GetSbBalance()
+		api2dBalance, _ := api2d.GetApi2dBalance()
+		balanceSect := buildBalanceSection(ohmygptBalance, sbBalance, api2dBalance)
+		body += balanceSect
+
 		tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
 		cnt := len(tradeNos)
 		txnTitle := fmt.Sprintf("\n# %d purchases\n", cnt)
