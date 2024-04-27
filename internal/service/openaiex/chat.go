@@ -18,12 +18,10 @@ import (
 
 var ohmygptClient *openai.Client
 var sbClient *openai.Client
-var api2dClient *openai.Client
 
 func init() {
 	ohmygptClient = createClientWithVendor(constant.Ohmygpt)
 	sbClient = createClientWithVendor(constant.OpenaiSb)
-	api2dClient = createClientWithVendor(constant.OpenaiApi2d)
 }
 
 func createClientWithVendor(aiVendor string) *openai.Client {
@@ -34,10 +32,8 @@ func createClientWithVendor(aiVendor string) *openai.Client {
 		}
 		return createClient(config.C.Ohmygpt.Key, baseUrl)
 	}
-	if aiVendor == constant.OpenaiSb {
-		return createClient(config.C.OpenaiSb.Key, config.C.OpenaiSb.BaseURL)
-	}
-	return createClient(config.C.OpenaiApi2d.Key, config.C.OpenaiApi2d.BaseURL)
+
+	return createClient(config.C.OpenaiSb.Key, config.C.OpenaiSb.BaseURL)
 }
 
 func createClient(key string, baseURL string) *openai.Client {
@@ -50,10 +46,7 @@ func getClient(vendor string) *openai.Client {
 	if vendor == constant.Ohmygpt {
 		return ohmygptClient
 	}
-	if vendor == constant.OpenaiSb {
-		return sbClient
-	}
-	return api2dClient
+	return sbClient
 }
 
 func CreateChatStream(
