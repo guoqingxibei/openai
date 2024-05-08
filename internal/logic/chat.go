@@ -45,6 +45,12 @@ func CreateChatStreamEx(
 		if isVoice {
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 		}
+
+		// special case: openaisb supports gpt-4 only currently
+		if vendor == constant.OpenaiSb && mode == constant.GPT4 {
+			model = openai.GPT4
+		}
+
 		fullReply, err = openaiex.CreateChatStream(
 			messages,
 			model,
