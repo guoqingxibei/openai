@@ -28,15 +28,24 @@ func CreateChatStreamEx(
 	isVoice bool,
 	mode string,
 ) (fullReply string) {
+	var err error = nil
+	defer func() {
+		if err != nil {
+			onFailure(user, msgId, mode, err)
+		}
+	}()
+
 	messages, err := buildMessages(user, question, mode)
 	if err != nil {
-		onFailure(user, msgId, mode, err)
 		return
 	}
 
 	model := getModel(mode)
 	// return a maximum of 3000 token (~1500 Chinese characters)
-	tokenCount := util.CalTokenCount4Messages(messages, model)
+	tokenCount, err := util.NumTokensFromMessages(messages, model)
+	if err != nil {
+		return
+	}
 	maxTokens := util.Min(5000-tokenCount, 3000)
 
 	for attemptNumber, vendor := range aiVendors {
@@ -44,11 +53,6 @@ func CreateChatStreamEx(
 		_ = store.AppendReplyChunk(msgId, startMark)
 		if isVoice {
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
-		}
-
-		// special case: openaisb supports gpt-4 only currently
-		if vendor == constant.OpenaiSb && mode == constant.GPT4 {
-			model = openai.GPT4
 		}
 
 		fullReply, err = openaiex.CreateChatStream(
@@ -66,9 +70,7 @@ func CreateChatStreamEx(
 		}
 		log.Printf("openaiex.CreateChatStream(%d, %s) failed: %v", msgId, vendor, err)
 	}
-
 	if err != nil {
-		onFailure(user, msgId, mode, err)
 		return
 	}
 
