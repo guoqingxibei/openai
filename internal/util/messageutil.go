@@ -38,14 +38,17 @@ func CalTokenCount4Messages(messages []openai.ChatCompletionMessage, model strin
 	case openai.GPT3Dot5Turbo:
 		fallthrough
 	case openai.GPT3Dot5Turbo1106:
-		return CalTokenCount4Messages(messages, openai.GPT3Dot5Turbo0301)
-	case openai.GPT4:
 		fallthrough
-	case openai.GPT4TurboPreview:
-		return CalTokenCount4Messages(messages, openai.GPT40314)
 	case openai.GPT3Dot5Turbo0301:
 		tokensPerMessage = 4
 		tokensPerName = -1
+
+	case openai.GPT4o:
+		fallthrough
+	case openai.GPT4:
+		fallthrough
+	case openai.GPT4TurboPreview:
+		fallthrough
 	case openai.GPT40314:
 		tokensPerMessage = 3
 		tokensPerName = 1
