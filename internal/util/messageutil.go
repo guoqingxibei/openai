@@ -29,6 +29,11 @@ func ParseMessages(messagesStr string) ([]openai.ChatCompletionMessage, error) {
 // NumTokensFromMessages
 // OpenAI Cookbook: https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
 func NumTokensFromMessages(messages []openai.ChatCompletionMessage, model string) (numTokens int, err error) {
+	// special case: think of gpt-4o as gpt-4 before gpt-4o is supported
+	if model == "gpt-4o" {
+		model = "gpt-4"
+	}
+
 	tkm, err := tiktoken.EncodingForModel(model)
 	if err != nil {
 		return
