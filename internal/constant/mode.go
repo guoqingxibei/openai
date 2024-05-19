@@ -11,7 +11,7 @@ const (
 
 const (
 	TimesPerQuestionGPT3        = 1
-	TimesPerQuestionGPT4        = 10
+	TimesPerQuestionGPT4        = 5
 	TimesPerQuestionDraw        = 10
 	CharCountPerTimeTTS         = 50
 	TimesPerQuestionTranslation = 1
