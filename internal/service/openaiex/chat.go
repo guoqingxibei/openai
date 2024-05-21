@@ -18,10 +18,12 @@ import (
 
 var ohmygptClient *openai.Client
 var sbClient *openai.Client
+var gptApiUsClient *openai.Client
 
 func init() {
 	ohmygptClient = createClientWithVendor(constant.Ohmygpt)
 	sbClient = createClientWithVendor(constant.OpenaiSb)
+	gptApiUsClient = createClientWithVendor(constant.GptApiUs)
 }
 
 func createClientWithVendor(aiVendor string) *openai.Client {
@@ -31,6 +33,10 @@ func createClientWithVendor(aiVendor string) *openai.Client {
 			baseUrl += "/azure"
 		}
 		return createClient(config.C.Ohmygpt.Key, baseUrl)
+	}
+
+	if aiVendor == constant.GptApiUs {
+		return createClient(config.C.GptApiUs.Key, config.C.GptApiUs.BaseURL)
 	}
 
 	return createClient(config.C.OpenaiSb.Key, config.C.OpenaiSb.BaseURL)
@@ -46,6 +52,11 @@ func getClient(vendor string) *openai.Client {
 	if vendor == constant.Ohmygpt {
 		return ohmygptClient
 	}
+
+	if vendor == constant.GptApiUs {
+		return gptApiUsClient
+	}
+
 	return sbClient
 }
 

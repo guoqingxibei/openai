@@ -21,6 +21,10 @@ type conf struct {
 		Key     string `json:"key"`
 		BaseURL string `json:"base_url"`
 	} `json:"openai_sb"`
+	GptApiUs struct {
+		Key     string `json:"key"`
+		BaseURL string `json:"base_url"`
+	} `json:"gpt_api_us"`
 	Wechat struct {
 		Token            string `json:"token"`
 		MessageUrlPrefix string `json:"message_url_prefix"`
@@ -61,7 +65,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	if C.Ohmygpt.Key == "" || C.OpenaiSb.Key == "" {
+	if C.Ohmygpt.Key == "" || C.OpenaiSb.Key == "" || C.GptApiUs.Key == "" {
 		fmt.Println("OpenAI的Key不能为空")
 		os.Exit(0)
 	}
