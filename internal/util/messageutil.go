@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/pkoukk/tiktoken-go"
 	"github.com/sashabaranov/go-openai"
-	"log"
 	"strings"
 )
 
@@ -29,11 +28,6 @@ func ParseMessages(messagesStr string) ([]openai.ChatCompletionMessage, error) {
 // NumTokensFromMessages
 // OpenAI Cookbook: https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
 func NumTokensFromMessages(messages []openai.ChatCompletionMessage, model string) (numTokens int, err error) {
-	// special case: think of gpt-4o as gpt-4 before gpt-4o is supported
-	if model == "gpt-4o" {
-		model = "gpt-4"
-	}
-
 	tkm, err := tiktoken.EncodingForModel(model)
 	if err != nil {
 		return
@@ -54,10 +48,8 @@ func NumTokensFromMessages(messages []openai.ChatCompletionMessage, model string
 		tokensPerName = -1   // if there's a name, the role is omitted
 	default:
 		if strings.Contains(model, "gpt-3.5-turbo") {
-			log.Println("warning: gpt-3.5-turbo may update over time. Returning num tokens assuming gpt-3.5-turbo-0613.")
 			return NumTokensFromMessages(messages, "gpt-3.5-turbo-0613")
 		} else if strings.Contains(model, "gpt-4") {
-			log.Println("warning: gpt-4 may update over time. Returning num tokens assuming gpt-4-0613.")
 			return NumTokensFromMessages(messages, "gpt-4-0613")
 		} else {
 			err = fmt.Errorf("num_tokens_from_messages() is not implemented for model %s. "+
