@@ -134,14 +134,7 @@ func CreateChatStream(
 }
 
 func getTimeout(model string, attemptNumber int) (timeout int) {
-	switch model {
-	case openai.GPT3Dot5Turbo:
-		fallthrough
-	case openai.GPT3Dot5Turbo1106:
-		timeout = 5 + attemptNumber*3
-	default:
-		timeout = 20 + attemptNumber*5
-	}
+	timeout = 5 + attemptNumber*3
 	return
 }
 
