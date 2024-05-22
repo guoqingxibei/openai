@@ -68,7 +68,7 @@ func CreateChatStreamEx(
 		if err == nil {
 			break
 		}
-		log.Printf("openaiex.CreateChatStream(%d, %s) failed: %v", msgId, vendor, err)
+		log.Printf("openaiex.CreateChatStream(%d, %s, %s) failed: %v", msgId, vendor, model, err)
 	}
 	if err != nil {
 		return
