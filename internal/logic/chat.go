@@ -19,7 +19,7 @@ const (
 	maxFetchTimes = 6000
 )
 
-var aiVendors = []string{constant.Openai, constant.GptApiUs, constant.Ohmygpt, constant.OpenaiSb}
+var aiVendors = []string{constant.Openai, constant.Ohmygpt, constant.OpenaiSb}
 
 func CreateChatStreamEx(
 	user string,
