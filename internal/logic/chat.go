@@ -55,6 +55,10 @@ func CreateChatStreamEx(
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 		}
 
+		// only ohmygpt support /gs feature
+		if strings.HasPrefix(question, "/gs") {
+			vendor = constant.Ohmygpt
+		}
 		fullReply, err = openaiex.CreateChatStream(
 			messages,
 			model,
