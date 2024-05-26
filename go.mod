@@ -14,7 +14,7 @@ require (
 	github.com/pkoukk/tiktoken-go v0.1.7
 	github.com/redis/go-redis/v9 v9.5.1
 	github.com/robfig/cron v1.2.0
-	github.com/sashabaranov/go-openai v1.24.0
+	github.com/sashabaranov/go-openai v1.24.1
 	github.com/silenceper/wechat/v2 v2.1.6
 	github.com/sirupsen/logrus v1.9.3
 	github.com/tcolgate/mp3 v0.0.0-20170426193717-e79c5a46d300

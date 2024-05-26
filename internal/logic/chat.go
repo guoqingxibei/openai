@@ -25,6 +25,7 @@ func CreateChatStreamEx(
 	user string,
 	msgId int64,
 	question string,
+	imageUrls []string,
 	isVoice bool,
 	mode string,
 ) (fullReply string) {
@@ -35,7 +36,7 @@ func CreateChatStreamEx(
 		}
 	}()
 
-	messages, err := buildMessages(user, question, mode)
+	messages, err := buildMessages(user, question, imageUrls, mode)
 	if err != nil {
 		return
 	}
@@ -63,6 +64,7 @@ func CreateChatStreamEx(
 			messages,
 			model,
 			maxTokens,
+			mode,
 			vendor,
 			attemptNumber,
 			func(word string) {
@@ -81,6 +83,7 @@ func CreateChatStreamEx(
 	_ = store.AppendReplyChunk(msgId, endMark)
 	messages = util.AppendAssistantMessage(messages, fullReply)
 	_ = store.SetMessages(user, messages)
+	_ = store.DelReceivedImageUrls(user)
 	return
 }
 
@@ -105,7 +108,7 @@ func onFailure(user string, msgId int64, mode string, err error) {
 	errorx.RecordError("CreateChatStreamEx() failed", err)
 }
 
-func buildMessages(user string, question string, mode string) (
+func buildMessages(user string, question string, imageUrls []string, mode string) (
 	messages []openai.ChatCompletionMessage,
 	err error,
 ) {
@@ -123,10 +126,33 @@ func buildMessages(user string, question string, mode string) (
 		return
 	}
 
-	messages = append(messages, openai.ChatCompletionMessage{
-		Role:    openai.ChatMessageRoleUser,
-		Content: question,
-	})
+	var newMessage openai.ChatCompletionMessage
+	if len(imageUrls) > 0 {
+		textPart := openai.ChatMessagePart{
+			Type: openai.ChatMessagePartTypeText,
+			Text: question,
+		}
+		multiContent := []openai.ChatMessagePart{textPart}
+		for _, url := range imageUrls {
+			multiContent = append(multiContent, openai.ChatMessagePart{
+				Type: openai.ChatMessagePartTypeImageURL,
+				ImageURL: &openai.ChatMessageImageURL{
+					URL:    url,
+					Detail: openai.ImageURLDetailAuto,
+				},
+			})
+		}
+		newMessage = openai.ChatCompletionMessage{
+			Role:         openai.ChatMessageRoleUser,
+			MultiContent: multiContent,
+		}
+	} else {
+		newMessage = openai.ChatCompletionMessage{
+			Role:    openai.ChatMessageRoleUser,
+			Content: question,
+		}
+	}
+	messages = append(messages, newMessage)
 	messages, err = util.RotateMessages(messages, getModel(mode))
 	return
 }

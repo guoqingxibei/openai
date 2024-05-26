@@ -75,6 +75,8 @@ func talk(msg *message.MixMessage) (reply *message.Reply) {
 		fallthrough
 	case message.MsgTypeText:
 		reply = onReceiveText(msg)
+	case message.MsgTypeImage:
+		reply = onReceiveImage(msg)
 	default:
 		log.Printf("未实现的消息类型: %s\n", msg.MsgType)
 		reply = util.BuildTextReply("抱歉，目前还只支持文本和语音消息哦~")

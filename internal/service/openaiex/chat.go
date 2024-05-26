@@ -74,6 +74,7 @@ func CreateChatStream(
 	messages []openai.ChatCompletionMessage,
 	model string,
 	maxTokens int,
+	mode string,
 	aiVendor string,
 	attemptNumber int,
 	processWord func(string),
@@ -81,8 +82,11 @@ func CreateChatStream(
 	req := openai.ChatCompletionRequest{
 		Model:     model,
 		Messages:  messages,
-		Stream:    true,
 		MaxTokens: maxTokens,
+		Stream:    true,
+		StreamOptions: &openai.StreamOptions{
+			IncludeUsage: true,
+		},
 	}
 	client := getClient(aiVendor)
 
@@ -123,12 +127,14 @@ func CreateChatStream(
 				content := response.Choices[0].Delta.Content
 				reply += content
 				processWord(content)
+			} else {
+				log.Println(fmt.Sprintf("[Tokens usage] %+v\n", response.Usage))
 			}
 		}
 	}()
 
 	// fail if the first word didn't reach in specified time
-	timeout := getTimeout(model, attemptNumber)
+	timeout := getTimeout(mode, attemptNumber)
 	select {
 	case <-time.After(time.Second * time.Duration(timeout)):
 		if reply == "" {
@@ -143,8 +149,14 @@ func CreateChatStream(
 	return
 }
 
-func getTimeout(model string, attemptNumber int) (timeout int) {
-	timeout = 5 + attemptNumber*3
+func getTimeout(mode string, attemptNumber int) (timeout int) {
+	base := 5
+	step := 3
+	if mode == constant.GPT4 {
+		base = 10
+		step = 5
+	}
+	timeout = base + attemptNumber*step
 	return
 }
 

@@ -68,6 +68,11 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 		return fmt.Sprintf("「%s」模式仅支持文字输入。", logic.GetModeName(mode))
 	}
 
+	imageUrls, _ := store.GetReceivedImageUrls(user)
+	if len(imageUrls) > 0 && mode != constant.GPT4 {
+		return "请切换到「GPT-4对话」模式输入你的问题(图片相关的)。"
+	}
+
 	ok, balanceTip := logic.DecreaseBalance(user, mode, question)
 	if !ok {
 		reply = balanceTip
@@ -115,7 +120,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 				question = textResult
 			}
 
-			conv.Answer = logic.CreateChatStreamEx(user, msgId, question, isVoice, mode)
+			conv.Answer = logic.CreateChatStreamEx(user, msgId, question, imageUrls, isVoice, mode)
 			replyChan <- buildReplyForChat(msgId)
 			return
 		}
