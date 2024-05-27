@@ -81,7 +81,7 @@ func sendYesterdayReportEmail() {
 Time | User | Amount | Account
 -----|------|--------|--------
 `
-			colTmpl := "%s | %s | %d | %s\n"
+			colTmpl := "%s | %s | %.1f | %s\n"
 			for _, tradeNo := range tradeNos {
 				transaction, _ := store.GetTransaction(tradeNo)
 				paidAccount := constant.Brother
