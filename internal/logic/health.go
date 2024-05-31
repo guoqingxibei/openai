@@ -94,7 +94,7 @@ Time | User | Amount | Account
 				txnContent += fmt.Sprintf(colTmpl,
 					util.FormatTime(transaction.UpdatedAt),
 					openId,
-					transaction.PriceInFen/100,
+					float64(transaction.PriceInFen)/100,
 					paidAccount,
 				)
 			}
