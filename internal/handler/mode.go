@@ -19,9 +19,16 @@ func buildModeDesc(userName string, mode string) (desc string) {
 	balance, _ := store.GetPaidBalance(userName)
 	switch mode {
 	case constant.GPT3:
-		fallthrough
-	case constant.GPT4:
 		desc = fmt.Sprintf("已切换到「%s」模式，每次对话消耗次数%d。"+
+			"你的付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。",
+			logic.GetModeName(mode),
+			logic.GetTimesPerQuestion(mode),
+			balance,
+			util.GetPayLink(userName),
+			util.GetInvitationTutorialLink(),
+		)
+	case constant.GPT4:
+		desc = fmt.Sprintf("已切换到「%s」模式，每次对话消耗次数%d，支持【发送图片】。"+
 			"你的付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。",
 			logic.GetModeName(mode),
 			logic.GetTimesPerQuestion(mode),

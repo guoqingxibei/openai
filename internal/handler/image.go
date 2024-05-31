@@ -56,7 +56,7 @@ func genReplyForImage(msg *message.MixMessage) (reply string) {
 		reply = fmt.Sprintf("【系统】已接收%d张图片(上限)，请尽快输入和图片相关的问题。",
 			count+1)
 	} else {
-		reply = fmt.Sprintf("【系统】已接收%d张图片，请尽快输入和图片相关的问题或者继续发送图片(上限%d张）。",
+		reply = fmt.Sprintf("【系统】已接收%d张图片(上限%d张），请尽快输入和图片相关的问题或者继续发送图片。",
 			count+1, maxReceivedImages)
 	}
 	return

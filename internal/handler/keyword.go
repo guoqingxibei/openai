@@ -94,21 +94,18 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 		return true, reply
 	}
 
-	// may hit code
-	if keyword == "" {
-		size := len(question)
-		if size == sizeOfCode {
-			inviter, _ := store.GetUserByInvitationCode(strings.ToUpper(question))
-			if inviter != "" {
-				reply = doInvite(inviter, msg)
-				return true, reply
-			}
-		} else if size == 36 {
-			codeDetailStr, _ := store.GetCodeDetail(question)
-			if codeDetailStr != "" {
-				reply = useCode(codeDetailStr, msg)
-				return true, reply
-			}
+	size := len(question)
+	if size == sizeOfCode { // invitation code
+		inviter, _ := store.GetUserByInvitationCode(strings.ToUpper(question))
+		if inviter != "" {
+			reply = doInvite(inviter, msg)
+			return true, reply
+		}
+	} else if size == 36 { // code to add balance
+		codeDetailStr, _ := store.GetCodeDetail(question)
+		if codeDetailStr != "" {
+			reply = useCode(codeDetailStr, msg)
+			return true, reply
 		}
 	}
 

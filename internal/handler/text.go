@@ -27,7 +27,8 @@ const (
 
 func onReceiveText(msg *message.MixMessage) (reply *message.Reply) {
 	if len(msg.Content) > maxLengthOfQuestion {
-		reply = util.BuildTextReply("哎呀，输入太长了~")
+		tip := fmt.Sprintf("输入太长了，请不要超过%d个汉字或者%d个字母。", maxLengthOfQuestion/3, maxLengthOfQuestion)
+		reply = util.BuildTextReply(tip)
 		return
 	}
 
@@ -70,7 +71,11 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 
 	imageUrls, _ := store.GetReceivedImageUrls(user)
 	if len(imageUrls) > 0 && mode != constant.GPT4 {
-		return "请切换到「GPT-4对话」模式输入你的问题(图片相关的)。"
+		tip := "请切换到「GPT-4对话」模式输入和图片相关的问题。"
+		if util.AccountIsUncle() {
+			tip = "请回复「gpt4」切换到「GPT-4对话」模式输入和图片相关的问题。"
+		}
+		return tip
 	}
 
 	ok, balanceTip := logic.DecreaseBalance(user, mode, question)
