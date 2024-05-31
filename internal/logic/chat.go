@@ -8,6 +8,7 @@ import (
 	"openai/internal/service/openaiex"
 	"openai/internal/store"
 	"openai/internal/util"
+	"slices"
 	"strings"
 	"time"
 )
@@ -17,6 +18,9 @@ const (
 	endMark   = "[END]"
 
 	maxFetchTimes = 6000
+
+	maxInputTokens  = 4000
+	maxOutputTokens = 4000 // ~2000 Chinese characters
 )
 
 var aiVendors = []string{constant.Openai, constant.Ohmygpt, constant.OpenaiSb}
@@ -41,14 +45,6 @@ func CreateChatStreamEx(
 		return
 	}
 
-	model := getModel(mode)
-	// return a maximum of 3000 token (~1500 Chinese characters)
-	tokenCount, err := util.NumTokensFromMessages(messages, model)
-	if err != nil {
-		return
-	}
-	maxTokens := util.Min(5000-tokenCount, 3000)
-
 	for attemptNumber, vendor := range aiVendors {
 		_ = store.DelReplyChunks(msgId)
 		_ = store.AppendReplyChunk(msgId, startMark)
@@ -62,9 +58,8 @@ func CreateChatStreamEx(
 		}
 		fullReply, err = openaiex.CreateChatStream(
 			messages,
-			model,
-			maxTokens,
 			mode,
+			maxOutputTokens,
 			vendor,
 			attemptNumber,
 			func(word string) {
@@ -74,7 +69,7 @@ func CreateChatStreamEx(
 		if err == nil {
 			break
 		}
-		log.Printf("openaiex.CreateChatStream(%d, %s, %s) failed: %v", msgId, vendor, model, err)
+		log.Printf("openaiex.CreateChatStream(%d, %s, %s) failed: %v", msgId, vendor, mode, err)
 	}
 	if err != nil {
 		return
@@ -87,19 +82,14 @@ func CreateChatStreamEx(
 	return
 }
 
-func getModel(mode string) (model string) {
-	switch mode {
-	case constant.GPT3:
-		model = openai.GPT3Dot5Turbo
-	case constant.GPT4:
-		model = openai.GPT4o
-	case constant.Translate:
-		model = openai.GPT3Dot5Turbo
-	}
-	return
-}
-
 func onFailure(user string, msgId int64, mode string, err error) {
+	urls, _ := store.GetReceivedImageUrls(user)
+	if len(urls) > 0 { // when input image
+		// add back count consumed by images
+		AddPaidBalance(user, GetTimesPerQuestion(mode)*len(urls))
+		_ = store.DelReceivedImageUrls(user)
+	}
+
 	AddPaidBalance(user, GetTimesPerQuestion(mode))
 	_ = store.DelReplyChunks(msgId)
 	_ = store.AppendReplyChunk(msgId, startMark)
@@ -152,8 +142,15 @@ func buildMessages(user string, question string, imageUrls []string, mode string
 			Content: question,
 		}
 	}
+
+	// gpt-3 doesn't support vision grammar
+	if mode == constant.GPT3 {
+		messages = slices.DeleteFunc(messages, func(message openai.ChatCompletionMessage) bool {
+			return len(message.MultiContent) > 0
+		})
+	}
 	messages = append(messages, newMessage)
-	messages, err = util.RotateMessages(messages, getModel(mode))
+	messages, err = rotateMessages(messages, util.GetModelByMode(mode))
 	return
 }
 
@@ -196,4 +193,25 @@ func FetchingReply(msgId int64, sendSegment func(segment string)) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+func rotateMessages(messages []openai.ChatCompletionMessage, model string) ([]openai.ChatCompletionMessage, error) {
+	tokenCount, err := calTokensForMessages(messages, model)
+	if err != nil {
+		return nil, err
+	}
+
+	for tokenCount > maxInputTokens {
+		// keep at least one message
+		if len(messages) <= 1 {
+			break
+		}
+
+		messages = messages[1:]
+		tokenCount, err = calTokensForMessages(messages, model)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return messages, nil
 }

@@ -3,6 +3,7 @@ package util
 import (
 	"github.com/disintegration/imaging"
 	"image"
+	"os"
 	"path/filepath"
 	"strconv"
 )
@@ -53,4 +54,19 @@ func SplitImage(inputImage string) ([]string, error) {
 	}
 
 	return outputImages, nil
+}
+
+func GetImageSize(imageFile string) (width int, height int, err error) {
+	reader, err := os.Open(imageFile)
+	if err != nil {
+		return
+	}
+
+	defer reader.Close()
+	im, _, err := image.DecodeConfig(reader)
+	if err != nil {
+		return
+	}
+
+	return im.Width, im.Height, err
 }

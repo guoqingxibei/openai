@@ -12,7 +12,7 @@ require (
 	github.com/gomarkdown/markdown v0.0.0-20240419095408-642f0ee99ae2
 	github.com/google/uuid v1.6.0
 	github.com/pkoukk/tiktoken-go v0.1.7
-	github.com/redis/go-redis/v9 v9.5.1
+	github.com/redis/go-redis/v9 v9.5.2
 	github.com/robfig/cron v1.2.0
 	github.com/sashabaranov/go-openai v1.24.1
 	github.com/silenceper/wechat/v2 v2.1.6

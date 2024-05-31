@@ -10,20 +10,18 @@ import (
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"golang.org/x/sync/errgroup"
 	"log"
-	"net/url"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
 	"openai/internal/service/ohmygpt"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
 	"openai/internal/util"
-	"path/filepath"
 	"runtime/debug"
 	"time"
 )
 
 const (
-	imageDir = "midjourney-images"
+	mdImageDir = constant.Temp + "/midjourney-images"
 )
 
 var ctx = context.Background()
@@ -147,13 +145,13 @@ func checkTask(taskId int) error {
 
 	if status == ohmygpt.StatusSuccess {
 		log.Printf("[task %d] Downloading image...", taskId)
-		fileName, err := downloadImage(data.ImageDcUrl)
+		filePath, err := util.DownloadFileInto(data.ImageDcUrl, mdImageDir)
 		if err != nil {
 			return err
 		}
 
 		log.Printf("[task %d] Spliting images...", taskId)
-		splitImages, err := util.SplitImage(fileName)
+		splitImages, err := util.SplitImage(filePath)
 		if err != nil {
 			return err
 		}
@@ -201,31 +199,6 @@ func sendImageToUser(image string, user string) error {
 
 	return wechat.GetAccount().
 		GetCustomerMessageManager().Send(message.NewCustomerImgMessage(user, media.MediaID))
-}
-
-func downloadImage(imageUrl string) (fileName string, err error) {
-	imageName, err := extractImageName(imageUrl)
-	if err != nil {
-		return
-	}
-
-	fileName = imageDir + "/" + imageName
-	err = util.DownloadFile(imageUrl, fileName)
-	if err != nil {
-		return
-	}
-
-	return
-}
-
-func extractImageName(imageUrl string) (imageName string, err error) {
-	parsedURL, err := url.Parse(imageUrl)
-	if err != nil {
-		return
-	}
-
-	imageName = filepath.Base(parsedURL.Path)
-	return
 }
 
 func buildTaskLockKey(taskId int) string {

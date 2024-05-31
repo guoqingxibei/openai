@@ -1,6 +1,9 @@
 package store
 
-import "time"
+import (
+	"fmt"
+	"time"
+)
 
 func buildReceivedImageUrlsKey(user string) string {
 	return "user:" + user + ":received-image-urls"
@@ -21,4 +24,16 @@ func AppendReceivedImageUrl(user string, imageUrl string) error {
 
 func DelReceivedImageUrls(user string) error {
 	return client.Del(ctx, buildReceivedImageUrlsKey(user)).Err()
+}
+
+func buildImageTokensKey(imageUrl string) string {
+	return fmt.Sprintf("image-url:%s:tokens", imageUrl)
+}
+
+func SetImageTokens(imageUrl string, tokens int) error {
+	return client.Set(ctx, buildImageTokensKey(imageUrl), tokens, 10*time.Minute).Err()
+}
+
+func GetImageTokens(imageUrl string) (int, error) {
+	return client.Get(ctx, buildImageTokensKey(imageUrl)).Int()
 }

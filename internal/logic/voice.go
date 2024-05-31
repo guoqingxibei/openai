@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	voiceDir           = "voices"
+	voiceDir           = constant.Temp + "/voices"
 	maxSegmentDuration = 60
 )
 
@@ -25,7 +25,7 @@ func GetTextFromVoice(mediaId string) (text string, err error) {
 		return
 	}
 
-	voiceFile := genVoiceFileName()
+	voiceFile := genVoiceFilePath()
 	err = util.DownloadFile(mediaURL, voiceFile)
 	if err != nil {
 		return
@@ -41,13 +41,13 @@ func GetTextFromVoice(mediaId string) (text string, err error) {
 	return
 }
 
-func genVoiceFileName() string {
+func genVoiceFilePath() string {
 	voiceId := uuid.New().String()
 	return fmt.Sprintf("%s/%s.mp3", voiceDir, voiceId)
 }
 
 func textToVoice(question string, user string, voiceSentPtr *bool) (err error) {
-	voiceFile := genVoiceFileName()
+	voiceFile := genVoiceFilePath()
 	for _, vendor := range aiVendors {
 		err = openaiex.TextToVoice(question, voiceFile, vendor)
 		if err == nil {

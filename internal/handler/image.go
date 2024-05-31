@@ -5,8 +5,13 @@ import (
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"openai/internal/constant"
 	"openai/internal/logic"
+	"openai/internal/service/errorx"
 	"openai/internal/store"
 	"openai/internal/util"
+)
+
+const (
+	maxReceivedImages = 4
 )
 
 func onReceiveImage(msg *message.MixMessage) (reply *message.Reply) {
@@ -31,7 +36,28 @@ func genReplyForImage(msg *message.MixMessage) (reply string) {
 		return balanceTip
 	}
 
-	_ = store.AppendReceivedImageUrl(user, msg.PicURL)
 	imageUrls, _ := store.GetReceivedImageUrls(user)
-	return fmt.Sprintf("【系统】已接收%d张图片，请尽快输入你的问题(关于图片的)或发送更多图片。", len(imageUrls))
+	count := len(imageUrls)
+	if count >= maxReceivedImages {
+		return fmt.Sprintf("【系统】已达到图片接收上限(%d张)，该图片被拒绝。\n\n请尽快输入和图片相关的问题。",
+			maxReceivedImages)
+	}
+
+	url := msg.PicURL
+	_ = store.AppendReceivedImageUrl(user, url)
+	go func() {
+		err := logic.CalAndStoreImageTokens(url)
+		if err != nil {
+			errorx.RecordError("CalAndStoreImageTokens() failed", err)
+		}
+	}()
+
+	if count == maxReceivedImages-1 {
+		reply = fmt.Sprintf("【系统】已接收%d张图片(上限)，请尽快输入和图片相关的问题。",
+			count+1)
+	} else {
+		reply = fmt.Sprintf("【系统】已接收%d张图片，请尽快输入和图片相关的问题或者继续发送图片(上限%d张）。",
+			count+1, maxReceivedImages)
+	}
+	return
 }

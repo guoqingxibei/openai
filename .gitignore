@@ -5,5 +5,4 @@ log/*
 test.html
 .idea
 config-*.json
-midjourney-images
-voices
+temp

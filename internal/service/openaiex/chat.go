@@ -72,15 +72,14 @@ func getClient(vendor string) *openai.Client {
 
 func CreateChatStream(
 	messages []openai.ChatCompletionMessage,
-	model string,
-	maxTokens int,
 	mode string,
+	maxTokens int,
 	aiVendor string,
 	attemptNumber int,
 	processWord func(string),
 ) (reply string, _err error) {
 	req := openai.ChatCompletionRequest{
-		Model:     model,
+		Model:     util.GetModelByMode(mode),
 		Messages:  messages,
 		MaxTokens: maxTokens,
 		Stream:    true,
@@ -128,7 +127,7 @@ func CreateChatStream(
 				reply += content
 				processWord(content)
 			} else {
-				log.Println(fmt.Sprintf("[Tokens usage] %+v\n", response.Usage))
+				log.Println(fmt.Sprintf("[TokensUsage] %+v", response.Usage))
 			}
 		}
 	}()

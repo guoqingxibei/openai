@@ -81,7 +81,6 @@ func init() {
 	if C.Wechat.Token == "" {
 		fmt.Println("未设置公众号token，公众号功能不可用")
 	}
-
 }
 
 func parseConfigFile() error {
