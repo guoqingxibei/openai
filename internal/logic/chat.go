@@ -23,7 +23,7 @@ const (
 	maxOutputTokens = 4000 // ~2000 Chinese characters
 )
 
-var aiVendors = []string{constant.Openai, constant.Ohmygpt, constant.OpenaiSb}
+var aiVendors = []string{constant.Openai, constant.Ohmygpt}
 
 func CreateChatStreamEx(
 	user string,

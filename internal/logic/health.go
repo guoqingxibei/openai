@@ -9,7 +9,6 @@ import (
 	"openai/internal/service/email"
 	"openai/internal/service/errorx"
 	"openai/internal/service/ohmygpt"
-	"openai/internal/service/sb"
 	"openai/internal/store"
 	"openai/internal/util"
 	"slices"
@@ -48,13 +47,9 @@ func checkVendorBalance() {
 	if ohmygptBalance < 30 {
 		alarm = true
 	}
-	sbBalance, _ := sb.GetSbBalance()
-	if sbBalance < 0.1 {
-		alarm = true
-	}
 	if alarm {
 		log.Println("Balance is insufficient, sending email...")
-		body := buildBalanceSection(ohmygptBalance, sbBalance)
+		body := buildBalanceSection(ohmygptBalance)
 		email.SendEmail("Insufficient Balance", body)
 	}
 	log.Println("Check finished")
@@ -68,8 +63,7 @@ func sendYesterdayReportEmail() {
 	var purchasedUsers []string
 	if util.AccountIsBrother() {
 		ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
-		sbBalance, _ := sb.GetSbBalance()
-		balanceSect := buildBalanceSection(ohmygptBalance, sbBalance)
+		balanceSect := buildBalanceSection(ohmygptBalance)
 		body += balanceSect
 
 		tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
@@ -162,17 +156,15 @@ Time | User | Amount | Account
 	email.SendEmail(subject, body)
 }
 
-func buildBalanceSection(ohmygptBalance float64, sbBalance float64) string {
+func buildBalanceSection(ohmygptBalance float64) string {
 	balanceTmpl := `
 # Balance
 Vendor | Balance
 -------|------
 %s | %.2f
-%s | %.2f
 `
 	balanceSect := fmt.Sprintf(balanceTmpl,
 		"Ohmygpt", ohmygptBalance,
-		"SB", sbBalance,
 	)
 	return balanceSect
 }

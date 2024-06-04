@@ -17,10 +17,6 @@ type conf struct {
 		BaseURL  string `json:"base_url"`
 		UseAzure bool   `json:"use_azure"`
 	} `json:"ohmygpt"`
-	OpenaiSb struct {
-		Key     string `json:"key"`
-		BaseURL string `json:"base_url"`
-	} `json:"openai_sb"`
 	GptApiUs struct {
 		Key     string `json:"key"`
 		BaseURL string `json:"base_url"`
@@ -69,7 +65,7 @@ func init() {
 		os.Exit(0)
 	}
 
-	if C.Ohmygpt.Key == "" || C.OpenaiSb.Key == "" || C.GptApiUs.Key == "" || C.Openai.Key == "" {
+	if C.Ohmygpt.Key == "" || C.GptApiUs.Key == "" || C.Openai.Key == "" {
 		fmt.Println("OpenAI的Key不能为空")
 		os.Exit(0)
 	}
