@@ -20,9 +20,7 @@ import (
 )
 
 const (
-	maxLengthOfReply     = 4000
-	maxRuneLengthOfReply = 200
-	maxLengthOfQuestion  = 3000 // ~ 1000 Chinese characters
+	maxLengthOfQuestion = 3000 // ~ 1000 Chinese characters
 )
 
 func onReceiveText(msg *message.MixMessage) (reply *message.Reply) {
@@ -86,6 +84,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 
 	replyIsLate := false
 	replyChan := make(chan string, 1)
+	reachMaxLengthChan := make(chan bool, 1)
 	voiceSent := false
 	go func() {
 		defer func() {
@@ -125,8 +124,8 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 				question = textResult
 			}
 
-			conv.Answer = logic.CreateChatStreamEx(user, msgId, question, imageUrls, isVoice, mode)
-			replyChan <- buildReplyForChat(msgId)
+			conv.Answer = logic.CreateChatStreamEx(user, msgId, question, imageUrls, isVoice, mode, reachMaxLengthChan)
+			replyChan <- buildFlexibleReply(msgId)
 			return
 		}
 
@@ -148,6 +147,8 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 	}()
 	select {
 	case reply = <-replyChan:
+	case <-reachMaxLengthChan: // only for text reply
+		reply = buildFlexibleReply(msgId)
 	case <-time.After(time.Millisecond * 3000):
 		if mode == constant.Draw || mode == constant.TTS {
 			replyIsLate = true
@@ -165,35 +166,35 @@ func buildLateReply(msgId int64, mode string) (reply string) {
 	} else if mode == constant.TTS {
 		reply = "转换中，静候佳音..."
 	} else {
-		reply = buildReplyForChat(msgId)
+		reply = buildFlexibleReply(msgId)
 	}
 	return
 }
 
-func buildReplyForChat(msgId int64) string {
+func buildFlexibleReply(msgId int64) string {
 	reply, reachEnd := logic.FetchReply(msgId)
-	if len(reply) > maxLengthOfReply {
-		reply = buildReplyWithShowMore(string([]rune(reply)[:maxRuneLengthOfReply]), msgId)
-	} else {
-		if reachEnd {
-			// Intent to display internal images via web
-			if strings.Contains(reply, "![](./images/") {
-				runes := []rune(reply)
-				length := len(runes)
-				if length > 30 {
-					length = 30
-				}
-				reply = buildReplyWithShowMore(string(runes[:length]), msgId)
-			}
-		} else {
-			if reply == "" {
-				reply = buildReplyURL(msgId, "查看回复")
-			} else {
-				reply = buildReplyWithShowMore(reply, msgId)
-			}
-		}
+	reply = strings.TrimSpace(reply)
+	if logic.ReplyIsTooLong(reply) {
+		return buildReplyWithShowMore(truncateReply(reply), msgId)
 	}
-	return strings.TrimSpace(reply)
+
+	if reachEnd {
+		return reply
+	}
+
+	if reply == "" {
+		return buildReplyURL(msgId, "查看回复")
+	}
+
+	return buildReplyWithShowMore(reply, msgId)
+}
+
+func truncateReply(reply string) string {
+	maxLength := constant.MaxRuneLengthOfChineseReply
+	if util.IsEnglishSentence(reply) {
+		maxLength = constant.MaxRuneLengthOfEnglishReply
+	}
+	return string([]rune(reply)[:maxLength])
 }
 
 func buildReplyWithShowMore(answer string, msgId int64) string {

@@ -50,3 +50,7 @@ func MarkdownToHtml(md string) string {
 
 	return string(markdown.Render(doc, renderer))
 }
+
+func GetRuneLength(s string) int {
+	return len([]rune(s))
+}
