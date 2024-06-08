@@ -25,11 +25,8 @@ OPTIONS="--rm -v .:${WORKDIR} -v ./temp/go-pkg-mod:/go/pkg/mod -w ${WORKDIR} -e 
 docker run ${OPTIONS} ${IMAGE} go build -o ${BIN_PATH}
 
 HK=47.56.184.46
-ssh root@$HK "cd /root/${FULL_SERVICE_NAME}/ \
-&& git fetch && git reset --hard origin/${BRANCH} \
-&& rm -f /root/${FULL_SERVICE_NAME}/${FULL_SERVICE_NAME}"
-
-scp ${BIN_PATH} root@$HK:/root/${FULL_SERVICE_NAME}/
-
+TARGET_BIN_PATH=/root/${FULL_SERVICE_NAME}/${FULL_SERVICE_NAME}
+ssh root@$HK "rm ${TARGET_BIN_PATH}"
+scp ${BIN_PATH} root@$HK:${TARGET_BIN_PATH}
 ssh root@$HK "chown -R ${FULL_SERVICE_NAME}:${FULL_SERVICE_NAME} /root/${FULL_SERVICE_NAME}/ \
 && systemctl restart ${FULL_SERVICE_NAME}"

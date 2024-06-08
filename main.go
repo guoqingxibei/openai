@@ -32,8 +32,6 @@ func main() {
 	}
 	handlerWithRequestLog := bootstrap.LogRequestHandler(engine)
 
-	http.Handle("/answer/", http.StripPrefix("/answer", http.FileServer(http.Dir("./public"))))
-	http.Handle("/images/", http.FileServer(http.Dir("./public")))
 	http.Handle("/", handlerWithRequestLog)
 
 	log.Println("Server started in port " + config.C.Http.Port)
