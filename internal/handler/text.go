@@ -210,6 +210,6 @@ func trimTailingPuncts(answer string) string {
 }
 
 func buildReplyURL(msgId int64, desc string) string {
-	url := config.C.Wechat.MessageUrlPrefix + "/answer/#/?msgId=" + strconv.FormatInt(msgId, 10)
+	url := config.C.Wechat.MessageUrlPrefix + "/answer?msgId=" + strconv.FormatInt(msgId, 10)
 	return fmt.Sprintf("<a href=\"%s\">%s</a>", url, desc)
 }
