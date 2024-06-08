@@ -46,7 +46,7 @@ func CreateChatStreamEx(
 		return
 	}
 
-	reply := ""
+	replyLen := 0
 	chanSent := false
 	for attemptNumber, vendor := range aiVendors {
 		_ = store.DelReplyChunks(msgId)
@@ -67,8 +67,8 @@ func CreateChatStreamEx(
 			attemptNumber,
 			func(word string) {
 				_ = store.AppendReplyChunk(msgId, word)
-				reply += word
-				if !chanSent && ReplyIsTooLong(reply) {
+				replyLen += util.GetVisualLength(word)
+				if !chanSent && replyLen > constant.MaxVisualLengthOfReply {
 					reachMaxLengthChan <- true
 					chanSent = true
 				}
@@ -88,15 +88,6 @@ func CreateChatStreamEx(
 	_ = store.SetMessages(user, messages)
 	_ = store.DelReceivedImageUrls(user)
 	return
-}
-
-func ReplyIsTooLong(str string) bool {
-	runeLength := util.GetRuneLength(str)
-	if util.IsEnglishSentence(str) {
-		return runeLength > constant.MaxRuneLengthOfEnglishReply
-	}
-
-	return runeLength > constant.MaxRuneLengthOfChineseReply
 }
 
 func onFailure(user string, msgId int64, mode string, err error) {

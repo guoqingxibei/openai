@@ -5,6 +5,7 @@ const (
 )
 
 const (
-	MaxRuneLengthOfChineseReply = 150
-	MaxRuneLengthOfEnglishReply = 400
+	// MaxVisualLengthOfReply
+	// 10 lines, 30 visual units long per line
+	MaxVisualLengthOfReply = 300
 )

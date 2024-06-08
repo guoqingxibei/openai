@@ -54,3 +54,35 @@ func MarkdownToHtml(md string) string {
 func GetRuneLength(s string) int {
 	return len([]rune(s))
 }
+
+// GetVisualLength
+// 1 English char is 1 visual unit
+// 1 Chinese char is 2 visual units
+func GetVisualLength(s string) int {
+	length := 0
+	for _, r := range s {
+		length += getVisualLengthOfChar(r)
+	}
+	return length
+}
+
+func TruncateReplyVisually(s string, visualLength int) string {
+	truncatedReply := ""
+	length := 0
+	for _, r := range s {
+		if length > visualLength {
+			break
+		}
+		length += getVisualLengthOfChar(r)
+		truncatedReply += string(r)
+	}
+	return truncatedReply
+}
+
+func getVisualLengthOfChar(r rune) int {
+	if r > unicode.MaxASCII {
+		return 2
+	}
+
+	return 1
+}

@@ -174,8 +174,9 @@ func buildLateReply(msgId int64, mode string) (reply string) {
 func buildFlexibleReply(msgId int64) string {
 	reply, reachEnd := logic.FetchReply(msgId)
 	reply = strings.TrimSpace(reply)
-	if logic.ReplyIsTooLong(reply) {
-		return buildReplyWithShowMore(truncateReply(reply), msgId)
+	if util.GetVisualLength(reply) > constant.MaxVisualLengthOfReply {
+		truncatedReply := util.TruncateReplyVisually(reply, constant.MaxVisualLengthOfReply)
+		return buildReplyWithShowMore(truncatedReply, msgId)
 	}
 
 	if reachEnd {
@@ -187,14 +188,6 @@ func buildFlexibleReply(msgId int64) string {
 	}
 
 	return buildReplyWithShowMore(reply, msgId)
-}
-
-func truncateReply(reply string) string {
-	maxLength := constant.MaxRuneLengthOfChineseReply
-	if util.IsEnglishSentence(reply) {
-		maxLength = constant.MaxRuneLengthOfEnglishReply
-	}
-	return string([]rune(reply)[:maxLength])
 }
 
 func buildReplyWithShowMore(answer string, msgId int64) string {
