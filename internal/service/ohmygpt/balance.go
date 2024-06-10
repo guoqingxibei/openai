@@ -2,8 +2,9 @@ package ohmygpt
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
+	"log/slog"
 	"net/http"
 	"openai/internal/config"
 	"openai/internal/util"
@@ -40,10 +41,10 @@ func GetOhmygptBalance() (float64, error) {
 	}
 	var resp balanceResponse
 	_ = json.Unmarshal(body, &resp)
-	log.Printf("[GetOhmygptBalanceAPI] Duration: %dms, response: 「%s」",
+	slog.Info(fmt.Sprintf("[GetOhmygptBalanceAPI] Duration: %dms, response: 「%s」",
 		int(time.Since(start).Milliseconds()),
 		util.EscapeNewline(string(body)),
-	)
+	))
 	balanceFloat, err := strconv.ParseFloat(resp.Data.Balance, 32)
 	return balanceFloat / 34000, nil
 }

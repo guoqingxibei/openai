@@ -3,7 +3,7 @@ package logic
 import (
 	"fmt"
 	"github.com/robfig/cron"
-	"log"
+	"log/slog"
 	"openai/internal/constant"
 	"openai/internal/model"
 	"openai/internal/service/email"
@@ -41,18 +41,18 @@ func init() {
 }
 
 func checkVendorBalance() {
-	log.Println("Checking balance of vendors...")
+	slog.Info("Checking balance of vendors...")
 	alarm := false
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
 	if ohmygptBalance < 30 {
 		alarm = true
 	}
 	if alarm {
-		log.Println("Balance is insufficient, sending email...")
+		slog.Info("Balance is insufficient, sending email...")
 		body := buildBalanceSection(ohmygptBalance)
 		email.SendEmail("Insufficient Balance", body)
 	}
-	log.Println("Check finished")
+	slog.Info("Check finished")
 }
 
 func sendYesterdayReportEmail() {

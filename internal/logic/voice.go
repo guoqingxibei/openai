@@ -5,7 +5,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/silenceper/wechat/v2/officialaccount/material"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"log"
+	"log/slog"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
 	"openai/internal/service/openaiex"
@@ -36,7 +36,7 @@ func GetTextFromVoice(mediaId string) (text string, err error) {
 		if err == nil {
 			break
 		}
-		log.Printf("openaiex.VoiceToText(%s) failed %v", vendor, err)
+		slog.Error("openaiex.VoiceToText() failed", "vendor", vendor, "error", err)
 	}
 	return
 }
@@ -53,7 +53,7 @@ func textToVoice(question string, user string, voiceSentPtr *bool) (err error) {
 		if err == nil {
 			break
 		}
-		log.Printf("openaiex.TextToVoice(%s) failed %v", vendor, err)
+		slog.Error("openaiex.TextToVoice() failed", "vendor", vendor, "error", err)
 	}
 	if err != nil {
 		return

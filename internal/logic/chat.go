@@ -2,7 +2,7 @@ package logic
 
 import (
 	"github.com/sashabaranov/go-openai"
-	"log"
+	"log/slog"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
 	"openai/internal/service/openaiex"
@@ -77,7 +77,8 @@ func CreateChatStreamEx(
 		if err == nil {
 			break
 		}
-		log.Printf("openaiex.CreateChatStream(%d, %s, %s) failed: %v", msgId, vendor, mode, err)
+		slog.Error("openaiex.CreateChatStream() failed",
+			"msgId", msgId, "vendor", vendor, "mode", mode, "error", err)
 	}
 	if err != nil {
 		return

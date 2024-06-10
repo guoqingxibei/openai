@@ -6,7 +6,7 @@ import (
 	"github.com/pkoukk/tiktoken-go"
 	"github.com/redis/go-redis/v9"
 	"github.com/sashabaranov/go-openai"
-	"log"
+	"log/slog"
 	"openai/internal/store"
 	"strings"
 )
@@ -56,7 +56,7 @@ func calTokensForMessages(messages []openai.ChatCompletionMessage, model string)
 					url := part.ImageURL.URL
 					tokens, err := store.GetImageTokens(url)
 					if errors.Is(err, redis.Nil) {
-						log.Printf("No tokens found for image %s", url)
+						slog.Info("No tokens found for image", "url", url)
 						tokens = 85
 					}
 					numTokens += tokens + 8

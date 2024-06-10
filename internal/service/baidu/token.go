@@ -7,7 +7,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron"
 	"io/ioutil"
-	"log"
+	"log/slog"
 	"net/http"
 	"openai/internal/config"
 	"openai/internal/service/errorx"
@@ -57,13 +57,13 @@ func refreshAccessToken() (string, error) {
 		errorx.RecordError("generateAccessToken() failed", err)
 		return "", err
 	}
-	log.Println("New Baidu API access token is " + token)
+	slog.Info("New Baidu API access token is " + token)
 	err = store.SetBaiduApiAccessToken(token, time.Second*time.Duration(expiresIn))
 	if err != nil {
-		log.Println("store.SetBaiduApiAccessToken failed", err)
+		slog.Error("store.SetBaiduApiAccessToken failed", "error", err)
 		return "", err
 	}
-	log.Println("Refreshed Baidu API access token")
+	slog.Info("Refreshed Baidu API access token")
 	return token, nil
 }
 

@@ -5,7 +5,7 @@ import (
 	"errors"
 	"github.com/go-pay/gopay"
 	"github.com/go-pay/gopay/wechat/v3"
-	"log"
+	"log/slog"
 	"openai/internal/config"
 	"openai/internal/service/errorx"
 	"openai/internal/util"
@@ -77,7 +77,7 @@ func InitiateTransaction(openid string, tradeNo string, total int, description s
 		errorx.RecordError("client.V3TransactionJsapi() failed", errors.New(wxRsp.Error))
 		return "", errors.New("wxRsp error")
 	}
-	log.Printf("wxRsp: %+v", wxRsp.Response)
+	slog.Info("InitiateTransaction", "wxRsp.Response", wxRsp.Response)
 	return wxRsp.Response.PrepayId, nil
 }
 

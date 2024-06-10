@@ -2,7 +2,7 @@ package email
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/smtp"
 	"openai/internal/config"
 	"openai/internal/constant"
@@ -39,7 +39,7 @@ Content-Type: text/html;
 		[]byte(msg),
 	)
 	if err != nil {
-		log.Println("smtp.SendMail() failed", err)
+		slog.Error("smtp.SendMail() failed", "error", err)
 		return
 	}
 }

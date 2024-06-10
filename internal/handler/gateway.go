@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"log"
+	"log/slog"
 	"net/http"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
@@ -63,12 +63,12 @@ func talk(msg *message.MixMessage) (reply *message.Reply) {
 		case message.EventSubscribe:
 			reply = onSubscribe(msg)
 		case message.EventUnsubscribe:
-			log.Println("取消关注:", msg.FromUserName)
+			slog.Info("取消关注:" + string(msg.FromUserName))
 			reply = util.BuildTextReply("")
 		case message.EventClick:
 			reply = onClick(msg)
 		default:
-			log.Printf("未实现的事件: %s\n", msg.Event)
+			slog.Info(fmt.Sprintf("未实现的事件: %s", msg.Event))
 			reply = util.BuildTextReply("")
 		}
 	case message.MsgTypeVoice:
@@ -78,7 +78,7 @@ func talk(msg *message.MixMessage) (reply *message.Reply) {
 	case message.MsgTypeImage:
 		reply = onReceiveImage(msg)
 	default:
-		log.Printf("未实现的消息类型: %s\n", msg.MsgType)
+		slog.Info(fmt.Sprintf("未实现的消息类型: %s", msg.MsgType))
 		reply = util.BuildTextReply("抱歉，目前还只支持文本和语音消息哦~")
 	}
 	return

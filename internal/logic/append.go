@@ -1,7 +1,7 @@
 package logic
 
 import (
-	"log"
+	"log/slog"
 	"openai/internal/store"
 )
 
@@ -12,7 +12,7 @@ const (
 func incUsedTimes(user string) int {
 	times, err := store.IncUsedTimes(user)
 	if err != nil {
-		log.Println("store.IncUsedTimes() failed", err)
+		slog.Error("store.IncUsedTimes() failed", "error", err)
 		return 0
 	}
 	return times

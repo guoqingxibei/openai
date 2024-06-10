@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/go-pay/gopay"
 	"github.com/go-pay/gopay/wechat/v3"
-	"log"
+	"log/slog"
 	"net/http"
 	"openai/internal/logic"
 	"openai/internal/service/errorx"
@@ -74,7 +74,7 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 
 	result, err := wechatService.VerifySignAndDecrypt(notifyReq)
 	if err != nil {
-		log.Println("wechatService.VerifySignAndDecrypt() failed", err)
+		slog.Error("wechatService.VerifySignAndDecrypt() failed", "error", err)
 		fail(w)
 		return
 	}

@@ -2,10 +2,11 @@ package bootstrap
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/felixge/httpsnoop"
 	"io"
 	"io/ioutil"
-	"log"
+	"log/slog"
 	"net/http"
 	"openai/internal/util"
 	"strings"
@@ -101,7 +102,7 @@ func requestGetRemoteAddress(r *http.Request) string {
 }
 
 func logHTTPReq(ri *HTTPReqInfo) {
-	log.Printf("[HTTP] %s %s %d %dms %s %dB 「%s」",
+	slog.Info(fmt.Sprintf("[HTTP] %s %s %d %dms %s %dB 「%s」",
 		ri.method,
 		ri.uri,
 		ri.code,
@@ -109,6 +110,6 @@ func logHTTPReq(ri *HTTPReqInfo) {
 		ri.ipaddr,
 		ri.size,
 		util.EscapeNewline(ri.body),
-	)
+	))
 	return
 }

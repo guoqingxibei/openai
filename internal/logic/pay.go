@@ -2,7 +2,7 @@ package logic
 
 import (
 	"github.com/go-pay/util"
-	"log"
+	"log/slog"
 	"openai/internal/model"
 	"openai/internal/service/wechat"
 	"openai/internal/store"
@@ -16,7 +16,7 @@ func InitiateTransaction(
 	times int,
 	description string) (string, string, error) {
 	tradeNo := util.RandomString(32)
-	log.Println("tradeNo:", tradeNo)
+	slog.Info("InitiateTransaction", "tradeNo", tradeNo)
 	prepayId, err := wechat.InitiateTransaction(openid, tradeNo, priceInFen, description)
 	if err != nil {
 		return "", "", err

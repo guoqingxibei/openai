@@ -2,9 +2,10 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"log"
+	"log/slog"
 	"openai/internal/constant"
 	"openai/internal/logic"
 	"openai/internal/model"
@@ -68,7 +69,7 @@ func doGenerateCode(question string) (reply *message.Reply) {
 		quantityStr := fields[2]
 		quantity, err = strconv.Atoi(quantityStr)
 		if err != nil {
-			log.Printf("quantityStr is %s, strconv.Atoi error is %v", quantityStr, err)
+			slog.Info(fmt.Sprintf("quantityStr is %s, strconv.Atoi error is %v", quantityStr, err))
 			return util.BuildTextReply("Invalid generate-code usage")
 		}
 	}

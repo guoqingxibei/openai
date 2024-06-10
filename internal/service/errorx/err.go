@@ -2,7 +2,7 @@ package errorx
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"openai/internal/model"
 	"openai/internal/service/email"
 	"openai/internal/store"
@@ -12,7 +12,7 @@ import (
 
 func RecordError(title string, err error) {
 	go func() {
-		log.Println(title, err)
+		slog.Error(title, "error", err)
 		myErr := model.MyError{
 			Title:  title,
 			Detail: err.Error(),

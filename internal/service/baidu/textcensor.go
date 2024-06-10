@@ -2,8 +2,9 @@ package baidu
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
-	"log"
+	"log/slog"
 	"net/http"
 	"openai/internal/service/errorx"
 	"openai/internal/util"
@@ -48,11 +49,11 @@ func Censor(text string) bool {
 	}
 	var censorResp censorResponse
 	_ = json.Unmarshal(body, &censorResp)
-	log.Printf("[CensorAPI] Conclusion: %s, duration: %dms, text: 「%s」, detail: %s",
+	slog.Info(fmt.Sprintf("[CensorAPI] Conclusion: %s, duration: %dms, text: 「%s」, detail: %s",
 		censorResp.Conclusion,
 		int(time.Since(start).Milliseconds()),
 		util.EscapeNewline(text),
 		string(body),
-	)
+	))
 	return censorResp.Conclusion == "" || censorResp.Conclusion == "合规"
 }

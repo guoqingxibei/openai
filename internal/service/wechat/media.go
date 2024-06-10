@@ -6,7 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/robfig/cron"
 	"github.com/silenceper/wechat/v2/officialaccount/material"
-	"log"
+	"log/slog"
 	"openai/internal/service/errorx"
 	"openai/internal/store"
 	"os"
@@ -41,7 +41,7 @@ func initMediaId(imageName string) {
 		if errors.Is(err, redis.Nil) {
 			_, _ = refreshImage(imageName)
 		} else {
-			log.Println("store.GetMediaId failed", err)
+			slog.Error("store.GetMediaId failed", "error", err)
 		}
 	}
 
@@ -81,10 +81,10 @@ func refreshImage(imageName string) (string, error) {
 	}
 	err = store.SetMediaId(mediaId, imageName, time.Hour*24*2)
 	if err != nil {
-		log.Println("store.SetMediaId() failed", err)
+		slog.Error("store.SetMediaId() failed", "error", err)
 		return "", err
 	}
-	log.Printf("Refreshed the media id of %s", imageName)
+	slog.Info(fmt.Sprintf("Refreshed the media id of %s", imageName))
 	return mediaId, nil
 }
 

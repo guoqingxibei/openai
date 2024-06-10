@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"github.com/sashabaranov/go-openai"
 	"io"
-	"log"
+	"log/slog"
 	"openai/internal/config"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
@@ -117,7 +117,7 @@ func CreateChatStream(
 				reply += content
 				processWord(content)
 			} else {
-				log.Println(fmt.Sprintf("[TokensUsage] %+v", response.Usage))
+				slog.Info("[TokensUsage]", "Usage", response.Usage)
 			}
 		}
 	}()
@@ -152,11 +152,11 @@ func getTimeout(mode string, attemptNumber int) (timeout int) {
 func TransToEng(original string, vendor string) (trans string, err error) {
 	start := time.Now()
 	defer func() {
-		log.Printf("[TransToEngAPI] Duration: %dms, original: 「%s」,trans: 「%s」",
+		slog.Info(fmt.Sprintf("[TransToEngAPI] Duration: %dms, original: 「%s」,trans: 「%s」",
 			int(time.Since(start).Milliseconds()),
 			original,
 			util.EscapeNewline(trans),
-		)
+		))
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)

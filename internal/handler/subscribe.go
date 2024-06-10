@@ -4,7 +4,7 @@ import (
 	"errors"
 	"github.com/redis/go-redis/v9"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"log"
+	"log/slog"
 	"openai/internal/store"
 	"openai/internal/util"
 	"time"
@@ -12,7 +12,7 @@ import (
 
 func onSubscribe(msg *message.MixMessage) *message.Reply {
 	userName := string(msg.FromUserName)
-	log.Println("新增关注:", userName)
+	slog.Info("新增关注:" + userName)
 	_, err := store.GetSubscribeTimestamp(userName)
 	if errors.Is(err, redis.Nil) {
 		_ = store.SetSubscribeTimestamp(userName, time.Now().Unix())

@@ -1,8 +1,9 @@
 package util
 
 import (
+	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -34,11 +35,11 @@ func DownloadFile(url string, path string) (err error) {
 		return
 	}
 
-	log.Printf("[DownloadFileAPI] Duration: %dms, path: %s, fileUrl: %s",
+	slog.Info(fmt.Sprintf("[DownloadFileAPI] Duration: %dms, path: %s, fileUrl: %s",
 		int(time.Since(start).Milliseconds()),
 		path,
 		url,
-	)
+	))
 	return
 }
 

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/redis/go-redis/v9"
-	"log"
+	"log/slog"
 	"openai/internal/constant"
 	"openai/internal/store"
 	"openai/internal/util"
@@ -144,12 +144,12 @@ func GetBalance(user string) int {
 			quota := GetQuota(user)
 			err := SetBalanceOfToday(user, quota)
 			if err != nil {
-				log.Println("SetBalanceOfToday() failed", err)
+				slog.Error("SetBalanceOfToday() failed", "error", err)
 				return 0
 			}
 			return quota
 		}
-		log.Println("fetchBalanceOfToday() failed", err)
+		slog.Error("fetchBalanceOfToday() failed", "error", err)
 		return 0
 	}
 	return balance

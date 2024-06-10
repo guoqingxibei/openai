@@ -1,14 +1,15 @@
 package handler
 
 import (
+	"fmt"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
-	"log"
+	"log/slog"
 	"openai/internal/constant"
 	"openai/internal/logic"
 )
 
 func onClick(msg *message.MixMessage) (reply *message.Reply) {
-	log.Printf("%s clicked the button 「%s」", msg.FromUserName, msg.EventKey)
+	slog.Info(fmt.Sprintf("%s clicked the button 「%s」", msg.FromUserName, msg.EventKey))
 	switch msg.EventKey {
 	case constant.GPT3:
 		fallthrough

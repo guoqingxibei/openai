@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/silenceper/wechat/v2/officialaccount/menu"
 	"io/ioutil"
-	"log"
+	"log/slog"
 	"openai/internal/service/errorx"
 )
 
@@ -32,5 +32,5 @@ func createOrUpdateMenu() {
 		errorx.RecordError("SetMenu() failed", err)
 		return
 	}
-	log.Println("Refreshed wechat menu")
+	slog.Info("Refreshed wechat menu")
 }

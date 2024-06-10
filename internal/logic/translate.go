@@ -1,7 +1,7 @@
 package logic
 
 import (
-	"log"
+	"log/slog"
 	"openai/internal/service/openaiex"
 )
 
@@ -11,7 +11,7 @@ func transToEngEx(original string) (trans string, err error) {
 		if err == nil {
 			break
 		}
-		log.Printf("openaiex.TransToEng(%s) failed %v", vendor, err)
+		slog.Error("openaiex.TransToEng() failed", "vendor", vendor, "error", err)
 	}
 	return
 }

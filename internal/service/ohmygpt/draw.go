@@ -2,9 +2,10 @@ package ohmygpt
 
 import (
 	"encoding/json"
+	"fmt"
 	"github.com/go-http-utils/headers"
 	"io/ioutil"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"openai/internal/config"
@@ -85,11 +86,11 @@ func SubmitDrawTask(prompt string) (response *TaskResponse, err error) {
 	}
 
 	_ = json.Unmarshal(body, response)
-	log.Printf("[SubmitDrawTaskAPI] Duration: %dms, prompt: 「%s」,response: 「%s」",
+	slog.Info(fmt.Sprintf("[SubmitDrawTaskAPI] Duration: %dms, prompt: 「%s」,response: 「%s」",
 		int(time.Since(start).Milliseconds()),
 		prompt,
 		util.EscapeNewline(string(body)),
-	)
+	))
 	return
 }
 
@@ -126,10 +127,10 @@ func GetTaskStatus(taskId int) (statusResp *StatusResponse, err error) {
 	}
 
 	_ = json.Unmarshal(body, &statusResp)
-	log.Printf("[GetTaskStatusAPI] Duration: %dms, taskId: %d, response: 「%s」",
+	slog.Info(fmt.Sprintf("[GetTaskStatusAPI] Duration: %dms, taskId: %d, response: 「%s」",
 		int(time.Since(start).Milliseconds()),
 		taskId,
 		util.EscapeNewline(string(body)),
-	)
+	))
 	return
 }

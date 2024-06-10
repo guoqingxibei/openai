@@ -9,7 +9,7 @@ import (
 	"github.com/silenceper/wechat/v2/officialaccount/material"
 	"github.com/silenceper/wechat/v2/officialaccount/message"
 	"golang.org/x/sync/errgroup"
-	"log"
+	"log/slog"
 	"openai/internal/constant"
 	"openai/internal/service/errorx"
 	"openai/internal/service/ohmygpt"
@@ -111,14 +111,14 @@ func checkTask(taskId int) error {
 	defer func() {
 		lock.Release(ctx)
 		if !errors.Is(err, redislock.ErrNotObtained) {
-			log.Printf("[task %d] Released task lock", taskId)
+			slog.Info(fmt.Sprintf("[task %d] Released task lock", taskId))
 		}
 	}()
 	if errors.Is(err, redislock.ErrNotObtained) {
 		return nil
 	}
 
-	log.Printf("[task %d] Obtained task lock, continue to check", taskId)
+	slog.Info(fmt.Sprintf("[task %d] Obtained task lock, continue to check", taskId))
 	statusResp, err := ohmygpt.GetTaskStatus(taskId)
 	if err != nil {
 		return err
@@ -136,21 +136,21 @@ func checkTask(taskId int) error {
 	data := statusResp.Data
 	status := data.Status
 	action := data.Action
-	log.Printf("[task %d] Status is %s, action is %s, user is %s", taskId, status, action, user)
+	slog.Info(fmt.Sprintf("[task %d] Status is %s, action is %s, user is %s", taskId, status, action, user))
 	if time.Now().After(data.SubmitTime.Add(time.Minute * 30)) {
 		onTaskFinished(user, taskId, false)
-		log.Printf("[task %d] Abandoned this task due to timeout", taskId)
+		slog.Info(fmt.Sprintf("[task %d] Abandoned this task due to timeout", taskId))
 		return errors.New("abandoned this task due to timeout")
 	}
 
 	if status == ohmygpt.StatusSuccess {
-		log.Printf("[task %d] Downloading image...", taskId)
+		slog.Info(fmt.Sprintf("[task %d] Downloading image...", taskId))
 		filePath, err := util.DownloadFileInto(data.ImageDcUrl, mdImageDir)
 		if err != nil {
 			return err
 		}
 
-		log.Printf("[task %d] Spliting images...", taskId)
+		slog.Info(fmt.Sprintf("[task %d] Spliting images...", taskId))
 		splitImages, err := util.SplitImage(filePath)
 		if err != nil {
 			return err
@@ -160,7 +160,7 @@ func checkTask(taskId int) error {
 		for _, splitImage := range splitImages {
 			splitImage := splitImage
 			g.Go(func() error {
-				log.Printf("[task %d] Sending image to user...", taskId)
+				slog.Info(fmt.Sprintf("[task %d] Sending image to user...", taskId))
 				return sendSplitImageToUser(splitImage, user)
 			})
 		}
@@ -169,7 +169,7 @@ func checkTask(taskId int) error {
 			return err
 		}
 
-		log.Printf("[task %d] Took %fs", taskId, time.Since(data.SubmitTime).Seconds())
+		slog.Info(fmt.Sprintf("[task %d] Took %fs", taskId, time.Since(data.SubmitTime).Seconds()))
 		onTaskFinished(user, taskId, true)
 		return nil
 	}
@@ -183,11 +183,11 @@ func checkTask(taskId int) error {
 		}
 
 		onTaskFinished(user, taskId, false)
-		log.Printf("[task %d] Abandoned this task due to failure, failure reason is 「%s」", taskId, data.FailReason)
+		slog.Info(fmt.Sprintf("[task %d] Abandoned this task due to failure, failure reason is 「%s」", taskId, data.FailReason))
 		return nil
 	}
 
-	log.Printf("[task %d] Skipped", taskId)
+	slog.Info(fmt.Sprintf("[task %d] Skipped", taskId))
 	return nil
 }
 

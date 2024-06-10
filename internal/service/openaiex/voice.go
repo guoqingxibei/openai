@@ -2,9 +2,10 @@ package openaiex
 
 import (
 	"context"
+	"fmt"
 	"github.com/sashabaranov/go-openai"
 	"io"
-	"log"
+	"log/slog"
 	"openai/internal/util"
 	"os"
 	"path/filepath"
@@ -15,11 +16,11 @@ import (
 func VoiceToText(voiceFile string, vendor string) (text string, err error) {
 	start := time.Now()
 	defer func() {
-		log.Printf("[VoiceToText] Duration: %dms, voiceFile: 「%s」,text: 「%s」",
+		slog.Info(fmt.Sprintf("[VoiceToText] Duration: %dms, voiceFile: 「%s」,text: 「%s」",
 			int(time.Since(start).Milliseconds()),
 			voiceFile,
 			util.EscapeNewline(text),
-		)
+		))
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
@@ -39,10 +40,10 @@ func VoiceToText(voiceFile string, vendor string) (text string, err error) {
 func TextToVoice(text string, voiceFile string, vendor string) (err error) {
 	start := time.Now()
 	defer func() {
-		log.Printf("[TextToVoice] Duration: %dms, text: 「%s」",
+		slog.Info(fmt.Sprintf("[TextToVoice] Duration: %dms, text: 「%s」",
 			int(time.Since(start).Milliseconds()),
 			text,
-		)
+		))
 	}()
 
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*300)

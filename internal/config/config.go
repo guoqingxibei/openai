@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"os"
 )
 
@@ -61,12 +62,12 @@ var (
 func init() {
 	// 尝试加载配置文件，否则使用参数
 	if err := parseConfigFile(); err != nil {
-		fmt.Println("缺少配置文件 config-" + env + ".json")
+		slog.Error("缺少配置文件 config-" + env + ".json")
 		os.Exit(0)
 	}
 
 	if C.Ohmygpt.Key == "" || C.GptApiUs.Key == "" || C.Openai.Key == "" {
-		fmt.Println("OpenAI的Key不能为空")
+		slog.Error("OpenAI的Key不能为空")
 		os.Exit(0)
 	}
 
@@ -75,7 +76,8 @@ func init() {
 	}
 
 	if C.Wechat.Token == "" {
-		fmt.Println("未设置公众号token，公众号功能不可用")
+		slog.Error("未设置公众号token，公众号功能不可用")
+		os.Exit(0)
 	}
 }
 

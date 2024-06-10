@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"log/slog"
 	"net/http"
 	"openai/bootstrap"
 	"openai/internal/config"
@@ -9,6 +11,7 @@ import (
 	"openai/internal/handler"
 	"openai/internal/util"
 	"os"
+	"path/filepath"
 )
 
 func init() {
@@ -34,7 +37,7 @@ func main() {
 
 	http.Handle("/", handlerWithRequestLog)
 
-	log.Println("Server started in port " + config.C.Http.Port)
+	slog.Info("Server started in port " + config.C.Http.Port)
 	err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, nil)
 	if err != nil {
 		panic(err)
@@ -42,26 +45,24 @@ func main() {
 }
 
 func configLog() {
-	if util.GetEnv() == constant.Dev {
-		log.SetOutput(os.Stdout)
-	} else {
-		dir := "./log"
-		path := dir + "/data.log"
-		_, err := os.Stat(dir)
-		if err != nil && os.IsNotExist(err) {
-			if err := os.Mkdir(dir, 0755); err != nil {
-				panic(err)
-			}
-		}
-		file, err := os.OpenFile(path, os.O_CREATE|os.O_APPEND|os.O_RDWR, 0755)
+	if util.GetEnv() != constant.Dev {
+		logPath := "logs/app.log"
+		err := os.MkdirAll(filepath.Dir(logPath), os.ModePerm)
 		if err != nil {
-			panic(err)
+			fmt.Printf("Error creating log file directory: %v\n", err)
+			return
 		}
-		log.SetOutput(file)
+
+		logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+		if err != nil {
+			fmt.Printf("Error opening log file: %v\n", err)
+			return
+		}
+		log.SetOutput(logFile)
 	}
 }
 
 func logUsefulInfo() {
-	log.Printf("[Env] env: %s, account: %s", util.GetEnv(), util.GetAccount())
-	log.Printf("[Redis] uncle db: %d, brother db: %d", config.C.Redis.UncleDB, config.C.Redis.BrotherDB)
+	slog.Info("[Env]", "env", util.GetEnv(), "account", util.GetAccount())
+	slog.Info("[Redis]", "UncleDB", config.C.Redis.UncleDB, "BrotherDB", config.C.Redis.BrotherDB)
 }
