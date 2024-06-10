@@ -12,7 +12,11 @@ chown syslog:syslog /var/log/brother
 ```
 Then add config file /etc/rsyslog.d/brother.conf
 ```shell
-if $programname == 'brother' then /var/log/brother/output.log
+# 定义一个模板，生成带有日期的日志文件名
+template(name="DailyLogFile" type="string" string="/var/log/brother/%$YEAR%-%$MONTH%-%$DAY%.log")
+
+# 使用该模板创建每天一个新的日志文件
+if $programname == 'brother' then ?DailyLogFile
 & stop
 ```
 Restart rsyslog
@@ -25,3 +29,4 @@ systemctl restart rsyslog.service
 
 ## Reference
 - https://luci7.medium.com/golang-running-a-go-binary-as-a-systemd-service-on-ubuntu-18-04-in-10-minutes-without-docker-e5a1e933bb7e
+- https://stackoverflow.com/questions/37585758/how-to-redirect-output-of-systemd-service-to-a-file
