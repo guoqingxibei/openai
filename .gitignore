@@ -1,8 +1,5 @@
 .vscode
 .DS_Store
-./openai
-test.html
 .idea
 config-*.json
 temp
-logs

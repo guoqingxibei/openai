@@ -1,21 +1,15 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"log/slog"
 	"net/http"
 	"openai/bootstrap"
 	"openai/internal/config"
-	"openai/internal/constant"
 	"openai/internal/handler"
 	"openai/internal/util"
-	"os"
-	"path/filepath"
 )
 
 func init() {
-	configLog()
 	logUsefulInfo()
 }
 
@@ -41,24 +35,6 @@ func main() {
 	err := http.ListenAndServe("127.0.0.1:"+config.C.Http.Port, nil)
 	if err != nil {
 		panic(err)
-	}
-}
-
-func configLog() {
-	if util.GetEnv() != constant.Dev {
-		logPath := "logs/app.log"
-		err := os.MkdirAll(filepath.Dir(logPath), os.ModePerm)
-		if err != nil {
-			fmt.Printf("Error creating log file directory: %v\n", err)
-			return
-		}
-
-		logFile, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-		if err != nil {
-			fmt.Printf("Error opening log file: %v\n", err)
-			return
-		}
-		log.SetOutput(logFile)
 	}
 }
 
