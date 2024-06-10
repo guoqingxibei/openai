@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	resourcePath = "internal/service/wechat/resource/images"
+	resourcePath = "resource/images"
 )
 
 func initMedias() {

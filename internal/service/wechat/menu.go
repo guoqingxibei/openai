@@ -14,7 +14,7 @@ type MenuResponse struct {
 }
 
 func createOrUpdateMenu() {
-	data, err := ioutil.ReadFile("internal/service/wechat/resource/menu.json")
+	data, err := ioutil.ReadFile("resource/menu.json")
 	if err != nil {
 		errorx.RecordError("ioutil.ReadFile() failed", err)
 		return
