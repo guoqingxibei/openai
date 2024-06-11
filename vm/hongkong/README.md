@@ -12,11 +12,8 @@ chown syslog:syslog /var/log/brother
 ```
 Then add config file /etc/rsyslog.d/brother.conf
 ```shell
-# 定义一个模板，生成带有日期的日志文件名
-template(name="DailyLogFile" type="string" string="/var/log/brother/%$YEAR%-%$MONTH%-%$DAY%.log")
-
-# 使用该模板创建每天一个新的日志文件
-if $programname == 'brother' then ?DailyLogFile
+$template BrotherDailyLogFile,"/var/log/brother/%$YEAR%-%$MONTH%-%$DAY%.log"
+if $programname == 'brother' then ?BrotherDailyLogFile
 & stop
 ```
 Restart rsyslog
