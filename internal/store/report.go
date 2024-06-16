@@ -19,8 +19,13 @@ func appendActiveUser(day string, user string) error {
 	return client.Expire(ctx, buildActiveUsersKey(day), WEEK).Err()
 }
 
-func GetActiveUsers(day string) ([]string, error) {
-	return client.SMembers(ctx, buildActiveUsersKey(day)).Result()
+func GetActiveUsers(day string, useUncleDb bool) ([]string, error) {
+	myClient := client
+	if useUncleDb {
+		myClient = uncleClient
+	}
+
+	return myClient.SMembers(ctx, buildActiveUsersKey(day)).Result()
 }
 
 func buildConversationsKey(user string, day string) string {
@@ -42,9 +47,14 @@ func AppendConversation(user string, day string, conv model.Conversation) error 
 	return client.Expire(ctx, buildConversationsKey(user, day), WEEK).Err()
 }
 
-func GetConversations(user string, day string) ([]model.Conversation, error) {
+func GetConversations(user string, day string, useUncleDb bool) ([]model.Conversation, error) {
+	myClient := client
+	if useUncleDb {
+		myClient = uncleClient
+	}
+
 	var convs []model.Conversation
-	convStrs, err := client.LRange(ctx, buildConversationsKey(user, day), 0, -1).Result()
+	convStrs, err := myClient.LRange(ctx, buildConversationsKey(user, day), 0, -1).Result()
 	if err != nil {
 		return convs, err
 	}

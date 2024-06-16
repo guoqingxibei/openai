@@ -12,17 +12,17 @@ func buildErrorsKey(day string) string {
 
 func AppendError(day string, myErr model.MyError) error {
 	errBytes, _ := json.Marshal(myErr)
-	err := client.RPush(ctx, buildErrorsKey(day), string(errBytes)).Err()
+	err := brotherClient.RPush(ctx, buildErrorsKey(day), string(errBytes)).Err()
 	if err != nil {
 		return err
 	}
 
-	return client.Expire(ctx, buildErrorsKey(day), WEEK).Err()
+	return brotherClient.Expire(ctx, buildErrorsKey(day), WEEK).Err()
 }
 
 func GetErrors(day string) ([]model.MyError, error) {
 	var myErrors []model.MyError
-	errStrs, err := client.LRange(ctx, buildErrorsKey(day), 0, -1).Result()
+	errStrs, err := brotherClient.LRange(ctx, buildErrorsKey(day), 0, -1).Result()
 	if err != nil {
 		return myErrors, err
 	}
@@ -33,8 +33,4 @@ func GetErrors(day string) ([]model.MyError, error) {
 		myErrors = append(myErrors, chatApiError)
 	}
 	return myErrors, err
-}
-
-func GetErrorsLen(day string) (int64, error) {
-	return client.LLen(ctx, buildErrorsKey(day)).Result()
 }

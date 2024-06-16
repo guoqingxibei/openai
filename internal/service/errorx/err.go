@@ -13,23 +13,24 @@ import (
 func RecordError(title string, err error) {
 	go func() {
 		slog.Error(title, "error", err)
+		if !util.EnvIsProd() {
+			return
+		}
+
 		myErr := model.MyError{
-			Title:  title,
-			Detail: err.Error(),
-			Time:   time.Now(),
+			Account: util.GetAccount(),
+			Title:   title,
+			Detail:  err.Error(),
+			Time:    time.Now(),
 		}
-		today := util.Today()
-		_ = store.AppendError(today, myErr)
-		errCount, _ := store.GetErrorsLen(today)
-		if errCount%1 == 0 {
-			sendErrorAlarmEmail()
-		}
+		_ = store.AppendError(util.Today(), myErr)
+		sendErrorAlarmEmail()
 	}()
 }
 
 func sendErrorAlarmEmail() {
 	errCnt, errDesc := GetErrorsDesc(util.Today())
-	subject := fmt.Sprintf("[%s/%s] Already %d Errors Today", util.GetAccount(), util.GetEnv(), errCnt)
+	subject := fmt.Sprintf("Already %d Errors Today", errCnt)
 	email.SendEmail(subject, errDesc)
 }
 
@@ -39,11 +40,16 @@ func GetErrorsDesc(day string) (errCnt int, detail string) {
 	// reverse errors
 	for _, myError := range errors {
 		errorTmpl := `
-### %s
+### %s %s
 **%s**
 %s
 `
-		detail = fmt.Sprintf(errorTmpl, util.FormatTime(myError.Time), myError.Title, myError.Detail) + detail
+		detail = fmt.Sprintf(
+			errorTmpl,
+			util.FormatTime(myError.Time),
+			myError.Account,
+			myError.Title,
+			myError.Detail) + detail
 	}
 	return
 }

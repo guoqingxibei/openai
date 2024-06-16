@@ -11,10 +11,13 @@ import (
 	"openai/internal/service/ohmygpt"
 	"openai/internal/store"
 	"openai/internal/util"
-	"slices"
 )
 
 func init() {
+	if !util.AccountIsBrother() || !util.EnvIsProd() {
+		return
+	}
+
 	c1 := cron.New()
 	// Execute once every day at 00:00
 	err := c1.AddFunc("0 0 0 * * ?", func() {
@@ -26,18 +29,16 @@ func init() {
 	}
 	c1.Start()
 
-	if util.AccountIsBrother() && util.EnvIsProd() {
-		c2 := cron.New()
-		// Execute once every hour
-		err = c2.AddFunc("0 0 * * * *", func() {
-			checkVendorBalance()
-		})
-		if err != nil {
-			errorx.RecordError("AddFunc() failed", err)
-			return
-		}
-		c2.Start()
+	c2 := cron.New()
+	// Execute once every hour
+	err = c2.AddFunc("0 0 * * * *", func() {
+		checkVendorBalance()
+	})
+	if err != nil {
+		errorx.RecordError("AddFunc() failed", err)
+		return
 	}
+	c2.Start()
 }
 
 func checkVendorBalance() {
@@ -57,101 +58,70 @@ func checkVendorBalance() {
 
 func sendYesterdayReportEmail() {
 	yesterday := util.Yesterday()
-	subject := fmt.Sprintf("[%s/%s] Summary on %s", util.GetAccount(), util.GetEnv(), yesterday)
-
+	subject := fmt.Sprintf("Summary on %s", yesterday)
 	body := ""
-	var purchasedUsers []string
-	if util.AccountIsBrother() {
-		ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
-		balanceSect := buildBalanceSection(ohmygptBalance)
-		body += balanceSect
 
-		tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
-		cnt := len(tradeNos)
-		txnTitle := fmt.Sprintf("\n# %d purchases\n", cnt)
-		txnContent := ""
-		if cnt > 0 {
-			txnContent = `
+	// balance section
+	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
+	balanceSect := buildBalanceSection(ohmygptBalance)
+	body += balanceSect
+
+	// transaction section
+	tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
+	cnt := len(tradeNos)
+	txnTitle := fmt.Sprintf("\n# %d purchases\n", cnt)
+	txnContent := ""
+	if cnt > 0 {
+		txnContent = `
 Time | User | Amount | Account
 -----|------|--------|--------
 `
-			colTmpl := "%s | %s | %.1f | %s\n"
-			for _, tradeNo := range tradeNos {
-				transaction, _ := store.GetTransaction(tradeNo)
-				paidAccount := constant.Brother
-				openId := transaction.OpenId
-				if transaction.UncleOpenId != "" {
-					paidAccount = constant.Uncle
-					openId = transaction.UncleOpenId
-				}
-				purchasedUsers = append(purchasedUsers, openId)
-				txnContent += fmt.Sprintf(colTmpl,
-					util.FormatTime(transaction.UpdatedAt),
-					openId,
-					float64(transaction.PriceInFen)/100,
-					paidAccount,
-				)
+		txnColTmpl := "%s | %s | %.1f | %s\n"
+		for _, tradeNo := range tradeNos {
+			transaction, _ := store.GetTransaction(tradeNo)
+			paidAccount := constant.Brother
+			openId := transaction.OpenId
+			if transaction.UncleOpenId != "" {
+				paidAccount = constant.Uncle
+				openId = transaction.UncleOpenId
 			}
+			txnContent += fmt.Sprintf(txnColTmpl,
+				util.FormatTime(transaction.UpdatedAt),
+				openId[len(openId)-4:],
+				float64(transaction.PriceInFen)/100,
+				paidAccount,
+			)
 		}
-		body += txnTitle + txnContent
 	}
+	body += txnTitle + txnContent
 
+	// error section
 	errCnt, errorContent := errorx.GetErrorsDesc(yesterday)
 	errorTitle := fmt.Sprintf("\n# %d errors\n", errCnt)
 	body += errorTitle + errorContent
 
-	users, _ := store.GetActiveUsers(yesterday)
-	user2Convs := make(map[string][]model.Conversation)
-	for _, user := range users {
-		convs, _ := store.GetConversations(user, yesterday)
-		user2Convs[user] = convs
+	// usage section
+	brotherUsers, _ := store.GetActiveUsers(yesterday, false)
+	var brotherConvs []model.Conversation
+	for _, user := range brotherUsers {
+		convs, _ := store.GetConversations(user, yesterday, false)
+		brotherConvs = append(brotherConvs, convs...)
 	}
-	compareUserFunc := func(a, b string) int {
-		aPurchased := slices.Contains(purchasedUsers, a)
-		bPurchased := slices.Contains(purchasedUsers, b)
-		if !aPurchased && !bPurchased || aPurchased && bPurchased {
-			return user2Convs[a][0].Time.Compare(user2Convs[b][0].Time)
-		}
-
-		if aPurchased {
-			return -1
-		}
-
-		return 1
+	uncleUsers, _ := store.GetActiveUsers(yesterday, true)
+	var uncleConvs []model.Conversation
+	for _, user := range uncleUsers {
+		convs, _ := store.GetConversations(user, yesterday, true)
+		uncleConvs = append(uncleConvs, convs...)
 	}
-	slices.SortFunc(users, compareUserFunc)
-
-	userCnt := len(users)
-	convCnt := 0
-	convContent := ""
-	for idx, user := range users {
-		convs := user2Convs[user]
-		convsCnt := len(convs)
-		mark := ""
-		if slices.Contains(purchasedUsers, user) {
-			mark = " ★"
-		}
-		convContent += fmt.Sprintf("## %d/%d %s %d %s\n", idx+1, userCnt, user, convsCnt, mark)
-		for convIdx, conv := range convs {
-			convTmpl := `
-### %d/%d %s %s %d
-**Q**: %s
-**A**: %s
+	usageTitle := "\n# Usage\n"
+	usageContent := `
+Account | Users | Conversations
+--------|-------|--------------
 `
-			convContent += fmt.Sprintf(convTmpl,
-				convIdx+1,
-				convsCnt,
-				util.FormatTime(conv.Time),
-				conv.Mode,
-				conv.PaidBalance,
-				truncateAndEscape(conv.Question),
-				truncateAndEscape(conv.Answer),
-			)
-		}
-		convCnt += convsCnt
-	}
-	convTitle := fmt.Sprintf("\n# %d users | %d convs\n", userCnt, convCnt)
-	body += convTitle + convContent
+	usageColTmpl := "%s | %d | %d\n"
+	usageContent += fmt.Sprintf(usageColTmpl, "brother", len(brotherUsers), len(brotherConvs))
+	usageContent += fmt.Sprintf(usageColTmpl, "uncle", len(uncleUsers), len(uncleConvs))
+	body += usageTitle + usageContent
 
 	email.SendEmail(subject, body)
 }
@@ -167,12 +137,4 @@ Vendor | Balance
 		"Ohmygpt", ohmygptBalance,
 	)
 	return balanceSect
-}
-
-func truncateAndEscape(origin string) string {
-	maxLen := 100
-	if util.IsEnglishSentence(origin) {
-		maxLen *= 5
-	}
-	return util.EscapeNewline(util.EscapeHtmlTags(util.TruncateString(origin, maxLen)))
 }
