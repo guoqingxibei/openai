@@ -67,37 +67,35 @@ func sendYesterdayReportEmail() {
 	body += balanceSect
 
 	// transaction section
+	txnTitle := "\n# Order\n"
 	tradeNos, _ := store.GetSuccessOutTradeNos(yesterday)
 	cnt := len(tradeNos)
-	txnTitle := fmt.Sprintf("\n# %d purchases\n", cnt)
-	txnContent := ""
+	txnContent := fmt.Sprintf("## %d orders in total\n", cnt)
 	if cnt > 0 {
-		txnContent = `
-Time | User | Amount | Account
------|------|--------|--------
+		txnContent += `
+Time | Account | Amount
+:---:|:-------:|:-----:
 `
-		txnColTmpl := "%s | %s | %.1f | %s\n"
+		txnColTmpl := "%s | %s | %.1f\n"
 		for _, tradeNo := range tradeNos {
 			transaction, _ := store.GetTransaction(tradeNo)
 			paidAccount := constant.Brother
-			openId := transaction.OpenId
 			if transaction.UncleOpenId != "" {
 				paidAccount = constant.Uncle
-				openId = transaction.UncleOpenId
 			}
 			txnContent += fmt.Sprintf(txnColTmpl,
 				util.FormatTime(transaction.UpdatedAt),
-				openId[len(openId)-4:],
-				float64(transaction.PriceInFen)/100,
 				paidAccount,
+				float64(transaction.PriceInFen)/100,
 			)
 		}
 	}
 	body += txnTitle + txnContent
 
 	// error section
-	errCnt, errorContent := errorx.GetErrorsDesc(yesterday)
-	errorTitle := fmt.Sprintf("\n# %d errors\n", errCnt)
+	errorTitle := "\n# Error\n"
+	errCnt, errorDesc := errorx.GetErrorsDesc(yesterday)
+	errorContent := fmt.Sprintf("## %d errors in total\n", errCnt) + errorDesc
 	body += errorTitle + errorContent
 
 	// usage section
@@ -116,11 +114,17 @@ Time | User | Amount | Account
 	usageTitle := "\n# Usage\n"
 	usageContent := `
 Account | Users | Conversations
---------|-------|--------------
+:------:|:-----:|:------------:
 `
 	usageColTmpl := "%s | %d | %d\n"
 	usageContent += fmt.Sprintf(usageColTmpl, "brother", len(brotherUsers), len(brotherConvs))
 	usageContent += fmt.Sprintf(usageColTmpl, "uncle", len(uncleUsers), len(uncleConvs))
+	usageContent += fmt.Sprintf(
+		usageColTmpl,
+		"TOTAL",
+		len(brotherUsers)+len(uncleUsers),
+		len(brotherConvs)+len(uncleConvs),
+	)
 	body += usageTitle + usageContent
 
 	email.SendEmail(subject, body)
@@ -130,7 +134,7 @@ func buildBalanceSection(ohmygptBalance float64) string {
 	balanceTmpl := `
 # Balance
 Vendor | Balance
--------|------
+:-----:|:-------:
 %s | %.2f
 `
 	balanceSect := fmt.Sprintf(balanceTmpl,
