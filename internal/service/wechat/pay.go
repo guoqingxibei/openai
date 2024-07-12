@@ -81,7 +81,7 @@ func InitiateTransaction(openid string, tradeNo string, total int, description s
 	return wxRsp.Response.PrepayId, nil
 }
 
-func VerifySignAndDecrypt(notifyReq *wechat.V3NotifyReq) (*wechat.V3DecryptResult, error) {
+func VerifySignAndDecrypt(notifyReq *wechat.V3NotifyReq) (*wechat.V3DecryptPayResult, error) {
 	// 获取微信平台证书
 	certMap := client.WxPublicKeyMap()
 	// 验证异步通知的签名
@@ -90,7 +90,7 @@ func VerifySignAndDecrypt(notifyReq *wechat.V3NotifyReq) (*wechat.V3DecryptResul
 		return nil, err
 	}
 
-	return notifyReq.DecryptCipherText(wcCfg.APIv3Key)
+	return notifyReq.DecryptPayCipherText(wcCfg.APIv3Key)
 }
 
 func GeneratePaySignParams(prepayid string) (*wechat.JSAPIPayParams, error) {
