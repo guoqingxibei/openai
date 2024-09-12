@@ -39,11 +39,6 @@
       },
       {
         "type": "click",
-        "name": "文字转语音",
-        "key": "tts"
-      },
-      {
-        "type": "click",
         "name": "AI绘画",
         "key": "draw"
       }
@@ -52,6 +47,11 @@
   {
     "name": "其他",
     "sub_button": [
+      {
+        "type": "click",
+        "name": "文字转语音",
+        "key": "tts"
+      },
       {
         "type": "click",
         "name": "清除历史",
