@@ -115,7 +115,7 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 
 func clearHistory(msg *message.MixMessage) (reply *message.Reply) {
 	_ = store.DelMessages(string(msg.FromUserName))
-	return util.BuildTextReply("历史已被清除。现在，你可以开始全新的对话啦。")
+	return util.BuildTextReply("所有历史已被清除。现在，你可以开始全新的对话啦。")
 }
 
 func useCode(codeDetailStr string, msg *message.MixMessage) (reply *message.Reply) {
