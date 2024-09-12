@@ -8,11 +8,11 @@ import (
 func GetModelByMode(mode string) (model string) {
 	switch mode {
 	case constant.GPT3:
-		model = openai.GPT3Dot5Turbo
+		model = openai.GPT4oMini
 	case constant.GPT4:
 		model = openai.GPT4o
 	case constant.Translate:
-		model = openai.GPT3Dot5Turbo
+		model = openai.GPT4oMini
 	}
 	return
 }
