@@ -10,7 +10,7 @@ func GetModelByMode(mode string) (model string) {
 	case constant.GPT3:
 		model = openai.GPT4oMini
 	case constant.GPT4:
-		model = openai.GPT4o
+		model = openai.GPT4o20240806
 	case constant.Translate:
 		model = openai.GPT4oMini
 	}
