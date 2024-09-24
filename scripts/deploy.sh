@@ -17,6 +17,16 @@ else
 fi
 
 echo "[${FULL_SERVICE_NAME}] Building..."
+if ! docker info >/dev/null 2>&1; then
+  echo "Docker is not running, launching it..."
+  open --background -a Docker
+  while ! docker info >/dev/null 2>&1; do
+    echo "Waiting util docker is ready..."
+    sleep 2
+  done
+  echo "Docker is running now"
+fi
+
 IMAGE=golang:1.22
 WORKDIR=/app
 BIN_PATH=../openai-temp/bins/${FULL_SERVICE_NAME}
