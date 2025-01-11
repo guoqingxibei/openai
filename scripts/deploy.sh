@@ -29,14 +29,15 @@ fi
 
 IMAGE=golang:1.22
 WORKDIR=/app
-BIN_PATH=../openai-temp/bins/${FULL_SERVICE_NAME}
-PROXY_SERVER=http://10.221.14.35:3128
-OPTIONS="--rm -v .:${WORKDIR} -v ./../openai-temp/go-pkg-mod:/go/pkg/mod -w ${WORKDIR} -e https_proxy=${PROXY_SERVER}"
-docker run ${OPTIONS} ${IMAGE} go build -o ${BIN_PATH}
+PROXY_SERVER=http://host.docker.internal:1087
+OPTIONS="--rm -v .:${WORKDIR} -v ./../openai-temp/go-pkg-mod:/go/pkg/mod -v ./../openai-temp/bins:/bins -w ${WORKDIR}"
+INTERNAL_BIN_PATH=/bins/${FULL_SERVICE_NAME}
+docker run ${OPTIONS} ${IMAGE} go build -o ${INTERNAL_BIN_PATH}
 
 echo "[${FULL_SERVICE_NAME}] Syncing..."
 HK=root@47.56.184.46
-rsync -azq --progress ${BIN_PATH} ./resource $HK:/root/${FULL_SERVICE_NAME}/
+EXTERNAL_BIN_PATH=../openai-temp/bins/${FULL_SERVICE_NAME}
+rsync -azq --progress ${EXTERNAL_BIN_PATH} ./resource $HK:/root/${FULL_SERVICE_NAME}/
 
 echo "[${FULL_SERVICE_NAME}] Restarting..."
 ssh ${HK} "chown -R ${FULL_SERVICE_NAME}:${FULL_SERVICE_NAME} /root/${FULL_SERVICE_NAME}/ \
