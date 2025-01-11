@@ -85,9 +85,11 @@ func CreateChatStreamEx(
 	}
 
 	_ = store.AppendReplyChunk(msgId, endMark)
-	messages = util.AppendAssistantMessage(messages, fullReply)
-	_ = store.SetMessages(user, messages)
-	_ = store.DelReceivedImageUrls(user)
+	if mode != constant.Translate {
+		messages = util.AppendAssistantMessage(messages, fullReply)
+		_ = store.SetMessages(user, messages)
+		_ = store.DelReceivedImageUrls(user)
+	}
 	return
 }
 
