@@ -110,7 +110,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 			return
 		}
 
-		if mode == constant.GPT3 || mode == constant.GPT4 {
+		if mode == constant.GPT3 || mode == constant.GPT4 || mode == constant.Translate {
 			// convert voice to text
 			if isVoice {
 				textResult, err := logic.GetTextFromVoice(msg.MediaID)
@@ -143,6 +143,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 		}
 
 		// Unknown mode
+		errorx.RecordError("failed with unknown mode", errors.New("unknown mode: "+mode))
 		replyChan <- constant.TryAgain
 	}()
 	select {
