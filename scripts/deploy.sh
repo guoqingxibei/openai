@@ -29,7 +29,7 @@ fi
 
 IMAGE=golang:1.22
 WORKDIR=/app
-PROXY_SERVER=http://host.docker.internal:1087
+PROXY_SERVER=http://host.docker.internal:1087 # v2ray proxy
 OPTIONS="--rm -v .:${WORKDIR} -v ./../openai-temp/go-pkg-mod:/go/pkg/mod -v ./../openai-temp/bins:/bins -w ${WORKDIR}"
 INTERNAL_BIN_PATH=/bins/${FULL_SERVICE_NAME}
 docker run ${OPTIONS} ${IMAGE} go build -o ${INTERNAL_BIN_PATH}
