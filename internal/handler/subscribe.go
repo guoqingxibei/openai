@@ -20,10 +20,10 @@ func onSubscribe(msg *message.MixMessage) *message.Reply {
 
 	var reply string
 	if util.AccountIsUncle() {
-		reply = "此公众号已接入ChatGPT 3.5、4，<a href=\"https://cxyds.top/2023/07/03/faq.html\">点我了解详细用法</a>。" +
+		reply = "此公众号已接入ChatGPT和DeepSeek，<a href=\"https://cxyds.top/2023/07/03/faq.html\">点我了解详细用法</a>。" +
 			"\n\n现在，你可以直接用文字、图片和我对话咯~"
 	} else {
-		reply = "此公众号已接入ChatGPT 3.5、4和MidJourney，<a href=\"https://cxyds.top/2023/07/03/faq.html\">点我了解详细用法</a>。" +
+		reply = "此公众号已接入ChatGPT、DeepSeek和MidJourney，<a href=\"https://cxyds.top/2023/07/03/faq.html\">点我了解详细用法</a>。" +
 			"\n\n现在，你可以直接用文字、图片和我对话咯~"
 	}
 	return util.BuildTextReply(reply)
