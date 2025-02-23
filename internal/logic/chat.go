@@ -66,6 +66,7 @@ func CreateChatStreamEx(
 		if strings.HasPrefix(question, "/gs") {
 			vendor = constant.Ohmygpt
 		}
+		nonSpaceStarts := false
 		fullReply, fullReasoningReply, err = openaiex.CreateChatStream(
 			messages,
 			mode,
@@ -78,6 +79,14 @@ func CreateChatStreamEx(
 					_ = store.AppendReasoningReplyChunk(msgId, endMark)
 				}
 
+				if !nonSpaceStarts {
+					word = strings.TrimLeft(word, " \t\n")
+					if word == "" {
+						return
+					}
+				}
+
+				nonSpaceStarts = true
 				_ = store.AppendReplyChunk(msgId, word)
 				replyLen += util.GetVisualLength(word)
 				if !chanSent && replyLen > constant.MaxVisualLengthOfReply {
@@ -225,6 +234,7 @@ func FetchingReply(msgId int64, sendSegment func(segment string)) {
 	hasReasoning, _ := store.ReasoningReplyChunksExists(msgId)
 	if hasReasoning {
 		sendSegment("【开始思考...】\n")
+		reasoningEndWithNewLine := false
 		for {
 			fetchTimes++
 			if fetchTimes > maxFetchTimes {
@@ -242,12 +252,17 @@ func FetchingReply(msgId int64, sendSegment func(segment string)) {
 				sendSegment(segment)
 				reasoningStartIndex += int64(length)
 				if reasoningReachEnd {
+					reasoningEndWithNewLine = strings.HasSuffix(segment, "\n")
 					break
 				}
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		sendSegment("\n【思考结束!】\n")
+		reasoningEndNote := "【思考结束。】\n\n---\n"
+		if !reasoningEndWithNewLine {
+			reasoningEndNote = "\n" + reasoningEndNote
+		}
+		sendSegment(reasoningEndNote)
 	}
 
 	for {
