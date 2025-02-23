@@ -67,7 +67,8 @@ func CreateChatStream(
 	aiVendor string,
 	attemptNumber int,
 	processWord func(string),
-) (reply string, _err error) {
+	processReasoningWord func(string),
+) (reply string, reasoningReply string, _err error) {
 	req := openai.ChatCompletionRequest{
 		Model:     util.GetModelByMode(mode),
 		Messages:  messages,
@@ -114,8 +115,18 @@ func CreateChatStream(
 
 			if len(response.Choices) > 0 {
 				content := response.Choices[0].Delta.Content
-				reply += content
-				processWord(content)
+				reasoningContent := response.Choices[0].Delta.ReasoningContent
+				if content == "" && reasoningContent == "" {
+					continue
+				}
+
+				if content == "" {
+					reasoningReply += reasoningContent
+					processReasoningWord(reasoningContent)
+				} else {
+					reply += content
+					processWord(content)
+				}
 			} else {
 				slog.Info("[TokensUsage]", "Usage", response.Usage)
 			}
@@ -126,10 +137,10 @@ func CreateChatStream(
 	timeout := getTimeout(mode, attemptNumber)
 	select {
 	case <-time.After(time.Second * time.Duration(timeout)):
-		if reply == "" {
+		if reply == "" && reasoningReply == "" {
 			cancel()
 			errMsg := fmt.Sprintf("not yet start responding in %d seconds", timeout)
-			return "", errors.New(errMsg)
+			return "", "", errors.New(errMsg)
 		}
 
 		<-doneChan

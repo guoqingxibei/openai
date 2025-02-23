@@ -6,6 +6,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"log/slog"
 	"openai/internal/constant"
+	"openai/internal/service/errorx"
 	"openai/internal/store"
 	"openai/internal/util"
 	"time"
@@ -76,6 +77,26 @@ func DecreaseBalance(userName string, mode string, question string) (bool, strin
 		return true, ""
 	}
 
+	if mode == constant.DeepSeekR1 {
+		if paidBalance < timesPerQuestion {
+			deepSeekR1BalanceTip := "【余额不足】抱歉，付费额度剩余%d次，不足以继续使用%s模式(每次对话消耗次数%d)，" +
+				"<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。" +
+				"\n\n%s在此模式下，每次对话仅消耗次数1。"
+			return false,
+				fmt.Sprintf(deepSeekR1BalanceTip,
+					paidBalance,
+					GetModeName(mode),
+					timesPerQuestion,
+					util.GetPayLink(userName),
+					util.GetInvitationTutorialLink(),
+					getSwitchToGpt3Tip(),
+				)
+		}
+
+		_, _ = store.DecrPaidBalance(userName, int64(timesPerQuestion))
+		return true, ""
+	}
+
 	if mode == constant.GPT3 {
 		if hasPaid {
 			if paidBalance < timesPerQuestion {
@@ -104,6 +125,7 @@ func DecreaseBalance(userName string, mode string, question string) (bool, strin
 	}
 
 	// default
+	errorx.RecordError("[DecreaseBalance] failed with unknown mode", errors.New("unknown mode: "+mode))
 	return true, ""
 }
 

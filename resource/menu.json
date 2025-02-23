@@ -29,6 +29,11 @@
       },
       {
         "type": "click",
+        "name": "DeepSeek-R1对话",
+        "key": "deep-seek-r1"
+      },
+      {
+        "type": "click",
         "name": "GPT-3对话",
         "key": "gpt3"
       },

@@ -33,7 +33,7 @@ func CreateChatStreamEx(
 	isVoice bool,
 	mode string,
 	reachMaxLengthChan chan<- bool,
-) (fullReply string) {
+) (fullReply string, fullReasoningReply string) {
 	var err error = nil
 	defer func() {
 		if err != nil {
@@ -48,9 +48,16 @@ func CreateChatStreamEx(
 
 	replyLen := 0
 	chanSent := false
+	reasoningDone := false
 	for attemptNumber, vendor := range aiVendors {
 		_ = store.DelReplyChunks(msgId)
 		_ = store.AppendReplyChunk(msgId, startMark)
+
+		if mode == constant.DeepSeekR1 {
+			_ = store.DelReasoningReplyChunks(msgId)
+			_ = store.AppendReasoningReplyChunk(msgId, startMark)
+		}
+
 		if isVoice {
 			_ = store.AppendReplyChunk(msgId, "「"+question+"」\n\n")
 		}
@@ -59,15 +66,28 @@ func CreateChatStreamEx(
 		if strings.HasPrefix(question, "/gs") {
 			vendor = constant.Ohmygpt
 		}
-		fullReply, err = openaiex.CreateChatStream(
+		fullReply, fullReasoningReply, err = openaiex.CreateChatStream(
 			messages,
 			mode,
 			maxOutputTokens,
 			vendor,
 			attemptNumber,
 			func(word string) {
+				if mode == constant.DeepSeekR1 && !reasoningDone {
+					reasoningDone = true
+					_ = store.AppendReasoningReplyChunk(msgId, endMark)
+				}
+
 				_ = store.AppendReplyChunk(msgId, word)
 				replyLen += util.GetVisualLength(word)
+				if !chanSent && replyLen > constant.MaxVisualLengthOfReply {
+					reachMaxLengthChan <- true
+					chanSent = true
+				}
+			},
+			func(reasoningWord string) {
+				_ = store.AppendReasoningReplyChunk(msgId, reasoningWord)
+				replyLen += util.GetVisualLength(reasoningWord)
 				if !chanSent && replyLen > constant.MaxVisualLengthOfReply {
 					reachMaxLengthChan <- true
 					chanSent = true
@@ -166,22 +186,70 @@ func buildMessages(user string, question string, imageUrls []string, mode string
 }
 
 func FetchReply(msgId int64) (string, bool) {
+	reply := ""
+	hasReasoning, _ := store.ReasoningReplyChunksExists(msgId)
+	if hasReasoning {
+		reasoningChunks, _ := store.GetReasoningReplyChunks(msgId, 1, -1)
+		if len(reasoningChunks) <= 0 {
+			return "", false
+		}
+
+		reply += "【开始思考...】\n"
+		reasoningReachEnd := reasoningChunks[len(reasoningChunks)-1] == endMark
+		if !reasoningReachEnd {
+			reply += strings.Join(reasoningChunks, "")
+			return reply, false
+		}
+
+		reply += strings.Join(reasoningChunks[:len(reasoningChunks)-1], "")
+		reply += "\n【思考结束!】\n"
+	}
+
 	chunks, _ := store.GetReplyChunks(msgId, 1, -1)
 	if len(chunks) <= 0 {
-		return "", false
+		return reply, false
 	}
 
 	reachEnd := chunks[len(chunks)-1] == endMark
 	if reachEnd {
 		chunks = chunks[:len(chunks)-1]
 	}
-	reply := strings.Join(chunks, "")
+	reply += strings.Join(chunks, "")
 	return reply, reachEnd
 }
 
 func FetchingReply(msgId int64, sendSegment func(segment string)) {
 	var startIndex int64 = 1
+	var reasoningStartIndex int64 = 1
 	fetchTimes := 0
+	hasReasoning, _ := store.ReasoningReplyChunksExists(msgId)
+	if hasReasoning {
+		sendSegment("【开始思考...】\n")
+		for {
+			fetchTimes++
+			if fetchTimes > maxFetchTimes {
+				break
+			}
+
+			reasoningChunks, _ := store.GetReasoningReplyChunks(msgId, reasoningStartIndex, -1)
+			length := len(reasoningChunks)
+			if length >= 1 {
+				reasoningReachEnd := reasoningChunks[length-1] == endMark
+				if reasoningReachEnd {
+					reasoningChunks = reasoningChunks[:length-1]
+				}
+				segment := strings.Join(reasoningChunks, "")
+				sendSegment(segment)
+				reasoningStartIndex += int64(length)
+				if reasoningReachEnd {
+					break
+				}
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+		sendSegment("\n【思考结束!】\n")
+	}
+
 	for {
 		fetchTimes++
 		if fetchTimes > maxFetchTimes {

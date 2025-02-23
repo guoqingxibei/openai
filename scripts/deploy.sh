@@ -27,7 +27,7 @@ if ! docker info >/dev/null 2>&1; then
   echo "Docker is running now"
 fi
 
-IMAGE=golang:1.22
+IMAGE=golang:1.24
 WORKDIR=/app
 PROXY_SERVER=http://host.docker.internal:1087 # v2ray proxy
 OPTIONS="--rm -v .:${WORKDIR} -v ./../openai-temp/go-pkg-mod:/go/pkg/mod -v ./../openai-temp/bins:/bins -w ${WORKDIR}"

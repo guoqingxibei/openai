@@ -110,7 +110,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 			return
 		}
 
-		if mode == constant.GPT3 || mode == constant.GPT4 || mode == constant.Translate {
+		if mode == constant.GPT3 || mode == constant.GPT4 || mode == constant.DeepSeekR1 || mode == constant.Translate {
 			// convert voice to text
 			if isVoice {
 				textResult, err := logic.GetTextFromVoice(msg.MediaID)
@@ -124,7 +124,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 				question = textResult
 			}
 
-			conv.Answer = logic.CreateChatStreamEx(user, msgId, question, imageUrls, isVoice, mode, reachMaxLengthChan)
+			conv.Answer, conv.ReasoningAnswer = logic.CreateChatStreamEx(user, msgId, question, imageUrls, isVoice, mode, reachMaxLengthChan)
 			replyChan <- buildFlexibleReply(msgId)
 			return
 		}
@@ -143,7 +143,7 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 		}
 
 		// Unknown mode
-		errorx.RecordError("failed with unknown mode", errors.New("unknown mode: "+mode))
+		errorx.RecordError("[genReply4Text] failed with unknown mode", errors.New("unknown mode: "+mode))
 		replyChan <- constant.TryAgain
 	}()
 	select {
