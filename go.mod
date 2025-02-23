@@ -43,3 +43,6 @@ require (
 )
 
 replace github.com/silenceper/wechat/v2 => github.com/guoqingxibei/wechat/v2 v2.2.7
+
+// TODO: remove this line util ReasoningContent is ready in the formmer
+replace github.com/sashabaranov/go-openai => github.com/goodenough227/go-openai v0.0.0-20250207091202-52738616d5a4
