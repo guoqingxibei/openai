@@ -34,18 +34,13 @@
       },
       {
         "type": "click",
-        "name": "GPT-3对话",
-        "key": "gpt3"
-      },
-      {
-        "type": "click",
         "name": "GPT-4对话",
         "key": "gpt4"
       },
       {
         "type": "click",
-        "name": "AI绘画",
-        "key": "draw"
+        "name": "GPT-3对话",
+        "key": "gpt3"
       }
     ]
   },
@@ -56,6 +51,11 @@
         "type": "click",
         "name": "文字转语音",
         "key": "tts"
+      },
+      {
+        "type": "click",
+        "name": "AI绘画",
+        "key": "draw"
       },
       {
         "type": "click",
