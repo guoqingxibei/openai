@@ -252,10 +252,12 @@ func FetchingReply(msgId int64, sendSegment func(segment string)) {
 					reasoningChunks = reasoningChunks[:length-1]
 				}
 				segment := strings.Join(reasoningChunks, "")
-				sendSegment(segment)
 				reasoningStartIndex += int64(length)
-				if reasoningReachEnd {
+				if segment != "" {
+					sendSegment(segment)
 					reasoningEndWithNewLine = strings.HasSuffix(segment, "\n")
+				}
+				if reasoningReachEnd {
 					break
 				}
 			}
