@@ -29,17 +29,17 @@
       },
       {
         "type": "click",
-        "name": "DeepSeek-R1对话",
+        "name": "DeepSeek-R1",
         "key": "deep-seek-r1"
       },
       {
         "type": "click",
-        "name": "GPT-4对话",
+        "name": "GPT-4",
         "key": "gpt4"
       },
       {
         "type": "click",
-        "name": "GPT-3对话",
+        "name": "GPT-3",
         "key": "gpt3"
       }
     ]
