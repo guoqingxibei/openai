@@ -211,7 +211,10 @@ func FetchReply(msgId int64) (string, bool) {
 		}
 
 		reply += strings.Join(reasoningChunks[:len(reasoningChunks)-1], "")
-		reply += "\n【思考结束!】\n"
+		if !strings.HasSuffix(reply, "\n") {
+			reply += "\n"
+		}
+		reply += "【思考结束!】\n\n---\n"
 	}
 
 	chunks, _ := store.GetReplyChunks(msgId, 1, -1)
@@ -258,7 +261,7 @@ func FetchingReply(msgId int64, sendSegment func(segment string)) {
 			}
 			time.Sleep(100 * time.Millisecond)
 		}
-		reasoningEndNote := "【思考结束。】\n\n---\n"
+		reasoningEndNote := "【思考结束!】\n\n---\n"
 		if !reasoningEndWithNewLine {
 			reasoningEndNote = "\n" + reasoningEndNote
 		}
