@@ -35,7 +35,7 @@ const (
 
 var keywords = []string{
 	donate, group, help, contact, report, transfer, clear, invite, reset,
-	constant.GPT3, constant.GPT4, constant.DeepSeekR1, constant.Draw, constant.Translate,
+	constant.GPT3, constant.GPT4, constant.GPT4Dot5, constant.DeepSeekR1, constant.Draw, constant.Translate,
 }
 var keywordPrefixes = []string{generateCode, switchEmail}
 
@@ -44,6 +44,7 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 	question = strings.TrimSpace(question)
 	question = strings.ToLower(question)
 
+	// modes without alias: gpt4.5
 	// keyword alias
 	if question == "ds" {
 		question = constant.DeepSeekR1
@@ -91,6 +92,8 @@ func hitKeyword(msg *message.MixMessage) (hit bool, reply *message.Reply) {
 		case constant.GPT3:
 			fallthrough
 		case constant.GPT4:
+			fallthrough
+		case constant.GPT4Dot5:
 			fallthrough
 		case constant.DeepSeekR1:
 			fallthrough

@@ -36,6 +36,15 @@ func buildModeDesc(userName string, mode string) (desc string) {
 			util.GetPayLink(userName),
 			util.GetInvitationTutorialLink(),
 		)
+	case constant.GPT4Dot5:
+		desc = fmt.Sprintf("已切换到「%s」模式，每次对话消耗次数%d，支持【发送图片】。"+
+			"你的付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。",
+			logic.GetModeName(mode),
+			logic.GetTimesPerQuestion(mode),
+			balance,
+			util.GetPayLink(userName),
+			util.GetInvitationTutorialLink(),
+		)
 	case constant.DeepSeekR1:
 		desc = fmt.Sprintf("已切换到「%s」模式，每次对话消耗次数%d，支持展示【思考过程】。"+
 			"你的付费额度剩余%d次，<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。",

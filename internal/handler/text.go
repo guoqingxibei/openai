@@ -110,7 +110,11 @@ func genReply4Text(msg *message.MixMessage) (reply string) {
 			return
 		}
 
-		if mode == constant.GPT3 || mode == constant.GPT4 || mode == constant.DeepSeekR1 || mode == constant.Translate {
+		if mode == constant.GPT3 ||
+			mode == constant.GPT4 ||
+			mode == constant.GPT4Dot5 ||
+			mode == constant.DeepSeekR1 ||
+			mode == constant.Translate {
 			// convert voice to text
 			if isVoice {
 				textResult, err := logic.GetTextFromVoice(msg.MediaID)
