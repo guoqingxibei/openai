@@ -39,3 +39,13 @@ func InitiateTransaction(
 	_ = store.SetTransaction(tradeNo, transaction)
 	return prepayId, tradeNo, err
 }
+
+func IsAround8PM() bool {
+	now := time.Now()
+
+	today := now.Format("2006-01-02")
+	startTime, _ := time.Parse("2006-01-02 15:04", today+" 20:00")
+	endTime, _ := time.Parse("2006-01-02 15:04", today+" 20:05")
+
+	return now.After(startTime) && now.Before(endTime)
+}

@@ -73,7 +73,8 @@ func NotifyTransactionResult(w http.ResponseWriter, r *http.Request) {
 
 	result, err := wechatService.VerifySignAndDecrypt(notifyReq)
 	if err != nil {
-		errorx.RecordError("wechatService.VerifySignAndDecrypt() failed", err)
+		// not clear why WeChat server always send invalid request around 20:01
+		errorx.RecordErrorWithEmailOption("wechatService.VerifySignAndDecrypt() failed", err, !logic.IsAround8PM())
 		fail(w)
 		return
 	}

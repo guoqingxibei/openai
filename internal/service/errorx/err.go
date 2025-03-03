@@ -11,9 +11,13 @@ import (
 )
 
 func RecordError(title string, err error) {
+	RecordErrorWithEmailOption(title, err, true)
+}
+
+func RecordErrorWithEmailOption(title string, err error, sendEmail bool) {
 	go func() {
 		slog.Error(title, "error", err)
-		if !util.EnvIsProd() {
+		if !util.EnvIsProd() || !sendEmail {
 			return
 		}
 
