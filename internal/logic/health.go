@@ -45,7 +45,7 @@ func checkVendorBalance() {
 	slog.Info("Checking balance of vendors...")
 	alarm := false
 	ohmygptBalance, _ := ohmygpt.GetOhmygptBalance()
-	if ohmygptBalance < 30 {
+	if ohmygptBalance < 5 {
 		alarm = true
 	}
 	if alarm {
