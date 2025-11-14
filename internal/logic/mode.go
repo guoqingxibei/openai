@@ -12,8 +12,6 @@ func GetTimesPerQuestion(mode string) (times int) {
 		times = constant.TimesPerQuestionGPT3
 	case constant.GPT4:
 		times = constant.TimesPerQuestionGPT4
-	case constant.GPT4Dot5:
-		times = constant.TimesPerQuestionGPT4Dot5
 	case constant.DeepSeekR1:
 		times = constant.TimesPerQuestionDeepSeekR1
 	case constant.Draw:
@@ -34,8 +32,6 @@ func GetModeDesc(mode string) (desc string) {
 		fallthrough
 	case constant.GPT4:
 		fallthrough
-	case constant.GPT4Dot5:
-		fallthrough
 	case constant.DeepSeekR1:
 		desc = fmt.Sprintf("当前模式是%s，每次对话消耗次数%d。", GetModeName(mode), GetTimesPerQuestion(mode))
 	case constant.Draw:
@@ -54,8 +50,6 @@ func GetModeName(mode string) (name string) {
 		name = "GPT-3对话"
 	case constant.GPT4:
 		name = "GPT-4对话"
-	case constant.GPT4Dot5:
-		name = "GPT-4.5对话"
 	case constant.DeepSeekR1:
 		name = "DeepSeek-R1对话"
 	case constant.Draw:

@@ -57,7 +57,7 @@ func DecreaseBalance(userName string, mode string, question string) (bool, strin
 		return true, ""
 	}
 
-	if mode == constant.GPT4 || mode == constant.GPT4Dot5 {
+	if mode == constant.GPT4 {
 		if paidBalance < timesPerQuestion {
 			gpt4BalanceTip := "【余额不足】抱歉，付费额度剩余%d次，不足以继续使用%s模式(每次对话消耗次数%d)，" +
 				"<a href=\"%s\">点我购买</a>或者<a href=\"%s\">邀请好友</a>获取次数。" +

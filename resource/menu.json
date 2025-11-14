@@ -34,11 +34,6 @@
       },
       {
         "type": "click",
-        "name": "GPT-4.5",
-        "key": "gpt4.5"
-      },
-      {
-        "type": "click",
         "name": "GPT-4",
         "key": "gpt4"
       },

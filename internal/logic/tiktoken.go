@@ -15,7 +15,7 @@ import (
 // OpenAI Cookbook: https://github.com/openai/openai-cookbook/blob/main/examples/How_to_count_tokens_with_tiktoken.ipynb
 func calTokensForMessages(messages []openai.ChatCompletionMessage, model string) (numTokens int, err error) {
 	// See ark-deepseek-r1-250528 as gpt-4
-	if model == "ark-deepseek-r1-250528" || model == "gpt-4.5-preview" {
+	if model == "ark-deepseek-r1-250528" {
 		model = "gpt-4"
 	}
 

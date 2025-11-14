@@ -15,8 +15,6 @@ func onClick(msg *message.MixMessage) (reply *message.Reply) {
 		fallthrough
 	case constant.GPT4:
 		fallthrough
-	case constant.GPT4Dot5:
-		fallthrough
 	case constant.DeepSeekR1:
 		fallthrough
 	case constant.Draw:
