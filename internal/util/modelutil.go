@@ -14,7 +14,7 @@ func GetModelByMode(mode string) (model string) {
 	case constant.GPT4Dot5:
 		model = "gpt-4.5-preview" // TODO: use constant in the future
 	case constant.DeepSeekR1:
-		model = "ark-deepseek-r1-250120"
+		model = "ark-deepseek-r1-250528"
 	case constant.Translate:
 		model = openai.GPT4o
 	}
