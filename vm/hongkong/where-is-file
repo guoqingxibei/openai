@@ -1,4 +1,0 @@
-Caddyfile in /etc/caddy/Caddyfile
-openai.service in /etc/systemd/system/openai.service
-openai-staging.service in /etc/systemd/system/openai-staging.service
-brother.service in /etc/systemd/system/brother.service
